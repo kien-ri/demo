@@ -1,9 +1,9 @@
-package com.kien.blog.service
+package com.kien.book.service
 
-import com.kien.blog.model.condition.BookCondition
-import com.kien.blog.common.Page
-import com.kien.blog.model.view.BookView
-import com.kien.blog.repository.BookMapper
+import com.kien.book.model.condition.BookCondition
+import com.kien.book.common.Page
+import com.kien.book.model.view.BookView
+import com.kien.book.repository.BookMapper
 import org.springframework.stereotype.Service
 import kotlin.math.ceil
 

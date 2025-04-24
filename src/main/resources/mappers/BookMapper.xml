@@ -3,7 +3,7 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.kien.blog.repository.BookMapper">
+<mapper namespace="com.kien.book.repository.BookMapper">
 
     <select id="getById" parameterType="long" resultType="BookView">
         SELECT

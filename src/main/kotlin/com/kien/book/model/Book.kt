@@ -1,4 +1,4 @@
-package com.kien.blog.model
+package com.kien.book.model
 
 import java.time.LocalDateTime
 

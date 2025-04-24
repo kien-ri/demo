@@ -1,4 +1,4 @@
-package com.kien.blog
+package com.kien.book
 
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication

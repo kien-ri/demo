@@ -1,7 +1,7 @@
-package com.kien.blog.repository
+package com.kien.book.repository
 
-import com.kien.blog.model.condition.BookCondition
-import com.kien.blog.model.view.BookView
+import com.kien.book.model.condition.BookCondition
+import com.kien.book.model.view.BookView
 import org.apache.ibatis.annotations.Mapper
 
 @Mapper

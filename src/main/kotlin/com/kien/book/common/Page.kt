@@ -1,4 +1,4 @@
-package com.kien.blog.common
+package com.kien.book.common
 
 data class Page<T> (
     val pageSize: Int,

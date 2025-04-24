@@ -1,9 +1,9 @@
-package com.kien.blog.controller;
+package com.kien.book.controller;
 
-import com.kien.blog.model.condition.BookCondition
-import com.kien.blog.common.Page
-import com.kien.blog.model.view.BookView
-import com.kien.blog.service.BookService
+import com.kien.book.model.condition.BookCondition
+import com.kien.book.common.Page
+import com.kien.book.model.view.BookView
+import com.kien.book.service.BookService
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping;

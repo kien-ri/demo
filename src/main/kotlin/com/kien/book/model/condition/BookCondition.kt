@@ -1,4 +1,4 @@
-package com.kien.blog.model.condition
+package com.kien.book.model.condition
 
 import jakarta.validation.constraints.Min
 
