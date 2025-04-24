@@ -1,27 +1,37 @@
 @startuml registerBooks
 
-title 書籍データの一括登録 (Batch Create)
+title 書籍データの一括登録
 
-participant ":利用者" as User
-participant ":画面" as UI
-participant ":コントローラー" as Controller
-participant ":サービス" as Service
-participant ":リポジトリ" as Repo
-participant ":データベース" as DB
+actor ":User" as User
+participant "UI" as UI
+boundary ":BookController" as BookController
+control ":BookService" as BookService
+entity ":BookMapper" as BookMapper
+database ":DB" as DB
 
 activate User
-User -> UI ++ : 複数書籍情報入力・一括登録ボタン押下 (例: CSVアップロード)
-UI -> Controller ++ : 書籍一括登録リクエスト (POST /books, 書籍データリスト)\n・ユーザid=ログイン中のユーザIDを設定
-Controller -> Service ++ : 書籍一括登録処理依頼 (書籍データリスト, ログイン中のユーザID)
-note over Service : トランザクション管理開始
-Service -> Repo ++ : 書籍データ一括保存依頼 (書籍エンティティリスト)
-Repo -> DB ++ : 一括INSERT INTO 書籍 (...) VALUES (...), (...)
-DB --> Repo -- : 追加された書籍objs
-Repo --> Service -- : 追加された書籍objs
-note over Service : トランザクション コミット or ロールバック
-Service --> Controller -- : 追加された書籍objs
-Controller --> UI -- : 追加された書籍objs
-UI --> User -- : 一括登録結果表示
+User -> UI ++ : 一括登録
+UI -> BookController ++ : request (POST /books, JSON)
+BookController -> BookService ++ : List<BookCreate>
+note over BookService : @transaction
+BookService -> BookMapper ++ : 一括保存依頼
+BookMapper -> DB ++ : 一括INSERT
+
+alt 全て登録できなかった場合
+    DB --> BookMapper : 追加された件数
+    BookMapper --> BookService : 追加された件数一致しない
+    note over BookService : rollback
+    BookService --> BookController : 失敗
+    BookController --> UI : 失敗
+    UI --> User : 失敗表示
+end
+
+DB --> BookMapper -- : 追加された件数
+BookMapper --> BookService -- : 追加された件数
+note over BookService : commit
+BookService --> BookController -- : 追加された件数
+BookController --> UI -- : 追加された件数
+UI --> User -- : 結果表示
 deactivate User
 
 @enduml

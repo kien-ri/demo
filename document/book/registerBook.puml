@@ -3,35 +3,32 @@
 title 書籍データの新規登録 (Create)
 
 actor ":User" as User
-participant ":UI" as UI
-participant ":コントローラー" as Controller
-participant ":サービス" as Service
-participant ":リポジトリ" as Repo
-participant ":データベース" as DB
+participant "UI" as UI
+boundary ":BookController" as BookController
+control ":BookService" as BookService
+entity ":BookMapper" as BookMapper
+database ":DB" as DB
 
 activate User
 User -> UI ++ : 情報登録
-UI -> Controller ++ : POST /books
-Controller -> Service ++ : Book
-note over Service : @transaction
-Service -> Repo ++ : Book
-Repo -> DB ++ : INSERT...
+UI -> BookController ++ : POST /books
+BookController -> BookService ++ : Book
+BookService -> BookMapper ++ : Book
+BookMapper -> DB ++ : INSERT...
 
 alt 新規登録失敗した場合
-    DB --> Repo :
-    Repo --> Service : 登録成功
-    note over Service : rollback
-    Service --> Controller : 登録完了
-    Controller --> UI : 登録成功レスポンス(書籍obj)
-    UI --> User : 登録完了画面を表示
+    DB --> BookMapper : 影響件数0
+    BookMapper --> BookService : 影響件数0
+    BookService --> BookController : 登録失敗
+    BookController --> UI : 登録失敗
+    UI --> User : 登録失敗
 end
 
-DB --> Repo -- : Book
-Repo --> Service -- : 登録成功
-Service --> Controller -- : 登録完了
-note over Service : トランザクション コミット or ロールバック
-Controller --> UI -- : 登録成功レスポンス(書籍obj)
-UI --> User -- : 登録完了画面を表示
+DB --> BookMapper -- : 影響件数1
+BookMapper --> BookService -- : 影響件数1
+BookService --> BookController -- : 登録完了
+BookController --> UI -- : 登録成功
+UI --> User -- : 登録完了
 deactivate User
 
 @enduml

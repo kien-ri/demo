@@ -88,4 +88,18 @@
         </if>
     </select>
 
+    <insert id="save" parameterType="BookCreate">
+        INSERT INTO `books`(title, title_kana, author, publisher_id, user_id)
+        VALUES(#{title}, #{titleKana}, #{author}, #{publisherId}, #{userId})
+    </insert>
+
+    <update id="delete" parameterType="long">
+        UPDATE
+            `books`
+        SET
+            is_deleted = true
+        WHERE
+            id = #{id}
+    </update>
+
 </mapper>

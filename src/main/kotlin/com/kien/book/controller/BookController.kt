@@ -2,12 +2,17 @@ package com.kien.book.controller;
 
 import com.kien.book.model.condition.BookCondition
 import com.kien.book.common.Page
+import com.kien.book.model.Book
+import com.kien.book.model.create.BookCreate
 import com.kien.book.model.view.BookView
 import com.kien.book.service.BookService
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -29,5 +34,35 @@ class BookController(private val bookService: BookService) {
     fun getBooksByCondition(@Valid bookConditoin: BookCondition): ResponseEntity<Page<BookView>> {
         val bookPage = bookService.getBooksByCondition(bookConditoin);
         return ResponseEntity.ok(bookPage)
+    }
+
+    @PostMapping
+    fun registerBook(@Valid @RequestBody bookCreate: BookCreate): ResponseEntity<Int> {
+        val result = bookService.registerBook(bookCreate)
+        return if (result > 0) {
+            ResponseEntity.ok(result)
+        } else{
+            ResponseEntity.status(500).build()
+        }
+    }
+
+    @PostMapping("/batch")
+    fun registerBooks(@Valid @RequestBody bookCreates: List<BookCreate>): ResponseEntity<Boolean> {
+        val result = bookService.registerBooks(bookCreates)
+        return if (result) {
+            ResponseEntity.ok(result)
+        } else {
+            ResponseEntity.status(500).build()
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    fun deleteBook(@PathVariable id: Long): ResponseEntity<Void> {
+        val result = bookService.deleteBook(id)
+        return if (result > 0) {
+            ResponseEntity.noContent().build()
+        } else {
+            ResponseEntity.status(500).build()
+        }
     }
 }

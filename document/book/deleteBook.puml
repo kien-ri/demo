@@ -2,23 +2,30 @@
 
 title 書籍データの削除 (Delete - 論理削除)
 
-participant ":利用者" as User
-participant ":画面" as UI
-participant ":コントローラー" as Controller
-participant ":サービス" as Service
-participant ":リポジトリ" as Repo
-participant ":データベース" as DB
+actor ":User" as User
+participant "UI" as UI
+boundary ":BookController" as BookController
+control ":BookService" as BookService
+entity ":BookMapper" as BookMapper
+database ":DB" as DB
 
 activate User
-User -> UI ++ : 特定の書籍を選択・削除ボタン押下
-UI -> Controller ++ : 書籍削除リクエスト (DELETE /books/{書籍ID})
-Controller -> Service ++ : 書籍削除処理依頼 (書籍ID)
-Service -> Repo ++ : 書籍データ削除（論理）依頼 (書籍ID)
-Repo -> DB ++ : UPDATE 書籍 SET 削除フラグ = true WHERE 書籍id = ?
-DB --> Repo -- : 更新成功
-Repo --> Service -- : 削除成功
-Service --> Controller -- : 削除完了
-Controller --> UI -- : 削除成功レスポンス(Boolean)
+User -> UI ++ : 削除ボタン
+UI -> BookController ++ : request (DELETE /books/{bookID})
+BookController -> BookService ++ : bookId
+BookService -> BookMapper ++ : bookId
+BookMapper -> DB ++ : UPDATE実行
+alt DB更新が失敗したとき
+    DB --> BookMapper : 更新失敗
+    BookMapper --> BookService : 更新失敗
+    BookService --> BookController : 削除失敗
+    BookController --> UI : 削除失敗
+    UI --> User : 削除失敗
+end
+DB --> BookMapper -- : 更新成功
+BookMapper --> BookService -- : 削除成功
+BookService --> BookController -- : 削除完了
+BookController --> UI -- : 削除成功
 UI --> User -- : 削除完了
 deactivate User
 
