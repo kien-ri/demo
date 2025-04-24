@@ -1,0 +1,82 @@
+@startuml recordPurchases
+
+title 複数書籍の仕入処理
+
+participant ":クライアント" as Client
+participant ":コントローラー" as Controller
+participant ":仕入サービス" as PurService
+participant ":仕入リポジトリ" as PurRepo
+participant ":在庫サービス/リポジトリ" as StockRepo
+participant ":データベース" as DB
+
+activate Client
+Client -> Controller ++ : 複数仕入記録リクエスト (List<Purchase>)
+Controller -> PurService ++ : 複数仕入記録処理依頼 (List<Purchase>)
+
+note over PurService : Transaction開始\n(MyBatis SqlSession 開始, ExecutorType.BATCH指定)
+
+PurService -> PurRepo ++ : 仕入記録一括保存依頼 (List<Purchase>)
+PurRepo -> DB ++ : Batch INSERT INTO 仕入記録 (...) VALUES (...), (...)...
+DB --> PurRepo -- : 保存結果 (成功/例外)
+alt 保存失敗時
+    PurRepo --> PurService -- : 保存失敗
+    note over PurService : Rollback
+    deactivate PurRepo
+    PurService --> Controller -- : 失敗 (理由: 仕入記録一括保存失敗)
+    deactivate PurService
+    Controller --> Client -- : 失敗レスポンス
+    deactivate Client
+end
+PurRepo --> PurService ++ : 保存成功
+deactivate PurRepo
+
+note over PurService : 更新対象の書籍IDリスト作成 (bookIds)
+PurService -> StockRepo ++ : 複数在庫情報取得依頼 (bookIds)
+StockRepo -> DB ++ : SELECT * FROM 在庫 WHERE 書籍id IN (...) FOR UPDATE
+DB --> StockRepo -- : 現在の在庫データリスト
+StockRepo --> PurService -- : 現在の在庫データリスト(List<Stock>)
+
+note over PurService : 新しい在庫計算
+
+alt 更新対象リスト(toUpdate)が空でない場合
+    PurService -> StockRepo ++ : 在庫情報一括更新依頼
+    StockRepo -> DB ++ : Batch UPDATE 在庫 SET ... WHERE 書籍id = ? ...
+    DB --> StockRepo -- : 更新結果 (成功/例外)
+    alt 更新失敗時
+        StockRepo --> PurService -- : 更新失敗
+        note over PurService : Rollback
+        deactivate StockRepo
+        PurService --> Controller ++ : 失敗 (理由: 在庫一括更新失敗)
+        deactivate PurService
+        Controller --> Client -- : 失敗レスポンス
+        deactivate Client
+    end
+    StockRepo --> PurService ++ : 更新成功
+    deactivate StockRepo
+end
+
+alt 新規登録対象リストが空でない場合
+    PurService -> StockRepo ++ : 新規在庫情報一括保存依頼
+    StockRepo -> DB ++ : Batch INSERT INTO 在庫 (...) VALUES (...), (...)...
+    DB --> StockRepo -- : 保存結果 (成功/例外)
+    alt 保存失敗(例外発生)時
+        StockRepo --> PurService -- : 保存失敗
+        note over PurService : Rollback
+        deactivate StockRepo
+        PurService --> Controller -- : 失敗 (理由: 新規在庫一括保存失敗)
+        deactivate PurService
+        Controller --> Client -- : 失敗レスポンス
+        deactivate Client
+    end
+    StockRepo --> PurService -- : 保存成功
+    deactivate StockRepo
+end
+
+note over PurService : Commit
+deactivate PurService
+
+PurService --> Controller -- : 仕入処理 成功
+Controller --> Client -- : 成功レスポンス
+deactivate Client
+
+@enduml

@@ -1,0 +1,22 @@
+@startuml getUserInfo
+
+title ユーザー情報取得 (getUserInfo)
+
+participant ":APIクライアント" as Client
+participant ":コントローラー" as Controller
+participant ":サービス" as Service
+participant ":リポジトリ" as Repo
+participant ":データベース" as DB
+
+activate Client
+Client -> Controller ++ : ユーザ情報取得リクエスト (ユーザID)
+Controller -> Service ++ : ユーザ情報取得依頼 (ユーザID)
+Service -> Repo ++ : ユーザ情報検索依頼 (ユーザID)
+Repo -> DB ++ : SELECT ユーザid, ユーザ名, ログインid FROM ユーザ WHERE ユーザid = ? AND 削除フラグ = false
+DB --> Repo -- : User obj
+Repo --> Service -- : User obj
+Service --> Controller -- : User obj
+Controller --> Client -- : User obj
+deactivate Client
+
+@enduml

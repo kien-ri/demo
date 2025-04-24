@@ -1,0 +1,37 @@
+@startuml registerBook
+
+title 書籍データの新規登録 (Create)
+
+actor ":User" as User
+participant ":UI" as UI
+participant ":コントローラー" as Controller
+participant ":サービス" as Service
+participant ":リポジトリ" as Repo
+participant ":データベース" as DB
+
+activate User
+User -> UI ++ : 情報登録
+UI -> Controller ++ : POST /books
+Controller -> Service ++ : Book
+note over Service : @transaction
+Service -> Repo ++ : Book
+Repo -> DB ++ : INSERT...
+
+alt 新規登録失敗した場合
+    DB --> Repo :
+    Repo --> Service : 登録成功
+    note over Service : rollback
+    Service --> Controller : 登録完了
+    Controller --> UI : 登録成功レスポンス(書籍obj)
+    UI --> User : 登録完了画面を表示
+end
+
+DB --> Repo -- : Book
+Repo --> Service -- : 登録成功
+Service --> Controller -- : 登録完了
+note over Service : トランザクション コミット or ロールバック
+Controller --> UI -- : 登録成功レスポンス(書籍obj)
+UI --> User -- : 登録完了画面を表示
+deactivate User
+
+@enduml

@@ -1,0 +1,33 @@
+@startuml getBook
+
+title 書籍データの参照
+
+actor "User" as User
+participant ":UI" as UI
+boundary ":BookController" as BookController
+control ":BookService" as BookService
+entity ":BookMapper" as BookMapper
+database ":DB" as DB
+
+activate User
+User -> UI : click
+activate UI
+UI -> BookController ++ : request (GET /books/{bookId})
+BookController -> BookService ++ : call (bookId)
+BookService -> BookMapper ++ : call (bookId)
+BookMapper -> DB ++ : SELECT文
+alt 結果がない場合
+    DB -->> BookMapper : null
+    BookMapper -->> BookService : null
+    BookService -->> BookController : null
+    BookController -->> UI : 404
+    UI -->> User : 存在しない
+end
+DB --> BookMapper -- : data
+BookMapper --> BookService -- : BookView
+BookService --> BookController -- : BookView
+BookController --> UI -- : BookView JSON
+UI -->> User : rendering
+deactivate User
+
+@enduml

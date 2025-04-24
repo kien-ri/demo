@@ -1,0 +1,39 @@
+@startuml deletePurchase
+
+title 仕入記録削除
+
+participant ":クライアント" as Client
+participant ":コントローラー" as Controller
+participant ":仕入サービス" as PurService
+participant ":在庫サービス" as StockService
+participant ":仕入リポジトリ" as PurRepo
+participant ":在庫リポジトリ" as StockRepo
+participant ":データベース" as DB
+
+activate Client
+Client -> Controller ++ : 仕入削除リクエスト(仕入ID)
+Controller -> PurService ++ : 削除依頼(仕入ID)
+note over PurService : Transaction開始
+PurService -> PurRepo ++ : 仕入情報検索依頼(仕入ID)
+PurRepo -> DB ++ : SELECT * FROM 仕入 WHERE 仕入ID = ?
+DB --> PurRepo -- : 仕入obj or NULL
+PurRepo --> PurService -- : 仕入obj or NULL
+PurService -> PurRepo ++ : 削除依頼(仕入ID)
+PurRepo -> DB ++ : UPDATE 仕入 SET 削除フラグ = TRUE WHERE 仕入ID = ?
+DB --> PurRepo -- : 削除成功
+PurRepo --> PurService -- : 削除成功
+
+PurService -> StockService ++ : 在庫更新依頼(書籍ID、数、仕入単価)
+StockService -> StockRepo ++ : 在庫更新依頼(Stock obj)
+StockRepo -> DB ++ : UPDATE 在庫 SET 数 = ?, 仕入単価 = ?, WHERE 書籍ID = ?
+DB --> StockRepo -- : 更新成功
+StockRepo --> StockService -- : 更新成功
+StockService --> PurService -- : 更新成功
+note over PurService : commit
+
+PurService --> Controller -- : 削除成功
+Controller --> Client -- : 成功レスポンス
+
+deactivate Client
+
+@enduml

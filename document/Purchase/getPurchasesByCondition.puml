@@ -1,0 +1,28 @@
+@startuml getPurchasesByCondition
+
+title 仕入記録の検索（条件指定・ページネーション付き）
+
+participant ":クライアント" as Client
+participant ":コントローラー" as Controller
+participant "仕入取引サービス" as Service
+participant ":仕入リポジトリ" as Repo
+participant ":データベース" as DB
+
+activate Client
+Client -> Controller ++ : 仕入記録検索リクエスト
+Controller -> Service ++ : 仕入記録検索処理依頼 (Condition obj)
+Service -> Repo ++ : 仕入記録の総数を取得依頼 (Condition obj)
+Repo -> DB ++ : SELECT COUNT(*) FROM 取引記録 WHERE [検索条件] AND 削除フラグ = false
+DB --> Repo -- : 総件数
+Repo --> Service -- : 総件数 (totalCount)
+
+Service -> Repo ++ : 指定ページの仕入記録リストを取得依頼 (Condition obj)
+Repo -> DB ++ : SELECT * FROM 取引記録 WHERE [検索条件] AND 削除フラグ = false ORDER BY 日時 DESC LIMIT ? OFFSET ?
+DB --> Repo -- : 指定ページの仕入記録データリスト
+Repo --> Service -- : 仕入記録データリスト (Page obj)
+
+Service --> Controller -- : Page obj
+Controller --> Client -- : 検索結果レスポンス
+deactivate Client
+
+@enduml

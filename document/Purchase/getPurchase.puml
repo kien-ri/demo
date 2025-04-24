@@ -1,0 +1,30 @@
+@startuml getPurchase
+
+title 単一仕入記録の取得
+
+participant ":クライアント" as Client
+participant ":コントローラー" as Controller
+participant ":仕入サービス" as Service
+participant ":仕入リポジトリ" as Repo
+participant ":データベース" as DB
+
+activate Client
+Client -> Controller ++ : 仕入記録取得リクエスト (取引ID)
+Controller -> Service ++ : 仕入記録取得依頼 (取引ID)
+Service -> Repo ++ : 仕入記録検索依頼 (取引ID)
+Repo -> DB ++ : SELECT * FROM 取引記録 WHERE 取引id = ? AND 削除フラグ = false
+DB --> Repo -- : Purchase obj or NULL
+
+alt データが見つかった場合
+    Repo --> Service -- : Purchase obj
+    Service --> Controller -- : Purchase obj
+    Controller --> Client -- : 取得成功レスポンス (Purchase obj JSON)
+else データが見つからない or 条件に合わない場合
+    Repo --> Service -- : null
+    Service --> Controller -- : null
+    Controller --> Client -- : 取得失敗レスポンス
+end
+
+deactivate Client
+
+@enduml

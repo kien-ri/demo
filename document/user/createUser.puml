@@ -1,0 +1,38 @@
+@startuml createUser
+
+title ユーザー新規登録 (createUser - 重複チェック含む)
+
+participant ":クライアント" as Client
+participant ":コントローラー" as Controller
+participant ":サービス" as Service
+participant ":リポジトリ" as Repo
+participant ":データベース" as DB
+
+activate Client
+Client -> Controller ++ : ユーザ登録リクエスト (ユーザ名, ログインID, パスワード)
+Controller -> Service ++ : ユーザ登録処理依頼 (User obj)
+
+note over Service : 入力値バリデーション
+Service -> Repo ++ : ログインIDでユーザ検索 (user.loginId)
+Repo -> DB ++ : SELECT 1 FROM user WHERE login_id = ? LIMIT 1
+DB --> Repo -- : 検索結果 (存在するかどうか)
+
+alt ログインIDが存在しない場合 (登録処理続行)
+    Repo --> Service -- : 存在しない
+    note over Service : パスワードをハッシュ化
+    Service -> Repo ++ : ユーザ情報保存依頼(User obj)
+    Repo -> DB ++ : INSERT INTO ユーザ (ユーザ名, ログインid, パスワード, 削除フラグ) VALUES (?, ?, ?, false)
+    DB --> Repo -- : 登録成功 (新しいユーザID)
+    Repo --> Service -- : 登録成功 (ユーザID)
+    Service --> Controller -- : 登録成功 (User obj)
+    Controller --> Client -- : 登録成功レスポンス (User obj)
+
+else ログインIDが既に存在する場合 (登録処理中断)
+    Repo --> Service -- : 存在することを通知
+    Service --> Controller -- : 登録失敗 (理由: ログインID重複)
+    Controller --> Client -- : 登録失敗レスポンス
+end
+
+deactivate Client
+
+@enduml

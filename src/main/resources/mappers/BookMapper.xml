@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.kien.blog.repository.BookMapper">
+
+    <select id="getById" parameterType="long" resultType="BookView">
+        SELECT
+            b.id AS id,
+            b.title AS title,
+            b.title_kana AS title_kana,
+            b.author AS author,
+            p.name AS publisher_name,
+            u.name AS user_name,
+            b.is_deleted AS is_deleted,
+            b.created_at AS created_at,
+            b.updated_at AS updated_at
+        FROM
+            books b
+        LEFT JOIN
+            publisher p ON b.publisher_id = p.id AND p.is_deleted = FALSE
+        LEFT JOIN
+            user u ON b.user_id = u.id AND u.is_deleted = FALSE
+        WHERE
+            b.id = #{id} AND b.is_deleted = FALSE;
+    </select>
+
+    <select id="getCountByCondition" parameterType="BookCondition" resultType="int">
+        SELECT
+            count(*)
+        FROM
+            books b
+        LEFT JOIN
+            publisher p ON b.publisher_id = p.id AND p.is_deleted = FALSE
+        LEFT JOIN
+            user u ON b.user_id = u.id AND u.is_deleted = FALSE
+        <where>
+            b.is_deleted = FALSE
+            <if test="title != null and title != ''">
+                AND b.title LIKE #{title} </if>
+            <if test="author != null and author != ''">
+                AND b.author LIKE #{author} </if>
+            <if test="publisherId != null">
+                AND b.publisher_id = #{publisherId}
+            </if>
+            <if test="userId != null">
+                AND b.user_id = #{userId}
+            </if>
+        </where>
+    </select>
+
+    <select id="getListByCondition" parameterType="BookCondition" resultType="BookView">
+        SELECT
+            b.id AS id,
+            b.title AS title,
+            b.title_kana AS title_kana,
+            b.author AS author,
+            p.name AS publisher_name,
+            u.name AS user_name,
+            b.is_deleted AS is_deleted,
+            b.created_at AS created_at,
+            b.updated_at AS updated_at
+        FROM
+            books b
+        LEFT JOIN
+            publisher p ON b.publisher_id = p.id AND p.is_deleted = FALSE
+        LEFT JOIN
+            user u ON b.user_id = u.id AND u.is_deleted = FALSE
+        <where>
+            b.is_deleted = FALSE
+            <if test="title != null and title != ''">
+                AND b.title LIKE #{title}
+            </if>
+            <if test="author != null and author != ''">
+                AND b.author LIKE #{author}
+            </if>
+            <if test="publisherId != null">
+                AND b.publisher_id = #{publisherId}
+            </if>
+            <if test="userId != null">
+                AND b.user_id = #{userId}
+            </if>
+        </where>
+        <if test="pageSize != null and currentPage != null">
+            <bind name="offset" value="(currentPage - 1) * pageSize"/>
+            LIMIT #{pageSize} OFFSET #{offset}
+        </if>
+    </select>
+
+</mapper>

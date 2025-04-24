@@ -1,0 +1,71 @@
+@startuml deletePurchases
+
+title 複数仕入記録の削除
+
+participant ":クライアント" as Client
+participant ":コントローラー" as Controller
+participant ":仕入サービス" as PurService
+participant ":仕入リポジトリ" as PurRepo
+participant ":在庫リポジトリ" as StockRepo
+participant ":データベース" as DB
+
+activate Client
+Client -> Controller ++ : 複数仕入削除リクエスト (ids)
+Controller -> PurService ++ : 複数仕入削除処理依頼 (ids)
+
+note over PurService : Transaction開始
+
+PurService -> PurRepo ++ : 複数仕入記録検索依頼 (ids)
+PurRepo -> DB ++ : SELECT * FROM 取引記録 WHERE 取引id IN (...) AND 削除フラグ = false
+DB --> PurRepo -- : 元の仕入記録データリスト
+PurRepo --> PurService -- : List<Purchase>
+alt 検証エラー (削除対象無し等) の場合
+    note over PurService : Rollback
+    PurService --> Controller --: 失敗 (理由: 削除対象データ検証エラー)
+    Controller --> Client -- : 失敗レスポンス
+end
+
+PurService -> PurRepo ++ : 仕入記録一括論理削除依頼 (purchaseIds)
+activate PurService
+PurRepo -> DB ++ : UPDATE 取引記録 SET 削除フラグ = true WHERE 取引id IN (...)
+DB --> PurRepo -- : 更新結果 (成功/例外)
+alt 論理削除失敗(例外発生)時
+    PurRepo --> PurService -- : 削除失敗 Exception
+    note over PurService : Rollback
+    PurService --> Controller -- : 失敗 (理由: 仕入記録一括削除失敗)
+    deactivate PurService
+    Controller --> Client -- : 失敗レスポンス
+    deactivate Client
+end
+
+PurRepo --> PurService -- : 論理削除成功
+activate PurService
+deactivate PurRepo
+
+PurService -> StockRepo ++ : 複数在庫情報取得依頼 (bookIds) FOR UPDATE
+StockRepo -> DB ++ : SELECT * FROM 在庫 WHERE 書籍id IN (...) FOR UPDATE
+DB --> StockRepo -- : 現在の在庫データリスト
+StockRepo --> PurService -- : List<Stock>
+
+note over PurService : 更新後の在庫計算
+
+PurService -> StockRepo ++ : 在庫情報一括更新依頼
+StockRepo -> DB ++ : Batch UPDATE 在庫 SET 在庫数 = ?, 仕入単価=?, 合計金額=? WHERE 書籍id = ? ...
+DB --> StockRepo -- : 更新結果 (成功/例外)
+alt 在庫更新失敗(例外発生)時
+    StockRepo --> PurService -- : 更新失敗 Exception
+    note over PurService : Rollback
+    PurService --> Controller -- : 失敗 (理由: 在庫一括更新失敗)
+    Controller --> Client -- : 失敗レスポンス
+    deactivate Client
+end
+StockRepo --> PurService ++ : 更新成功
+deactivate StockRepo
+
+note over PurService : Commit
+
+PurService --> Controller -- : 削除処理 成功
+Controller --> Client -- : 成功レスポンス
+deactivate Client
+
+@enduml

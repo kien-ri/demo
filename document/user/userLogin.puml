@@ -1,0 +1,36 @@
+@startuml userLogin
+
+title ユーザーログイン (userLogin)
+
+participant ":クライアント" as Client
+participant ":コントローラー" as Controller
+participant ":サービス" as Service
+participant ":リポジトリ" as Repo
+participant ":データベース" as DB
+participant ":認証/セッション管理" as Auth
+
+activate Client
+Client -> Controller ++ : ログインリクエスト (ログインID, パスワード)
+Controller -> Service ++ : ログイン処理依頼 (User obj)
+
+Service -> Repo ++ : ログインIDでユーザ検索 (ログインID)
+Repo -> DB ++ : SELECT ユーザid, ユーザ名, パスワード FROM ユーザ WHERE ログインid = ? AND 削除フラグ = false
+DB --> Repo -- : User or Null
+
+alt ユーザーが見つかり、パスワードが一致する場合
+    Repo --> Service -- : ユーザデータ (User obj)
+    note over Service : 提供されたパスワードとDBのハッシュを比較
+    Service -> Auth ++ : 認証成功、セッション/トークン生成依頼
+    Auth --> Service -- : セッションID / JWTトークン
+    Service --> Controller -- : ログイン成功 (セッションID/トークン)
+    Controller --> Client -- : ログイン成功レスポンス (セッションID/トークン)
+else ユーザーが見つからない、またはパスワードが不一致の場合
+    Repo --> Service -- : null または ユーザデータ
+    note over Service : ユーザーが見つからない or ハッシュ比較結果が false
+    Service --> Controller -- : ログイン失敗
+    Controller --> Client -- : ログイン失敗レスポンス (エラー)
+end
+
+deactivate Client
+
+@enduml

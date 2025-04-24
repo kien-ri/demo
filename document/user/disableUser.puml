@@ -1,0 +1,23 @@
+@startuml disableUser
+
+title ユーザー無効化 (disableUser - 論理削除)
+
+participant ":クライアント" as Client
+participant ":コントローラー" as Controller
+participant ":サービス" as Service
+participant ":リポジトリ" as Repo
+participant ":データベース" as DB
+
+activate Client
+Client -> Controller ++ : ユーザ無効化リクエスト (ユーザID)
+Controller -> Service ++ : ユーザ無効化処理依頼 (ユーザID)
+note over Service : ユーザ存在チェック
+Service -> Repo ++ : ユーザ論理削除依頼 (ユーザID)
+Repo -> DB ++ : UPDATE ユーザ SET 削除フラグ = true WHERE ユーザid = ?
+DB --> Repo -- : 更新成功
+Repo --> Service -- : 削除成功(boolean)
+Service --> Controller -- : 無効化成功(boolean)
+Controller --> Client -- : 無効化成功レスポンス(boolean)
+deactivate Client
+
+@enduml

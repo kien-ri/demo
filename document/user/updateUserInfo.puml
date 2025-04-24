@@ -1,0 +1,23 @@
+@startuml updateUserInfo
+
+title ユーザー情報更新 (updateUserInfo - パスワード以外)
+
+participant ":クライアント" as Client
+participant ":コントローラー" as Controller
+participant ":サービス" as Service
+participant ":リポジトリ" as Repo
+participant ":データベース" as DB
+
+activate Client
+Client -> Controller ++ : ユーザ情報更新リクエスト (ユーザID, 更新情報{ユーザ名: "新しい名前"})
+Controller -> Service ++ : ユーザ情報更新処理依頼 (User obj)
+note over Service : 入力値バリデーション
+Service -> Repo ++ : ユーザ情報更新依頼 (User obj)
+Repo -> DB ++ : UPDATE ユーザ SET ユーザ名 = ? WHERE ユーザid = ? AND 削除フラグ = false
+DB --> Repo -- : 更新成功
+Repo --> Service -- : 更新成功(User obj)
+Service --> Controller -- : 更新成功(User obj)
+Controller --> Client -- : 更新成功レスポンス(User obj)
+deactivate Client
+
+@enduml

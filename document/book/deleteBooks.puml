@@ -1,0 +1,27 @@
+@startuml deleteBooks
+
+title 書籍データの一括削除 (Batch Delete - 論理削除)
+
+participant ":利用者" as User
+participant ":画面" as UI
+participant ":コントローラー" as Controller
+participant ":サービス" as Service
+participant ":リポジトリ" as Repo
+participant ":データベース" as DB
+
+activate User
+User -> UI ++ : 複数書籍選択・一括削除ボタン押下
+UI -> Controller ++ : 書籍一括削除リクエスト (DELETE /books/batch?ids=1,2,3)
+Controller -> Service ++ : 書籍一括削除処理依頼 (書籍ids)
+note over Service : トランザクション管理開始
+Service -> Repo ++ : 書籍データ一括削除（論理）依頼 (書籍ids)
+Repo -> DB ++ : UPDATE 書籍 SET 削除フラグ = true WHERE 書籍id IN (?, ?, ...) AND 削除フラグ = false
+DB --> Repo -- : 更新結果 (ids)
+Repo --> Service -- : 削除結果
+note over Service : トランザクション コミット or ロールバック
+Service --> Controller -- : 削除結果
+Controller --> UI -- : 削除結果idsレスポンス
+UI --> User -- : 一括削除結果表示
+deactivate User
+
+@enduml

@@ -1,0 +1,64 @@
+@startuml recordPurchase
+
+title 仕入処理
+
+participant ":クライアント" as Client
+participant ":コントローラー" as Controller
+participant ":仕入サービス" as PurService
+participant ":在庫サービス" as StockService
+participant ":仕入リポジトリ" as PurRepo
+participant ":在庫リポジトリ" as StockRepo
+participant ":データベース" as DB
+
+activate Client
+Client -> Controller ++ : 仕入記録リクエスト (Purchase obj)
+Controller -> PurService ++ : 仕入記録処理依頼 (Purchase obj)
+note over PurService : Transaction開始
+PurService -> PurRepo ++ : 仕入記録保存依頼 (Purchase obj)
+PurRepo -> DB ++ : INSERT INTO 仕入記録 (日時, 書籍id, 数, 単価, 取引先id...) VALUES (?, ?, ?, ?, ?, ...)
+DB --> PurRepo -- : 保存結果 (成功/失敗)
+
+alt 仕入記録の保存に成功した場合
+    PurRepo --> PurService -- : 取引記録 保存成功
+    PurService -> StockService ++ : 在庫更新依頼(書籍ID, 数, 単価)
+
+    StockService -> StockRepo ++ : 現在の在庫情報を取得 (書籍ID)
+    StockRepo -> DB ++ : SELECT * FROM 在庫 WHERE 書籍id = ? FOR UPDATE
+    DB --> StockRepo -- : 現在の在庫データ (存在する場合 nullもあり)
+    StockRepo --> StockService -- : 現在の在庫データ
+
+    alt 在庫レコードが存在する場合
+        note over StockService : 在庫数を加算
+        StockService -> StockRepo ++ : 在庫情報更新依頼 (Stock obj)
+        StockRepo -> DB ++ : UPDATE 在庫 SET 在庫数 = ?, 仕入単価 = ?, 合計金額 = ? WHERE 書籍id = ?
+        DB --> StockRepo -- : 更新結果 (成功/失敗)
+        StockRepo --> StockService -- : 更新結果
+    else 在庫レコードが存在しない場合 (初回仕入)
+        note over StockService : 新しい在庫レコードを作成\n(在庫数=仕入数, 仕入単価=今回の単価, 合計金額計算)
+        StockService -> StockRepo ++ : 新規在庫情報保存依頼 (Stock obj)
+        StockRepo -> DB ++ : INSERT INTO 在庫 (書籍id, 在庫数, 仕入単価, 合計金額) VALUES (?, ?, ?, ?)
+        DB --> StockRepo -- : 保存結果 (成功/失敗)
+        StockRepo --> StockService -- : 保存結果
+    end
+
+    alt 在庫更新が成功した場合
+        StockService --> PurService -- : 在庫更新 成功
+        note over PurService : Commit
+        PurService --> Controller -- : 仕入処理 成功
+        Controller --> Client -- : 成功レスポンス
+    else 在庫更新が失敗した場合
+        StockService --> PurService -- : 在庫更新 失敗
+        note over PurService : Rollback
+        PurService --> Controller -- : 失敗 (理由: 在庫更新失敗)
+        Controller --> Client -- : 失敗レスポンス
+    end
+else 取引記録の保存に失敗した場合
+    PurRepo --> PurService -- : 取引記録 保存失敗
+    note over PurService : Rollback
+    PurService --> Controller -- : 失敗 (理由: 取引記録保存失敗)
+    Controller --> Client -- : 失敗レスポンス
+end
+
+deactivate Client
+
+@enduml

@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: blog
+  # ===============================
+  # DataSource Configuration (MySQL)
+  # ===============================
+  datasource:
+    url: jdbc:mysql://localhost:3306/book?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+# ===============================
+# MyBatis Configuration
+# ===============================
+mybatis:
+  mapper-locations: classpath:/mappers/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+  type-aliases-package: com.kien.blog.model

@@ -1,0 +1,31 @@
+@startuml getBooksByCondition
+
+title 書籍データ検索（条件指定・ページネーション付き）
+
+actor ":User" as User
+participant ":UI" as UI
+boundary ":BookController" as BookController
+control ":BookService" as BookService
+entity ":BookMapper" as BookMapper
+database ":DB" as DB
+
+activate User
+User -> UI ++ : 条件指定検索
+UI -> BookController ++ : request
+BookController -> BookService ++ : BookConditon
+
+BookService -> BookMapper ++ : BookConditon
+BookMapper -> DB ++ : SELECT COUNT(*)
+DB --> BookMapper -- : 総件数
+BookMapper --> BookService -- : 総件数
+
+BookService -> BookMapper ++ : BookConditon
+BookMapper -> DB ++ : SELECT文
+DB --> BookMapper -- : List<Book>
+BookMapper --> BookService -- : List<Book>
+BookService --> BookController -- : Page<Book>
+BookController --> UI -- : Page<Book>(JSON)
+UI --> User -- : レンダリング
+deactivate User
+
+@enduml

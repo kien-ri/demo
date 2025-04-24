@@ -1,0 +1,25 @@
+@startuml deleteBook
+
+title 書籍データの削除 (Delete - 論理削除)
+
+participant ":利用者" as User
+participant ":画面" as UI
+participant ":コントローラー" as Controller
+participant ":サービス" as Service
+participant ":リポジトリ" as Repo
+participant ":データベース" as DB
+
+activate User
+User -> UI ++ : 特定の書籍を選択・削除ボタン押下
+UI -> Controller ++ : 書籍削除リクエスト (DELETE /books/{書籍ID})
+Controller -> Service ++ : 書籍削除処理依頼 (書籍ID)
+Service -> Repo ++ : 書籍データ削除（論理）依頼 (書籍ID)
+Repo -> DB ++ : UPDATE 書籍 SET 削除フラグ = true WHERE 書籍id = ?
+DB --> Repo -- : 更新成功
+Repo --> Service -- : 削除成功
+Service --> Controller -- : 削除完了
+Controller --> UI -- : 削除成功レスポンス(Boolean)
+UI --> User -- : 削除完了
+deactivate User
+
+@enduml

@@ -1,0 +1,27 @@
+@startuml updateBook
+
+title 書籍データの更新 (Update)
+
+participant ":利用者" as User
+participant ":画面" as UI
+participant ":コントローラー" as Controller
+participant ":サービス" as Service
+participant ":リポジトリ" as Repo
+participant ":データベース" as DB
+
+activate User
+User -> UI ++ : 既存情報編集・更新ボタン押下
+UI -> Controller ++ : 書籍更新リクエスト (PUT /books/{書籍ID}, 更新データ)
+Controller -> Service ++ : 書籍更新処理依頼 (書籍ID, 更新データ, ログイン中のユーザID)
+' note over Service : ユーザIDを更新するかは要件による\n(ここでは更新しない想定)
+Service -> Repo ++ : 書籍データ更新依頼 (書籍エンティティ)
+note right of Repo : 削除フラグ=false の\nレコードを対象とする
+Repo -> DB ++ : UPDATE 書籍 SET ... WHERE 書籍id = ? AND 削除フラグ = false
+DB --> Repo -- : 更新成功(ids)
+Repo --> Service -- : 更新成功
+Service --> Controller -- : 更新完了
+Controller --> UI -- : 更新成功レスポンス (ids)
+UI --> User -- : 更新完了画面を表示
+deactivate User
+
+@enduml
