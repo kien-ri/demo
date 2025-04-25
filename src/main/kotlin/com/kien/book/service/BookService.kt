@@ -50,7 +50,7 @@ class BookService(
     }
 
     fun registerBooks(bookCreates: List<BookCreate>): Boolean {
-        val res = batchService.batchInsert(
+        val res = batchService.batchProcess(
             dataList = bookCreates,
             mapperClass = BookMapper::class.java,
             insertOperation = BookMapper::save
@@ -76,5 +76,14 @@ class BookService(
         } else {
             throw Exception("...")
         }
+    }
+
+    fun updateBooks(books: List<Book>): Boolean {
+        val updatedCount = batchService.batchProcess(
+            dataList = books,
+            mapperClass = BookMapper::class.java,
+            insertOperation = BookMapper::update
+        )
+        return updatedCount == books.size
     }
 }

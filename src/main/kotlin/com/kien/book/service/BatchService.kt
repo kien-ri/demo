@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service
 @Service
 class BatchService(private val sqlSessionFactory: SqlSessionFactory) {
 
-    fun <T, M> batchInsert(
+    fun <T, M> batchProcess(
         dataList: List<T>,
         mapperClass: Class<M>,
         insertOperation: (M, T) -> Any?

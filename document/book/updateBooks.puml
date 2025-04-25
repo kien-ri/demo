@@ -1,27 +1,34 @@
 @startuml updateBooks
 
-title 書籍データの一括更新 (Batch Update)
+title 書籍データの一括更新
 
-participant ":利用者" as User
-participant ":画面" as UI
-participant ":コントローラー" as Controller
-participant ":サービス" as Service
-participant ":リポジトリ" as Repo
-participant ":データベース" as DB
+actor ":User" as User
+participant "UI" as UI
+boundary ":BookController" as BookController
+control ":BookService" as BookService
+entity ":BookMapper" as BookMapper
+database ":DB" as DB
 
 activate User
-User -> UI ++ : 複数書籍情報編集・一括更新ボタン押下
-UI -> Controller ++ : 書籍一括更新リクエスト (PUT /books/batch, 更新データリスト[{id:1, data:...}, {id:2, data:...}])\nログイン中のユーザid
-Controller -> Service ++ : 書籍一括更新処理依頼
-note over Service :トランザクション管理開始
-Service -> Repo ++ : 書籍データ一括更新依頼 (更新エンティティリスト)
-Repo -> DB ++ : foreach case when: UPDATE 書籍 SET ... WHERE 書籍id = ? AND 削除フラグ = false
-DB --> Repo -- : 更新結果 (書籍obj)
-Repo --> Service -- : 全体の更新結果
-note over Service : トランザクション コミット or ロールバック
-Service --> Controller -- : 更新結果
-Controller --> UI -- : 一括更新結果レスポンス(書籍obj)
-UI --> User -- : 一括更新結果表示
+User -> UI ++ : 情報更新請求
+UI -> BookController ++ : (PATCH /books, json)
+BookController -> BookService ++ : book list
+BookService -> BookMapper ++ : book list
+BookMapper -> DB ++ : UPDATE
+
+alt 更新失敗した場合
+    DB --> BookMapper : error
+    BookMapper --> BookService : error
+    BookService --> BookController : 更新失敗
+    BookController --> UI : 更新失敗
+    UI --> User : 失敗画面
+end
+
+DB --> BookMapper -- : 影響件数
+BookMapper --> BookService -- : 影響件数
+BookService --> BookController -- : 更新完了
+BookController --> UI -- : 更新成功
+UI --> User -- : 完了画面
 deactivate User
 
 @enduml

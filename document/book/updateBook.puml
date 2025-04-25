@@ -1,6 +1,6 @@
 @startuml updateBook
 
-title 書籍データの更新 (Update)
+title 書籍データの更新
 
 actor ":User" as User
 participant "UI" as UI
@@ -15,11 +15,20 @@ UI -> BookController ++ : (PUT /books/{id}, json)
 BookController -> BookService ++ : book
 BookService -> BookMapper ++ : book
 BookMapper -> DB ++ : UPDATE
-DB --> BookMapper -- : 更新成功(ids)
-BookMapper --> BookService -- : 更新成功
+
+alt 更新失敗した場合
+    DB --> BookMapper : error
+    BookMapper --> BookService : error
+    BookService --> BookController : 更新失敗
+    BookController --> UI : 更新失敗
+    UI --> User : 失敗画面
+end
+
+DB --> BookMapper -- : 影響件数
+BookMapper --> BookService -- : 影響件数
 BookService --> BookController -- : 更新完了
-BookController --> UI -- : 更新成功レスポンス (ids)
-UI --> User -- : 更新完了画面を表示
+BookController --> UI -- : 更新成功
+UI --> User -- : 完了画面
 deactivate User
 
 @enduml

@@ -12,6 +12,7 @@ import jakarta.validation.constraints.Positive
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
@@ -84,6 +85,12 @@ class BookController(private val bookService: BookService) {
     fun updateBook(@PathVariable @Positive id: Long, @RequestBody book: Book): ResponseEntity<BookView> {
         val updatedBook = bookService.updateBook(book)
         return ResponseEntity.ok(updatedBook)
+    }
+
+    @PatchMapping
+    fun updateBooks(@RequestBody books: List<Book>): ResponseEntity<Void> {
+        bookService.updateBooks(books)
+        return ResponseEntity.noContent().build()
     }
 
 }
