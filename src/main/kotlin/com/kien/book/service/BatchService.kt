@@ -11,25 +11,26 @@ class BatchService(private val sqlSessionFactory: SqlSessionFactory) {
     fun <T, M> batchProcess(
         dataList: List<T>,
         mapperClass: Class<M>,
-        insertOperation: (M, T) -> Any?
+        operation: (M, T) -> Any?
     ): Int {
 
         var sqlSession: SqlSession? = null
-        var totalInserted = 0
+        var totalCount = 0
         try {
             sqlSession = sqlSessionFactory.openSession(ExecutorType.BATCH, false)
             val mapper = sqlSession.getMapper(mapperClass)
 
             dataList.forEach { item ->
                 try {
-                    insertOperation(mapper, item)
+                    operation(mapper, item)
+                    totalCount++
                 } catch (e: Exception) {
-                    throw RuntimeException("Batch insert failed", e)
+                    throw RuntimeException("Batch opration failed", e)
                 }
             }
 
             sqlSession.commit()
-            return totalInserted
+            return totalCount
 
         } catch (e: Exception) {
             sqlSession?.rollback()

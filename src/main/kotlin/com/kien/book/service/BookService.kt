@@ -53,7 +53,7 @@ class BookService(
         val res = batchService.batchProcess(
             dataList = bookCreates,
             mapperClass = BookMapper::class.java,
-            insertOperation = BookMapper::save
+            operation = BookMapper::save
         )
         return res == bookCreates.size
     }
@@ -82,7 +82,7 @@ class BookService(
         val updatedCount = batchService.batchProcess(
             dataList = books,
             mapperClass = BookMapper::class.java,
-            insertOperation = BookMapper::update
+            operation = BookMapper::update
         )
         return updatedCount == books.size
     }
