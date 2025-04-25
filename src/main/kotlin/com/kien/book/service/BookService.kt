@@ -59,4 +59,8 @@ class BookService(
     fun deleteBook(id: Long): Int {
         return bookMapper.delete(id)
     }
+
+    fun deleteBooks(ids: List<Long>): Int {
+        return bookMapper.deleteBatch(ids)
+    }
 }
