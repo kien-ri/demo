@@ -1,5 +1,6 @@
-package com.kien.book.model.view
+package com.kien.book.model.dto.book
 
+import com.kien.book.model.Book
 import java.time.LocalDateTime
 
 data class BookView(
@@ -7,9 +8,13 @@ data class BookView(
     val title: String?,
     val titleKana: String?,
     val author: String?,
+    val publisherId: Long?,
     val publisherName: String?,
+    val userId: Long?,
     val userName: String?,
     val isDeleted: Boolean = false,
     val createdAt: LocalDateTime,
     val updatedAt: LocalDateTime
-)
+) {
+    fun toEntity() = Book(id, title, titleKana, author, publisherId, userId, isDeleted, createdAt, updatedAt)
+}

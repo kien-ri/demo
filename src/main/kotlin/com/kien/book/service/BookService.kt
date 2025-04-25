@@ -1,11 +1,13 @@
 package com.kien.book.service
 
-import com.kien.book.model.condition.BookCondition
+import com.kien.book.model.dto.book.BookCondition
 import com.kien.book.common.Page
-import com.kien.book.model.create.BookCreate
-import com.kien.book.model.view.BookView
+import com.kien.book.model.Book
+import com.kien.book.model.dto.book.BookCreate
+import com.kien.book.model.dto.book.BookView
 import com.kien.book.repository.BookMapper
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import kotlin.math.ceil
 
 @Service
@@ -62,5 +64,17 @@ class BookService(
 
     fun deleteBooks(ids: List<Long>): Int {
         return bookMapper.deleteBatch(ids)
+    }
+
+    @Transactional
+    fun updateBook(book: Book): BookView {
+        val updatedCount = bookMapper.update(book)
+        if (updatedCount > 0) {
+            val bookId = book.id ?: throw Exception("...")
+            val bookView = bookMapper.getById(bookId)
+            return bookView ?: throw Exception("...")
+        } else {
+            throw Exception("...")
+        }
     }
 }

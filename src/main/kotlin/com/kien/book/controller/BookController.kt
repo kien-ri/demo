@@ -1,20 +1,20 @@
 package com.kien.book.controller;
 
-import com.kien.book.model.condition.BookCondition
+import com.kien.book.model.dto.book.BookCondition
 import com.kien.book.common.Page
 import com.kien.book.model.Book
-import com.kien.book.model.create.BookCreate
-import com.kien.book.model.delete.DeleteBooksRequest
-import com.kien.book.model.view.BookView
+import com.kien.book.model.dto.book.BookCreate
+import com.kien.book.model.dto.book.BooksDelete
+import com.kien.book.model.dto.book.BookView
 import com.kien.book.service.BookService
 import jakarta.validation.Valid
-import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.Positive
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -70,7 +70,7 @@ class BookController(private val bookService: BookService) {
     }
 
     @DeleteMapping("/batch")
-    fun deleteBooks(@RequestBody @Valid deleteReq: DeleteBooksRequest): ResponseEntity<Void> {
+    fun deleteBooks(@RequestBody @Valid deleteReq: BooksDelete): ResponseEntity<Void> {
         val ids = deleteReq.ids
         val deleted = bookService.deleteBooks(ids)
         return if (deleted == ids.size) {
@@ -78,6 +78,12 @@ class BookController(private val bookService: BookService) {
         } else {
             ResponseEntity.status(500).build()
         }
+    }
+
+    @PutMapping("/{id}")
+    fun updateBook(@PathVariable @Positive id: Long, @RequestBody book: Book): ResponseEntity<BookView> {
+        val updatedBook = bookService.updateBook(book)
+        return ResponseEntity.ok(updatedBook)
     }
 
 }
