@@ -21,6 +21,7 @@ class BookService(
 
     fun getBooksByCondition(bookCondition: BookCondition): Page<BookView> {
         bookCondition.title?.let { if (it.isNotEmpty()) bookCondition.title = "%$it%" }
+        bookCondition.titleKana?.let { if (it.isNotEmpty()) bookCondition.title = "%$it%" }
         bookCondition.author?.let { if (it.isNotEmpty()) bookCondition.author = "%$it%" }
 
         val totalCount = bookMapper.getCountByCondition(bookCondition);
@@ -45,45 +46,36 @@ class BookService(
         )
     }
 
-    fun registerBook(bookCreate: BookCreate): Int {
-        return bookMapper.save(bookCreate)
+    fun registerBook(bookCreate: BookCreate) {
+        bookMapper.save(bookCreate)
     }
 
-    fun registerBooks(bookCreates: List<BookCreate>): Boolean {
-        val res = batchService.batchProcess(
+    fun registerBooks(bookCreates: List<BookCreate>) {
+        batchService.batchProcess(
             dataList = bookCreates,
             mapperClass = BookMapper::class.java,
             operation = BookMapper::save
         )
-        return res == bookCreates.size
     }
 
-    fun deleteBook(id: Long): Int {
-        return bookMapper.delete(id)
+    fun deleteBook(id: Long) {
+        bookMapper.delete(id)
     }
 
-    fun deleteBooks(ids: List<Long>): Int {
-        return bookMapper.deleteBatch(ids)
+    fun deleteBooks(ids: List<Long>) {
+        bookMapper.deleteBatch(ids)
     }
 
     @Transactional
-    fun updateBook(book: Book): BookView {
-        val updatedCount = bookMapper.update(book)
-        if (updatedCount > 0) {
-            val bookId = book.id ?: throw Exception("...")
-            val bookView = bookMapper.getById(bookId)
-            return bookView ?: throw Exception("...")
-        } else {
-            throw Exception("...")
-        }
+    fun updateBook(book: Book) {
+        bookMapper.update(book)
     }
 
-    fun updateBooks(books: List<Book>): Boolean {
-        val updatedCount = batchService.batchProcess(
+    fun updateBooks(books: List<Book>) {
+        batchService.batchProcess(
             dataList = books,
             mapperClass = BookMapper::class.java,
             operation = BookMapper::update
         )
-        return updatedCount == books.size
     }
 }

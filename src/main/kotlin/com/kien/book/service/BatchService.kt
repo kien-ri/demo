@@ -21,12 +21,8 @@ class BatchService(private val sqlSessionFactory: SqlSessionFactory) {
             val mapper = sqlSession.getMapper(mapperClass)
 
             dataList.forEach { item ->
-                try {
-                    operation(mapper, item)
-                    totalCount++
-                } catch (e: Exception) {
-                    throw RuntimeException("Batch opration failed", e)
-                }
+                operation(mapper, item)
+                totalCount++
             }
 
             sqlSession.commit()

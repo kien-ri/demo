@@ -15,6 +15,4 @@ data class BookView(
     val isDeleted: Boolean = false,
     val createdAt: LocalDateTime,
     val updatedAt: LocalDateTime
-) {
-    fun toEntity() = Book(id, title, titleKana, author, publisherId, userId, isDeleted, createdAt, updatedAt)
-}
+)
