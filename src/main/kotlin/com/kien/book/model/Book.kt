@@ -9,6 +9,7 @@ data class Book(
     var author: String?,
     var publisherId: Long?,
     var userId: Long?,
+    var price: Int?,
     var isDeleted: Boolean = false,
     var createdAt: LocalDateTime? = null,
     var updatedAt: LocalDateTime? = null
