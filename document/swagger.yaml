@@ -59,7 +59,7 @@ paths:
       parameters:
         - name: title
           in: query
-          description: 書籍タイトル（部分一致フィルタ、単一クエリと同時指定不可）
+          description: 書籍タイトル（部分一致フィルタ）
           required: false
           schema:
             type: string
@@ -67,7 +67,7 @@ paths:
             example: 星を継ぐもの
         - name: titleKana
           in: query
-          description: 書籍タイトルのカタカナ表記（部分一致フィルタ、単一クエリと同時指定不可）
+          description: 書籍タイトルのカタカナ表記（部分一致フィルタ）
           required: false
           schema:
             type: string
@@ -75,7 +75,7 @@ paths:
             example: ホシヲツグモノ
         - name: author
           in: query
-          description: 著者名（部分一致フィルタ、単一クエリと同時指定不可）
+          description: 著者名（部分一致フィルタ）
           required: false
           schema:
             type: string
@@ -83,7 +83,7 @@ paths:
             example: ジェイムズ・P・ホーガン
         - name: publisherId
           in: query
-          description: 出版社ID（フィルタ、単一クエリと同時指定不可）
+          description: 出版社ID
           required: false
           schema:
             type: integer
@@ -93,7 +93,7 @@ paths:
             example: 1
         - name: userId
           in: query
-          description: ユーザーID（フィルタ、単一クエリと同時指定不可）
+          description: ユーザーID
           required: false
           schema:
             type: integer
@@ -103,8 +103,8 @@ paths:
             example: 1
         - name: pageSize
           in: query
-          description: 1ページあたりの件数（必須、条件指定クエリ用）
-          required: false
+          description: 1ページあたりの件数
+          required: true
           schema:
             type: integer
             format: int32
@@ -112,8 +112,8 @@ paths:
             example: 10
         - name: currentPage
           in: query
-          description: 現在のページ番号（必須、条件指定クエリ用）
-          required: false
+          description: 現在のページ番号
+          required: true
           schema:
             type: integer
             format: int32
