@@ -1,14 +1,12 @@
 package com.kien.book.controller;
 
-import com.kien.book.model.dto.book.BookCondition
 import com.kien.book.common.Page
 import com.kien.book.model.Book
-import com.kien.book.model.dto.book.BookCreate
-import com.kien.book.model.dto.book.BooksDelete
-import com.kien.book.model.dto.book.BookView
+import com.kien.book.model.dto.book.*
 import com.kien.book.service.BookService
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Positive
+import org.springframework.beans.BeanUtils
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,68 +25,57 @@ class BookController(private val bookService: BookService) {
     @GetMapping("/{id}")
     fun getBookById(@PathVariable id: Long): ResponseEntity<BookView> {
         val bookView = bookService.getBookById(id)
-        return if (bookView != null) {
+        return if (bookView == null) {
+            ResponseEntity.notFound().build()
+        } else {
             ResponseEntity.ok(bookView)
+        }
+    }
+
+    @GetMapping
+    fun getBooksByCondition(@Valid bookCondition: BookCondition): ResponseEntity<Page<BookView>> {
+        val bookPage = bookService.getBooksByCondition(bookCondition);
+        return if (bookPage.content.isNotEmpty()) {
+            ResponseEntity.ok(bookPage)
         } else {
             ResponseEntity.notFound().build()
         }
     }
 
-    @GetMapping
-    fun getBooksByCondition(@Valid bookConditoin: BookCondition): ResponseEntity<Page<BookView>> {
-        val bookPage = bookService.getBooksByCondition(bookConditoin);
-        return ResponseEntity.ok(bookPage)
-    }
-
     @PostMapping
-    fun registerBook(@Valid @RequestBody bookCreate: BookCreate): ResponseEntity<Int> {
-        val result = bookService.registerBook(bookCreate)
-        return if (result > 0) {
-            ResponseEntity.ok(result)
-        } else{
-            ResponseEntity.status(500).build()
-        }
+    fun registerBook(@Valid @RequestBody bookCreate: BookCreate): ResponseEntity<Void> {
+        bookService.registerBook(bookCreate)
+        return ResponseEntity.noContent().build()
     }
 
     @PostMapping("/batch")
-    fun registerBooks(@Valid @RequestBody bookCreates: List<BookCreate>): ResponseEntity<Boolean> {
-        val result = bookService.registerBooks(bookCreates)
-        return if (result) {
-            ResponseEntity.ok(result)
-        } else {
-            ResponseEntity.status(500).build()
-        }
+    fun registerBooks(@Valid @RequestBody bookCreates: List<BookCreate>): ResponseEntity<Void> {
+        bookService.registerBooks(bookCreates)
+        return ResponseEntity.noContent().build()
     }
 
     @DeleteMapping("/{id}")
     fun deleteBook(@PathVariable @Positive id: Long): ResponseEntity<Void> {
-        val result = bookService.deleteBook(id)
-        return if (result > 0) {
-            ResponseEntity.noContent().build()
-        } else {
-            ResponseEntity.status(500).build()
-        }
+        bookService.deleteBook(id)
+        return ResponseEntity.noContent().build()
     }
 
     @DeleteMapping("/batch")
     fun deleteBooks(@RequestBody @Valid deleteReq: BooksDelete): ResponseEntity<Void> {
-        val ids = deleteReq.ids
-        val deleted = bookService.deleteBooks(ids)
-        return if (deleted == ids.size) {
-            ResponseEntity.noContent().build()
-        } else {
-            ResponseEntity.status(500).build()
-        }
+        bookService.deleteBooks(deleteReq.ids)
+        return ResponseEntity.noContent().build()
     }
 
     @PutMapping("/{id}")
-    fun updateBook(@PathVariable @Positive id: Long, @RequestBody book: Book): ResponseEntity<BookView> {
-        val updatedBook = bookService.updateBook(book)
-        return ResponseEntity.ok(updatedBook)
+    fun updateBook(@PathVariable @Positive id: Long, @RequestBody @Valid bookUpdate: BookUpdate): ResponseEntity<Void> {
+        val book = bookUpdate.toEntity()
+        bookService.updateBook(book)
+        return ResponseEntity.noContent().build()
     }
 
-    @PatchMapping
-    fun updateBooks(@RequestBody books: List<Book>): ResponseEntity<Void> {
+    @PutMapping("/batch")
+    fun updateBooks(@RequestBody @Valid bookUpdates: List<BookUpdate>): ResponseEntity<Void> {
+        val books = bookUpdates.map { it.toEntity() }
         bookService.updateBooks(books)
         return ResponseEntity.noContent().build()
     }

@@ -4,6 +4,7 @@ import jakarta.validation.constraints.Min
 
 data class BookCondition(
     var title: String? = null,
+    var titleKana: String? = null,
     var author: String? = null,
     val publisherId: Long? = null,
     val userId: Long? = null,

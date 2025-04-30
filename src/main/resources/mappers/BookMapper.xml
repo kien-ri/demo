@@ -76,6 +76,9 @@
             <if test="title != null and title != ''">
                 AND b.title LIKE #{title}
             </if>
+            <if test="titleKana != null and titleKana != ''">
+                AND b.title LIKE #{title}
+            </if>
             <if test="author != null and author != ''">
                 AND b.author LIKE #{author}
             </if>
