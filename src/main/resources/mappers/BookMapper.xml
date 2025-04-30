@@ -23,7 +23,7 @@
         LEFT JOIN
             publisher p ON b.publisher_id = p.id AND p.is_deleted = FALSE
         LEFT JOIN
-            user u ON b.user_id = u.id AND u.is_deleted = FALSE
+            `user` u ON b.user_id = u.id AND u.is_deleted = FALSE
         WHERE
             b.id = #{id} AND b.is_deleted = FALSE;
     </select>
@@ -36,7 +36,7 @@
         LEFT JOIN
             publisher p ON b.publisher_id = p.id AND p.is_deleted = FALSE
         LEFT JOIN
-            user u ON b.user_id = u.id AND u.is_deleted = FALSE
+            `user` u ON b.user_id = u.id AND u.is_deleted = FALSE
         <where>
             b.is_deleted = FALSE
             <if test="title != null and title != ''">
@@ -70,7 +70,7 @@
         LEFT JOIN
             publisher p ON b.publisher_id = p.id AND p.is_deleted = FALSE
         LEFT JOIN
-            user u ON b.user_id = u.id AND u.is_deleted = FALSE
+            `user` u ON b.user_id = u.id AND u.is_deleted = FALSE
         <where>
             b.is_deleted = FALSE
             <if test="title != null and title != ''">
