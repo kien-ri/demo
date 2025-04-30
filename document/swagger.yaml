@@ -23,15 +23,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/BookCreate'
-            examples:
-              singleBookCreate:
-                summary: 単一書籍登録のリクエスト例
-                value:
-                  title: 星を継ぐもの
-                  titleKana: ホシヲツグモノ
-                  author: ジェイムズ・P・ホーガン
-                  publisherId: 1
-                  userId: 1
       responses:
         '204':
           description: OK
