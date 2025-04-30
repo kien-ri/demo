@@ -11,22 +11,52 @@ tags:
     description: ユーザ関連の処理
 paths:
   /book:
+    post:
+      tags:
+        - book
+      summary: 書籍情報登録
+      description: 新たに書籍の情報を登録する
+      operationId: registerBook
+      requestBody:
+        description: 書籍情報
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookCreate'
+            examples:
+              singleBookCreate:
+                summary: 単一書籍登録のリクエスト例
+                value:
+                  title: 星を継ぐもの
+                  titleKana: ホシヲツグモノ
+                  author: ジェイムズ・P・ホーガン
+                  publisherId: 1
+                  userId: 1
+      responses:
+        '204':
+          description: OK
+          content:
+            application/json:
+              examples:
+                success:
+                  summary: 単一書籍登録成功例
+                  value: {}
+        default:
+          description: 予想外のエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     get:
       tags:
         - book
-      summary: 書籍情報取得
-      description: 指定IDの書籍の情報を取得する
-      operationId: getBook
+      summary: 書籍情報の一覧取得（条件検索）
+      description: |
+        タイトル、カタカナ表記、著者名、出版社ID、ユーザーID、ページ情報の条件を指定して、書籍情報をページング形式で取得します。
+        ページ情報以外のパラメータを指定しない場合、すべての書籍をページングで返します。
+        例: `GET /books?title=星を継ぐもの&author=ジェイムズ・P・ホーガン&page=0&size=10`
+      operationId: getBooksByCondition
       parameters:
-        - name: id
-          in: query
-          description: 単一の書籍ID（単一クエリ用、検索条件と同時指定不可）
-          required: false
-          schema:
-            type: integer
-            format: int64
-            minimum: 1
-            example: 1
         - name: title
           in: query
           description: 書籍タイトル（部分一致フィルタ、単一クエリと同時指定不可）
@@ -100,23 +130,12 @@ paths:
                   - type: array
                     items:
                       $ref: '#/components/schemas/BookView'
-              examples:
-                singleBook:
-                  summary: 単一書籍の取得例
-                  value:
-                    id: 1
-                    title: 星を継ぐもの
-                    titleKana: ホシヲツグモノ
-                    author: ジェイムズ・P・ホーガン
-                    publisherId: 1
-                    publisherName: 岩波書店
-                    userId: 1
-                    userName: 神里 綾華
-                    createdAt: '2025-04-24T07:22:13Z'
-                    updatedAt: '2025-04-24T07:22:13Z'
-                bookList:
-                  summary: 条件指定による書籍リストの取得例
-                  value:
+                example:
+                  pageSize: 10
+                  currentPage: 1
+                  totalCount: 2
+                  totalPages: 1
+                  content:
                     - id: 1
                       title: 星を継ぐもの
                       titleKana: ホシヲツグモノ
@@ -138,7 +157,7 @@ paths:
                       createdAt: '2025-04-25T08:30:00Z'
                       updatedAt: '2025-04-25T08:30:00Z'
         '404':
-          description: 指定IDの書籍が見つかりません
+          description: 指定条件の書籍が見つかりません
           content:
             application/json: {}
         default:
@@ -147,36 +166,40 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-    post:
+  /book/{id}:
+    get:
       tags:
         - book
-      summary: 書籍情報登録
-      description: 新たに書籍の情報を登録する
-      operationId: registerBook
-      requestBody:
-        description: 書籍情報
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/BookCreate'
-            examples:
-              singleBookCreate:
-                summary: 単一書籍登録のリクエスト例
-                value:
-                  title: 星を継ぐもの
-                  titleKana: ホシヲツグモノ
-                  author: ジェイムズ・P・ホーガン
-                  publisherId: 1
-                  userId: 1
+      summary: 書籍情報の取得（ID指定）
+      description: |
+        指定されたIDに基づいて単一の書籍情報を取得します。
+        例: `GET /books/1`
+      operationId: getBookById
+      parameters:
+        - name: id
+          in: path
+          description: 取得する書籍のID
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          example: 1
       responses:
-        '204':
+        '200':
           description: OK
           content:
             application/json:
-              examples:
-                success:
-                  summary: 単一書籍登録成功例
-                  value: {}
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/BookView'
+                  - type: array
+                    items:
+                      $ref: '#/components/schemas/BookView'
+        '404':
+          description: 指定IDの書籍が見つかりません
+          content:
+            application/json: {}
         default:
           description: 予想外のエラー
           content:
@@ -191,13 +214,14 @@ paths:
       operationId: deleteBook
       parameters:
         - name: id
-          in: query
+          in: path
           description: 書籍ID
           required: true
           schema:
             type: integer
             format: int64
             minimum: 1
+          example: 1
       responses:
         '204':
           description: OK
@@ -217,13 +241,14 @@ paths:
       operationId: updateBook
       parameters:
         - name: id
-          in: query
+          in: path
           description: 書籍ID
           required: true
           schema:
             type: integer
             format: int64
             minimum: 1
+          example: 1
       requestBody:
         description: 書籍情報
         content:
