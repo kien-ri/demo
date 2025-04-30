@@ -291,19 +291,20 @@ paths:
       summary: 書籍情報一括削除
       description: 指定された複数の書籍IDに基づいて書籍情報を一括で削除する
       operationId: deleteBooks
-      requestBody:
-        description: 削除する書籍IDのリスト
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/BooksDelete'
-            examples:
-              batchDelete:
-                summary: 複数書籍削除のリクエスト例
-                value:
-                  ids:
-                    - 1
-                    - 2
+      parameters:
+        - name: ids
+          in: query
+          description: 削除する書籍IDのリスト（カンマ区切り）
+          required: true
+          schema:
+            type: array
+            items:
+              type: integer
+              format: int64
+            minItems: 1
+          style: form
+          explode: false
+          example: [1, 2]
       responses:
         '204':
           description: OK
