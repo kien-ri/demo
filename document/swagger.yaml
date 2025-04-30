@@ -525,21 +525,6 @@ components:
           example: 1
       required:
         - id
-    BooksDelete:
-      type: object
-      description: 書籍情報一括削除用のデータオブジェクト
-      properties:
-        ids:
-          type: array
-          items:
-            type: integer
-            format: int64
-            minimum: 1
-          example:
-            - 1
-            - 2
-      required:
-        - ids
     Error:
       type: object
       properties:
