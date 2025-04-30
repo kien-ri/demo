@@ -15,6 +15,7 @@
             p.name AS publisher_name,
             b.user_id AS user_id,
             u.name AS user_name,
+            b.price AS price,
             b.is_deleted AS is_deleted,
             b.created_at AS created_at,
             b.updated_at AS updated_at
@@ -40,14 +41,19 @@
         <where>
             b.is_deleted = FALSE
             <if test="title != null and title != ''">
-                AND b.title LIKE #{title} </if>
+                AND b.title LIKE #{title}
+            </if>
             <if test="author != null and author != ''">
-                AND b.author LIKE #{author} </if>
+                AND b.author LIKE #{author}
+            </if>
             <if test="publisherId != null">
                 AND b.publisher_id = #{publisherId}
             </if>
             <if test="userId != null">
                 AND b.user_id = #{userId}
+            </if>
+            <if test="minPrice != null and maxPirce != null">
+                AND b.price BETWEEN #{minPrice} AND #{maxPrice}
             </if>
         </where>
     </select>
@@ -62,6 +68,7 @@
             p.name AS publisher_name,
             b.user_id AS user_id,
             u.name AS user_name,
+            b.price AS price,
             b.is_deleted AS is_deleted,
             b.created_at AS created_at,
             b.updated_at AS updated_at
@@ -88,6 +95,9 @@
             <if test="userId != null">
                 AND b.user_id = #{userId}
             </if>
+            <if test="minPrice != null and maxPirce != null">
+                AND b.price BETWEEN #{minPrice} AND #{maxPrice}
+            </if>
         </where>
         <if test="pageSize != null and currentPage != null">
             <bind name="offset" value="(currentPage - 1) * pageSize"/>
@@ -96,8 +106,10 @@
     </select>
 
     <insert id="save" parameterType="BookCreate">
-        INSERT INTO `books`(title, title_kana, author, publisher_id, user_id)
-        VALUES(#{title}, #{titleKana}, #{author}, #{publisherId}, #{userId})
+        INSERT INTO
+            `books`(title, title_kana, author, publisher_id, user_id, price)
+        VALUES
+            (#{title}, #{titleKana}, #{author}, #{publisherId}, #{userId}, #{price})
     </insert>
 
     <update id="delete" parameterType="long">
@@ -130,7 +142,8 @@
             title_kana = #{titleKana},
             author = #{author},
             publisher_id = #{publisherId},
-            user_id = #{userId}
+            user_id = #{userId},
+            price = #{price}
         WHERE
             id = #{id}
     </update>

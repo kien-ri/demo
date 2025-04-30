@@ -13,22 +13,23 @@ CREATE TABLE books (
     author VARCHAR(255),
     publisher_id BIGINT,
     user_id BIGINT,
+    price INT,
     is_deleted BOOLEAN NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
-INSERT INTO books (title, title_kana, author, publisher_id, user_id, is_deleted) VALUES
-('ONE PIECE', 'ワンピース', '尾田栄一郎', 1, 1, FALSE),
-('進撃の巨人', 'シンゲキノキョジン', '諫山創', 2, 2, FALSE),
-('ソードアート・オンライン', 'ソードアート・オンライン', '川原礫', 3, 1, FALSE),
-('名探偵コナン', 'メイタンテイコナン', '青山剛昌', 4, 3, FALSE),
-('鬼滅の刃', 'キメツノヤイバ', '吾峠呼世晴', 1, 2, FALSE),
-('転生したらスライムだった件', 'テンセイシタラスライムダッタケン', '伏瀬', 3, 4, FALSE),
-('SPY×FAMILY', 'スパイファミリー', '遠藤達哉', 1, 5, FALSE),
-('君の名は。', 'キミノナハ', '新海誠', 3, 3, FALSE),
-('ハリー・ポッターと賢者の石', 'ハリーポッタートケンジャノイシ', 'J.K.ローリング', NULL, 1, FALSE),
-('ある夜、雪の中で', 'アルヨルユキノナカデ', 'アガサ・クリスティ', 5, 2, FALSE),
-('そして誰もいなくなった', 'ソシテダレモイナクナッタ', 'アガサ・クリスティ', 5, 3, TRUE);
+INSERT INTO books (title, title_kana, author, publisher_id, user_id, price, is_deleted) VALUES
+('ONE PIECE', 'ワンピース', '尾田栄一郎', 1, 1, 500, FALSE),
+('進撃の巨人', 'シンゲキノキョジン', '諫山創', 2, 2, 600, FALSE),
+('ソードアート・オンライン', 'ソードアート・オンライン', '川原礫', 3, 1, 700, FALSE),
+('名探偵コナン', 'メイタンテイコナン', '青山剛昌', 4, 3, 550, FALSE),
+('鬼滅の刃', 'キメツノヤイバ', '吾峠呼世晴', 1, 2, 650, FALSE),
+('転生したらスライムだった件', 'テンセイシタラスライムダッタケン', '伏瀬', 3, 4, 800, FALSE),
+('SPY×FAMILY', 'スパイファミリー', '遠藤達哉', 1, 5, 520, FALSE),
+('君の名は。', 'キミノナハ', '新海誠', 3, 3, 900, FALSE),
+('ハリー・ポッターと賢者の石', 'ハリーポッタートケンジャノイシ', 'J.K.ローリング', NULL, 1, 1200, FALSE),
+('ある夜、雪の中で', 'アルヨルユキノナカデ', 'アガサ・クリスティ', 5, 2, 750, FALSE),
+('そして誰もいなくなった', 'ソシテダレモイナクナッタ', 'アガサ・クリスティ', 5, 3, 700, TRUE);
 
 CREATE TABLE publisher (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,

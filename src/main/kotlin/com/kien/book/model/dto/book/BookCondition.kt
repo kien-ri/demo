@@ -8,6 +8,8 @@ data class BookCondition(
     var author: String? = null,
     val publisherId: Long? = null,
     val userId: Long? = null,
+    val minPrice: Int? = null,
+    val maxPrice: Int? = null,
     @field:Min(value = 1)
     val pageSize: Int,
     @field:Min(value = 1)
