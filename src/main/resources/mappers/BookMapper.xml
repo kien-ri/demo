@@ -11,9 +11,9 @@
             b.title AS title,
             b.title_kana AS title_kana,
             b.author AS author,
-            b.publisher_id AS publisher_id,
+            p.id AS publisher_id,
             p.name AS publisher_name,
-            b.user_id AS user_id,
+            u.id AS user_id,
             u.name AS user_name,
             b.is_deleted AS is_deleted,
             b.created_at AS created_at,
@@ -21,11 +21,16 @@
         FROM
             books b
         LEFT JOIN
-            publisher p ON b.publisher_id = p.id AND p.is_deleted = FALSE
+            publisher p
+        ON b.publisher_id = p.id
+        AND p.is_deleted = FALSE
         LEFT JOIN
-            `user` u ON b.user_id = u.id AND u.is_deleted = FALSE
+            `user` u
+        ON b.user_id = u.id
+        AND u.is_deleted = FALSE
         WHERE
-            b.id = #{id} AND b.is_deleted = FALSE;
+            b.id = #{id}
+        AND b.is_deleted = FALSE;
     </select>
 
     <select id="getCountByCondition" parameterType="BookCondition" resultType="int">
@@ -34,15 +39,24 @@
         FROM
             books b
         LEFT JOIN
-            publisher p ON b.publisher_id = p.id AND p.is_deleted = FALSE
+            publisher p
+        ON b.publisher_id = p.id
+        AND p.is_deleted = FALSE
         LEFT JOIN
-            `user` u ON b.user_id = u.id AND u.is_deleted = FALSE
+            `user` u
+        ON b.user_id = u.id
+        AND u.is_deleted = FALSE
         <where>
             b.is_deleted = FALSE
             <if test="title != null and title != ''">
-                AND b.title LIKE #{title} </if>
+                AND b.title LIKE CONCAT('%', #{title}, '%')
+            </if>
+            <if test="titleKana != null and titleKana != ''">
+                AND b.titleKana LIKE CONCAT('%', #{titleKana}, '%')
+            </if>
             <if test="author != null and author != ''">
-                AND b.author LIKE #{author} </if>
+                AND b.author LIKE CONCAT('%', #{author}, '%')
+            </if>
             <if test="publisherId != null">
                 AND b.publisher_id = #{publisherId}
             </if>
@@ -58,9 +72,9 @@
             b.title AS title,
             b.title_kana AS title_kana,
             b.author AS author,
-            b.publisher_id AS publisher_id,
+            p.id AS publisher_id,
             p.name AS publisher_name,
-            b.user_id AS user_id,
+            u.id AS user_id,
             u.name AS user_name,
             b.is_deleted AS is_deleted,
             b.created_at AS created_at,
@@ -68,19 +82,23 @@
         FROM
             books b
         LEFT JOIN
-            publisher p ON b.publisher_id = p.id AND p.is_deleted = FALSE
+            publisher p
+        ON b.publisher_id = p.id
+        AND p.is_deleted = FALSE
         LEFT JOIN
-            `user` u ON b.user_id = u.id AND u.is_deleted = FALSE
+            `user` u
+        ON b.user_id = u.id
+        AND u.is_deleted = FALSE
         <where>
             b.is_deleted = FALSE
             <if test="title != null and title != ''">
-                AND b.title LIKE #{title}
+                AND b.title LIKE CONCAT('%', #{title}, '%')
             </if>
             <if test="titleKana != null and titleKana != ''">
-                AND b.title LIKE #{title}
+                AND b.titleKana LIKE CONCAT('%', #{titleKana}, '%')
             </if>
             <if test="author != null and author != ''">
-                AND b.author LIKE #{author}
+                AND b.author LIKE CONCAT('%', #{author}, '%')
             </if>
             <if test="publisherId != null">
                 AND b.publisher_id = #{publisherId}

@@ -164,7 +164,7 @@ class BookControllerTest {
     }
 
     @Test
-    fun `deleteBook should return 204 when deletion succeeds`() {
+    fun `deleteBookLogically should return 204 when deletion succeeds`() {
         val bookId = 1L
         mockMvc.delete("/books/$bookId")
             .andExpect {
@@ -173,11 +173,10 @@ class BookControllerTest {
     }
 
     @Test
-    fun `deleteBooks should return 204 when batch deletion succeeds`() {
-        val deleteReq = BooksDelete(ids = listOf(1L, 2L))
+    fun `deleteBooksLogically should return 204 when batch deletion succeeds`() {
         mockMvc.delete("/books/batch") {
             contentType = MediaType.APPLICATION_JSON
-            content = objectMapper.writeValueAsString(deleteReq)
+            content = objectMapper.writeValueAsString(listOf(1L, 2L))
         }.andExpect {
             status { isNoContent() }
         }

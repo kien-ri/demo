@@ -45,47 +45,145 @@ class BookMapperTest {
     }
 
     @Test
-    fun `getById should return null when book does not exist or is deleted`() {
+    fun `getById should return BookView with null publisherName when publisher is deleted`() {
+        val result = bookMapper.getById(5L)
+
+        assertThat(result).isNotNull()
+        assertThat(result).isEqualTo(
+            BookView(
+                id = 5L,
+                title = "データベース基礎",
+                titleKana = "データベース キソ",
+                author = "山本花子",
+                publisherId = null,
+                publisherName = null,
+                userId = 102L,
+                userName = "鈴木一郎",
+                isDeleted = false,
+                createdAt = LocalDateTime.of(2023, 2, 2, 10, 0),
+                updatedAt = LocalDateTime.of(2023, 2, 2, 10, 0)
+            )
+        )
+    }
+
+    @Test
+    fun `getById should return BookView with null userName when user is deleted`() {
+        val result = bookMapper.getById(6L)
+
+        assertThat(result).isNotNull()
+        assertThat(result).isEqualTo(
+            BookView(
+                id = 6L,
+                title = "アルゴリズム入門",
+                titleKana = "アルゴリズム ニュウモン",
+                author = "田中一",
+                publisherId = 3L,
+                publisherName = "文芸出版社",
+                userId = null,
+                userName = null,
+                isDeleted = false,
+                createdAt = LocalDateTime.of(2023, 2, 3, 10, 0),
+                updatedAt = LocalDateTime.of(2023, 2, 3, 10, 0)
+            )
+        )
+    }
+
+    @Test
+    fun `getById should return BookView with null publisherName and userName when both are deleted`() {
+        val result = bookMapper.getById(7L)
+
+        assertThat(result).isNotNull()
+        assertThat(result).isEqualTo(
+            BookView(
+                id = 7L,
+                title = "ネットワーク入門",
+                titleKana = "ネットワーク ニュウモン",
+                author = "高橋健",
+                publisherId = null,
+                publisherName = null,
+                userId = null,
+                userName = null,
+                isDeleted = false,
+                createdAt = LocalDateTime.of(2023, 2, 4, 10, 0),
+                updatedAt = LocalDateTime.of(2023, 2, 4, 10, 0)
+            )
+        )
+    }
+
+    @Test
+    fun `getById should return null when book does not exist`() {
         val result = bookMapper.getById(999L)
         assertThat(result).isNull()
     }
 
     @Test
+    fun `getById should return null when book is logically deleted`() {
+        val result = bookMapper.getById(3L)
+        assertThat(result).isNull()
+    }
+
+    @Test
     fun `getCountByCondition should return correct count`() {
-        val condition = BookCondition(
-            title = "%Kotlin%",
-            author = "%山田%",
-            publisherId = 1L,
-            userId = 100L,
+        val condition1 = BookCondition(
+            title = "入門",
+            author = null,
+            publisherId = 3L,
+            userId = 102L,
             pageSize = 10,
             currentPage = 1
         )
-        val count = bookMapper.getCountByCondition(condition)
-        assertThat(count).isEqualTo(1)
+        val condition2 = BookCondition(
+            title = null,
+            author = "田中",
+            publisherId = null,
+            userId = null,
+            pageSize = 10,
+            currentPage = 1
+        )
+        assertThat(bookMapper.getCountByCondition(condition1)).isEqualTo(1)
+        assertThat(bookMapper.getCountByCondition(condition2)).isEqualTo(2)
     }
 
     @Test
     fun `getCountByCondition should return 0 when no books match`() {
-        val condition = BookCondition(
-            title = "%Nonexistent%",
+        val condition1 = BookCondition(
+            title = "Nonexistent",
             pageSize = 10,
             currentPage = 1
         )
-        val count = bookMapper.getCountByCondition(condition)
-        assertThat(count).isEqualTo(0)
+        val condition2 = BookCondition(
+            author = "Nonexistent",
+            pageSize = 10,
+            currentPage = 1
+        )
+        val condition3 = BookCondition(
+            publisherId = 999L,
+            pageSize = 10,
+            currentPage = 1
+        )
+        val condition4 = BookCondition(
+            userId = 999L,
+            pageSize = 10,
+            currentPage = 1
+        )
+
+        assertThat(bookMapper.getCountByCondition(condition1)).isEqualTo(0)
+        assertThat(bookMapper.getCountByCondition(condition2)).isEqualTo(0)
+        assertThat(bookMapper.getCountByCondition(condition3)).isEqualTo(0)
+        assertThat(bookMapper.getCountByCondition(condition4)).isEqualTo(0)
     }
 
     @Test
-    fun `getListByCondition should return paginated books with conditions`() {
+    fun `getListByCondition should return multiple books when multiple records match`() {
         val condition = BookCondition(
-            title = "%Kotlin%",
+            title = "入門",
             pageSize = 10,
             currentPage = 1
         )
         val result = bookMapper.getListByCondition(condition)
 
-        assertThat(result).hasSize(1)
-        assertThat(result[0]).isEqualTo(
+        assertThat(result).hasSize(5)
+        assertThat(result).contains(
             BookView(
                 id = 1L,
                 title = "Kotlin入門",
@@ -98,14 +196,40 @@ class BookMapperTest {
                 isDeleted = false,
                 createdAt = LocalDateTime.of(2023, 1, 1, 10, 0),
                 updatedAt = LocalDateTime.of(2023, 1, 1, 10, 0)
+            ),
+            BookView(
+                id = 2L,
+                title = "Java入門",
+                titleKana = "ジャバー ニュウモン",
+                author = "田中太郎",
+                publisherId = 2L,
+                publisherName = "教育出版社",
+                userId = 101L,
+                userName = "佐藤花子",
+                isDeleted = false,
+                createdAt = LocalDateTime.of(2023, 1, 1, 10, 0),
+                updatedAt = LocalDateTime.of(2023, 1, 1, 10, 0)
+            ),
+            BookView(
+                id = 4L,
+                title = "Spring Boot 入門",
+                titleKana = "スプリング ブート ニュウモン",
+                author = "佐藤次郎",
+                publisherId = 3L,
+                publisherName = "文芸出版社",
+                userId = 102L,
+                userName = "鈴木一郎",
+                isDeleted = false,
+                createdAt = LocalDateTime.of(2023, 2, 1, 10, 0),
+                updatedAt = LocalDateTime.of(2023, 2, 1, 10, 0)
             )
         )
     }
 
     @Test
-    fun `getListByCondition should return empty list when no books match`() {
+    fun `getListByCondition should return empty list when title does not match`() {
         val condition = BookCondition(
-            title = "%Nonexistent%",
+            title = "Nonexistent",
             pageSize = 10,
             currentPage = 1
         )
@@ -114,40 +238,245 @@ class BookMapperTest {
     }
 
     @Test
+    fun `getListByCondition should return empty list when author does not match`() {
+        val condition = BookCondition(
+            author = "Nonexistent",
+            pageSize = 10,
+            currentPage = 1
+        )
+        val result = bookMapper.getListByCondition(condition)
+        assertThat(result).isEmpty()
+    }
+
+    @Test
+    fun `getListByCondition should return empty list when publisherId does not match`() {
+        val condition = BookCondition(
+            publisherId = 999L,
+            pageSize = 10,
+            currentPage = 1
+        )
+        val result = bookMapper.getListByCondition(condition)
+        assertThat(result).isEmpty()
+    }
+
+    @Test
+    fun `getListByCondition should return empty list when userId does not match`() {
+        val condition = BookCondition(
+            userId = 999L,
+            pageSize = 10,
+            currentPage = 1
+        )
+        val result = bookMapper.getListByCondition(condition)
+        assertThat(result).isEmpty()
+    }
+
+    @Test
+    fun `getListByCondition should return books with null publisher info when publisher is logically deleted`() {
+        val condition = BookCondition(
+            publisherId = 4L,
+            pageSize = 10,
+            currentPage = 1
+        )
+        val result = bookMapper.getListByCondition(condition)
+
+        assertThat(result).hasSize(2)
+        assertThat(result).contains(
+            BookView(
+                id = 5L,
+                title = "データベース基礎",
+                titleKana = "データベース キソ",
+                author = "山本花子",
+                publisherId = null,
+                publisherName = null,
+                userId = 102L,
+                userName = "鈴木一郎",
+                isDeleted = false,
+                createdAt = LocalDateTime.of(2023, 2, 2, 10, 0),
+                updatedAt = LocalDateTime.of(2023, 2, 2, 10, 0)
+            ),
+            BookView(
+                id = 7L,
+                title = "ネットワーク入門",
+                titleKana = "ネットワーク ニュウモン",
+                author = "高橋健",
+                publisherId = null,
+                publisherName = null,
+                userId = null,
+                userName = null,
+                isDeleted = false,
+                createdAt = LocalDateTime.of(2023, 2, 4, 10, 0),
+                updatedAt = LocalDateTime.of(2023, 2, 4, 10, 0)
+            )
+        )
+    }
+
+    @Test
+    fun `getListByCondition should return books with null user info when user is logically deleted`() {
+        val condition = BookCondition(
+            userId = 103L,
+            pageSize = 10,
+            currentPage = 1
+        )
+        val result = bookMapper.getListByCondition(condition)
+
+        assertThat(result).hasSize(2)
+        assertThat(result).contains(
+            BookView(
+                id = 6L,
+                title = "アルゴリズム入門",
+                titleKana = "アルゴリズム ニュウモン",
+                author = "田中一",
+                publisherId = 3L,
+                publisherName = "文芸出版社",
+                userId = null,
+                userName = null,
+                isDeleted = false,
+                createdAt = LocalDateTime.of(2023, 2, 3, 10, 0),
+                updatedAt = LocalDateTime.of(2023, 2, 3, 10, 0)
+            ),
+            BookView(
+                id = 7L,
+                title = "ネットワーク入門",
+                titleKana = "ネットワーク ニュウモン",
+                author = "高橋健",
+                publisherId = 4L,
+                publisherName = null,
+                userId = null,
+                userName = null,
+                isDeleted = false,
+                createdAt = LocalDateTime.of(2023, 2, 4, 10, 0),
+                updatedAt = LocalDateTime.of(2023, 2, 4, 10, 0)
+            )
+        )
+    }
+
+    @Test
+    fun `getListByCondition should exclude deleted books`() {
+        val condition = BookCondition(
+            title = "入門",
+            pageSize = 10,
+            currentPage = 1
+        )
+        val result = bookMapper.getListByCondition(condition)
+
+        assertThat(result).hasSize(5)
+        assertThat(result).doesNotContain(
+            BookView(
+                id = 3L,
+                title = "PHP入門",
+                titleKana = "ピーエイチピー ニュウモン",
+                author = "田中太郎",
+                publisherId = 2L,
+                publisherName = "教育出版社",
+                userId = 101L,
+                userName = "佐藤花子",
+                isDeleted = true,
+                createdAt = LocalDateTime.of(2023, 1, 1, 10, 0),
+                updatedAt = LocalDateTime.of(2023, 1, 1, 10, 0)
+            ),
+            BookView(
+                id = 8L,
+                title = "AI入門",
+                titleKana = "エーアイ ニュウモン",
+                author = "山田健太",
+                publisherId = 5L,
+                publisherName = "歴史出版社",
+                userId = 104L,
+                userName = "中村健太",
+                isDeleted = true,
+                createdAt = LocalDateTime.of(2023, 2, 7, 10, 0),
+                updatedAt = LocalDateTime.of(2023, 2, 7, 10, 0)
+            )
+        )
+    }
+
+    @Test
+    fun `getListByCondition should respect LIMIT and OFFSET for pagination`() {
+        val condition = BookCondition(
+            title = "入門",
+            pageSize = 2,
+            currentPage = 2
+        )
+        val result = bookMapper.getListByCondition(condition)
+
+        assertThat(result).hasSize(2)
+        assertThat(result).containsExactly(
+            BookView(
+                id = 4L,
+                title = "Spring Boot 入門",
+                titleKana = "スプリング ブート ニュウモン",
+                author = "佐藤次郎",
+                publisherId = 3L,
+                publisherName = "文芸出版社",
+                userId = 102L,
+                userName = "鈴木一郎",
+                isDeleted = false,
+                createdAt = LocalDateTime.of(2023, 2, 1, 10, 0),
+                updatedAt = LocalDateTime.of(2023, 2, 1, 10, 0)
+            ),
+            BookView(
+                id = 6L,
+                title = "アルゴリズム入門",
+                titleKana = "アルゴリズム ニュウモン",
+                author = "田中一",
+                publisherId = 3L,
+                publisherName = "文芸出版社",
+                userId = null,
+                userName = null,
+                isDeleted = false,
+                createdAt = LocalDateTime.of(2023, 2, 3, 10, 0),
+                updatedAt = LocalDateTime.of(2023, 2, 3, 10, 0)
+            )
+        )
+    }
+
+    @Test
     fun `save should insert book`() {
+        val temp = bookMapper.getById(9L)
+        assertThat(temp).isEqualTo(null)
+
+        val startTime = LocalDateTime.now()
+
         val bookCreate = BookCreate(
-            title = "Spring Boot入門",
-            titleKana = "スプリング ブート ニュウモン",
+            title = "Python入門",
+            titleKana = "パイソン ニュウモン",
             author = "佐藤花子",
-            publisherId = 2L,
-            userId = 101L
+            publisherId = 5L,
+            userId = 104L
         )
         val affectedRows = bookMapper.save(bookCreate)
         assertThat(affectedRows).isEqualTo(1)
 
-        val insertedBook = bookMapper.getById(2L)
+        val endTime = LocalDateTime.now()
+
+        val insertedBook = bookMapper.getById(9L)
         assertThat(insertedBook).isNotNull()
-        assertThat(insertedBook?.title).isEqualTo("Spring Boot入門")
-        assertThat(insertedBook?.titleKana).isEqualTo("スプリング ブート ニュウモン")
+        assertThat(insertedBook?.title).isEqualTo("Python入門")
+        assertThat(insertedBook?.titleKana).isEqualTo("パイソン ニュウモン")
         assertThat(insertedBook?.author).isEqualTo("佐藤花子")
-        assertThat(insertedBook?.publisherId).isEqualTo(2L)
-        assertThat(insertedBook?.userId).isEqualTo(101L)
+        assertThat(insertedBook?.publisherId).isEqualTo(5L)
+        assertThat(insertedBook?.publisherName).isEqualTo("歴史出版社")
+        assertThat(insertedBook?.userId).isEqualTo(104L)
+        assertThat(insertedBook?.userName).isEqualTo("中村健太")
+        assertThat(insertedBook?.createdAt).isNotNull()
+        assertThat(insertedBook?.createdAt).isAfterOrEqualTo(startTime)
+        assertThat(insertedBook?.createdAt).isBeforeOrEqualTo(endTime)
     }
 
     @Test
-    fun `delete should soft delete book and return affected rows`() {
-        val affectedRows = bookMapper.delete(1L)
+    fun `deleteLogically should soft delete book and return affected rows`() {
+        val affectedRows = bookMapper.deleteLogically(1L)
         assertThat(affectedRows).isEqualTo(1)
         val deletedBook = bookMapper.getById(1L)
         assertThat(deletedBook).isNull()
     }
 
     @Test
-    fun `deleteBatch should soft delete multiple books and return affected rows`() {
-        val affectedRows = bookMapper.deleteBatch(listOf(1L))
-        assertThat(affectedRows).isEqualTo(1)
-        val deletedBook = bookMapper.getById(1L)
-        assertThat(deletedBook).isNull()
+    fun `deleteBatchLogically should soft delete multiple books and return affected rows`() {
+        val affectedRows = bookMapper.deleteBatchLogically(listOf(1L, 2L))
+        assertThat(affectedRows).isEqualTo(2)
+        assertThat(bookMapper.getById(1L)).isNull()
+        assertThat(bookMapper.getById(2L)).isNull()
     }
 
     @Test
@@ -169,6 +498,8 @@ class BookMapperTest {
         assertThat(updatedBook?.titleKana).isEqualTo("コトリン ニュウモン")
         assertThat(updatedBook?.author).isEqualTo("山田太郎")
         assertThat(updatedBook?.publisherId).isEqualTo(1L)
+        assertThat(updatedBook?.publisherName).isEqualTo("技術出版社")
         assertThat(updatedBook?.userId).isEqualTo(100L)
+        assertThat(updatedBook?.userName).isEqualTo("テストユーザー")
     }
 }

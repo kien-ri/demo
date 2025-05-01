@@ -158,17 +158,17 @@ class BookServiceTest {
     }
 
     @Test
-    fun `deleteBook should call delete on BookMapper`() {
+    fun `deleteBookLogically should call delete on BookMapper`() {
         val bookId = 1L
-        bookService.deleteBook(bookId)
-        verify(bookMapper).delete(bookId)
+        bookService.deleteBookLogically(bookId)
+        verify(bookMapper).deleteLogically(bookId)
     }
 
     @Test
-    fun `deleteBooks should call deleteBatch on BookMapper`() {
+    fun `deleteBooksLogically should call deleteBatch on BookMapper`() {
         val ids = listOf(1L, 2L)
-        bookService.deleteBooks(ids)
-        verify(bookMapper).deleteBatch(ids)
+        bookService.deleteBooksLogically(ids)
+        verify(bookMapper).deleteBatchLogically(ids)
     }
 
     @Test
