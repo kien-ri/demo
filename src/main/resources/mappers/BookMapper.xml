@@ -52,14 +52,11 @@
             <if test="userId != null">
                 AND b.user_id = #{userId}
             </if>
-            <if test="minPrice != null and maxPrice != null">
-                AND b.price BETWEEN #{minPrice} AND #{maxPrice}
+            <if test="minPrice != null">
+                AND b.price >= #{minPrice}
             </if>
-            <if test="minPrice != null and maxPrice == null">
-                AND b.price > #{minPrice}
-            </if>
-            <if test="minPrice == null and maxPrice != null">
-                AND #{maxPrice} > b.price
+            <if test="maxPrice != null">
+                AND #{maxPrice} >= b.price
             </if>
         </where>
     </select>
@@ -101,14 +98,11 @@
             <if test="userId != null">
                 AND b.user_id = #{userId}
             </if>
-            <if test="minPrice != null and maxPrice != null">
-                AND b.price BETWEEN #{minPrice} AND #{maxPrice}
+            <if test="minPrice != null">
+                AND b.price >= #{minPrice}
             </if>
-            <if test="minPrice != null and maxPrice == null">
-                AND b.price > #{minPrice}
-            </if>
-            <if test="minPrice == null and maxPrice != null">
-                AND #{maxPrice} > b.price
+            <if test="maxPrice != null">
+                AND #{maxPrice} >= b.price
             </if>
         </where>
         <if test="pageSize != null and currentPage != null">
