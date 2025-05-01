@@ -20,10 +20,6 @@ class BookService(
     }
 
     fun getBooksByCondition(bookCondition: BookCondition): Page<BookView> {
-        bookCondition.title?.let { if (it.isNotEmpty()) bookCondition.title = "%$it%" }
-        bookCondition.titleKana?.let { if (it.isNotEmpty()) bookCondition.title = "%$it%" }
-        bookCondition.author?.let { if (it.isNotEmpty()) bookCondition.author = "%$it%" }
-
         val totalCount = bookMapper.getCountByCondition(bookCondition);
 
         val bookViews: List<BookView>
