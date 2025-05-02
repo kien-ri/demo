@@ -1,0 +1,562 @@
+openapi: '3.0.3'
+info:
+  title: 書籍管理システム
+  version: '1.0'
+servers:
+  - url: https://localhost:8080/
+tags:
+  - name: book
+    description: 書籍情報関連処理
+  - name: user
+    description: ユーザ関連の処理
+paths:
+  /book:
+    post:
+      tags:
+        - book
+      summary: 書籍情報登録
+      description: 新たに書籍の情報を登録する
+      operationId: registerBook
+      requestBody:
+        description: 書籍情報
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookCreate'
+      responses:
+        '204':
+          description: OK
+          content:
+            application/json:
+              examples:
+                success:
+                  summary: 単一書籍登録成功例
+                  value: {}
+        default:
+          description: 予想外のエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      tags:
+        - book
+      summary: 書籍情報の一覧取得（条件検索）
+      description: |
+        タイトル、カタカナ表記、著者名、出版社ID、ユーザーID、ページ情報の条件を指定して、書籍情報をページング形式で取得します。
+        ページ情報以外のパラメータを指定しない場合、すべての書籍をページングで返します。
+        例: `GET /books?title=星を継ぐもの&author=ジェイムズ・P・ホーガン&page=0&size=10`
+      operationId: getBooksByCondition
+      parameters:
+        - name: title
+          in: query
+          description: 書籍タイトル（部分一致フィルタ）
+          required: false
+          schema:
+            type: string
+            nullable: true
+            example: 星を継ぐもの
+        - name: titleKana
+          in: query
+          description: 書籍タイトルのカタカナ表記（部分一致フィルタ）
+          required: false
+          schema:
+            type: string
+            nullable: true
+            example: ホシヲツグモノ
+        - name: author
+          in: query
+          description: 著者名（部分一致フィルタ）
+          required: false
+          schema:
+            type: string
+            nullable: true
+            example: ジェイムズ・P・ホーガン
+        - name: publisherId
+          in: query
+          description: 出版社ID
+          required: false
+          schema:
+            type: integer
+            format: int64
+            nullable: true
+            minimum: 1
+            example: 1
+        - name: userId
+          in: query
+          description: ユーザーID
+          required: false
+          schema:
+            type: integer
+            format: int64
+            nullable: true
+            minimum: 1
+            example: 1
+        - name: pageSize
+          in: query
+          description: 1ページあたりの件数
+          required: true
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            example: 10
+        - name: currentPage
+          in: query
+          description: 現在のページ番号
+          required: true
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            example: 1
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/BookView'
+                  - type: array
+                    items:
+                      $ref: '#/components/schemas/BookView'
+                example:
+                  pageSize: 10
+                  currentPage: 1
+                  totalCount: 2
+                  totalPages: 1
+                  content:
+                    - id: 1
+                      title: 星を継ぐもの
+                      titleKana: ホシヲツグモノ
+                      author: ジェイムズ・P・ホーガン
+                      publisherId: 1
+                      publisherName: 岩波書店
+                      userId: 1
+                      userName: 神里 綾華
+                      price: 1200
+                      createdAt: '2025-04-24T07:22:13Z'
+                      updatedAt: '2025-04-24T07:22:13Z'
+                    - id: 2
+                      title: ガニメデの優しい巨人
+                      titleKana: ガニメデノヤサシイキョジン
+                      author: ジェイムズ・P・ホーガン
+                      publisherId: 1
+                      publisherName: 岩波書店
+                      userId: 2
+                      userName: 山田 太郎
+                      price: 500
+                      createdAt: '2025-04-25T08:30:00Z'
+                      updatedAt: '2025-04-25T08:30:00Z'
+        '404':
+          description: 指定条件の書籍が見つかりません
+          content:
+            application/json: {}
+        default:
+          description: 予想外のエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /book/{id}:
+    get:
+      tags:
+        - book
+      summary: 書籍情報の取得（ID指定）
+      description: |
+        指定されたIDに基づいて単一の書籍情報を取得します。
+        例: `GET /books/1`
+      operationId: getBookById
+      parameters:
+        - name: id
+          in: path
+          description: 取得する書籍のID
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          example: 1
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/BookView'
+                  - type: array
+                    items:
+                      $ref: '#/components/schemas/BookView'
+        '404':
+          description: 指定IDの書籍が見つかりません
+          content:
+            application/json: {}
+        default:
+          description: 予想外のエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags:
+        - book
+      summary: 書籍情報削除
+      description: 指定IDの書籍情報を削除する
+      operationId: deleteBook
+      parameters:
+        - name: id
+          in: path
+          description: 書籍ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          example: 1
+      responses:
+        '204':
+          description: OK
+          content:
+            application/json: {}
+        default:
+          description: 予想外のエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - book
+      summary: 書籍情報更新
+      description: 指定IDの書籍情報を更新する
+      operationId: updateBook
+      parameters:
+        - name: id
+          in: path
+          description: 書籍ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          example: 1
+      requestBody:
+        description: 書籍情報
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookUpdate'
+      responses:
+        '204':
+          description: NO CONTENT
+          content:
+            application/json: {}
+        default:
+          description: 予想外のエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /book/batch:
+    post:
+      tags:
+        - book
+      summary: 書籍情報一括登録
+      description: 複数の書籍情報を一括で登録する
+      operationId: registerBooks
+      requestBody:
+        description: 書籍情報のリスト
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/BookCreate'
+            examples:
+              batchBookCreate:
+                summary: 複数書籍登録のリクエスト例
+                value:
+                  - title: 星を継ぐもの
+                    titleKana: ホシヲツグモノ
+                    author: ジェイムズ・P・ホーガン
+                    publisherId: 1
+                    userId: 1
+                    price: 700
+                  - title: ガニメデの優しい巨人
+                    titleKana: ガニメデノヤサシイキョジン
+                    author: ジェイムズ・P・ホーガン
+                    publisherId: 1
+                    userId: 2
+                    price: 1300
+      responses:
+        '204':
+          description: OK
+          content:
+            application/json:
+              examples:
+                success:
+                  summary: 複数書籍登録成功例
+                  value: {}
+        default:
+          description: 予想外のエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags:
+        - book
+      summary: 書籍情報一括削除
+      description: 指定された複数の書籍IDに基づいて書籍情報を一括で削除する
+      operationId: deleteBooks
+      parameters:
+        - name: ids
+          in: query
+          description: 削除する書籍IDのリスト（カンマ区切り）
+          required: true
+          schema:
+            type: array
+            items:
+              type: integer
+              format: int64
+            minItems: 1
+          style: form
+          explode: false
+          example: [1, 2]
+      responses:
+        '204':
+          description: OK
+          content:
+            application/json:
+              examples:
+                success:
+                  summary: 複数書籍削除成功例
+                  value: {}
+        default:
+          description: 予想外のエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - book
+      summary: 書籍情報一括更新
+      description: 複数の書籍情報を一括で更新する
+      operationId: updateBooks
+      requestBody:
+        description: 更新する書籍情報のリスト
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/BookUpdate'
+            examples:
+              batchUpdate:
+                summary: 複数書籍更新のリクエスト例
+                value:
+                  - id: 1
+                    title: 星を継ぐもの（改訂版）
+                    titleKana: ホシヲツグモノカイテイバン
+                    author: ジェイムズ・P・ホーガン
+                    publisherId: 1
+                    userId: 1
+                    price: 500
+                  - id: 2
+                    title: ガニメデの優しい巨人（改訂版）
+                    titleKana: ガニメデノヤサシイキョジンカイテイバン
+                    author: ジェイムズ・P・ホーガン
+                    publisherId: 1
+                    userId: 2
+                    price: 800
+      responses:
+        '204':
+          description: OK
+          content:
+            application/json:
+              examples:
+                success:
+                  summary: 複数書籍更新成功例
+                  value: {}
+        default:
+          description: 予想外のエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  schemas:
+    Book:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 1
+        title:
+          type: string
+          example: 星を継ぐもの
+        titleKana:
+          type: string
+          example: ホシヲツグモノ
+        author:
+          type: string
+          example: ジェイムズ・P・ホーガン
+        publisherId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 1
+        userId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 1
+        price:
+          type: integer
+          minimum: 0
+          example: 500
+        createdAt:
+          type: string
+          format: date-time
+          example: '2025-04-24T07:22:13Z'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2025-04-24T07:22:13Z'
+      required:
+        - id
+        - createdAt
+        - updatedAt
+    BookView:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 1
+        title:
+          type: string
+          example: 星を継ぐもの
+        titleKana:
+          type: string
+          example: ホシヲツグモノ
+        author:
+          type: string
+          example: ジェイムズ・P・ホーガン
+        publisherId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 1
+        publisherName:
+          type: string
+          example: 岩波書店
+        userId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 1
+        userName:
+          type: string
+          example: 神里 綾華
+        price:
+          type: integer
+          minimum: 0
+          example: 500
+        createdAt:
+          type: string
+          format: date-time
+          example: '2025-04-24T07:22:13Z'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2025-04-24T07:22:13Z'
+      required:
+        - id
+        - createdAt
+        - updatedAt
+    BookCreate:
+      type: object
+      description: 書籍情報登録用のデータオブジェクト
+      properties:
+        title:
+          type: string
+          example: 星を継ぐもの
+        titleKana:
+          type: string
+          example: ホシヲツグモノ
+        author:
+          type: string
+          example: ジェイムズ・P・ホーガン
+        publisherId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 1
+        userId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 1
+        price:
+          type: integer
+          minimum: 0
+          example: 500
+      required:
+        - title
+        - titleKana
+        - author
+        - publisherId
+        - userId
+        - price
+    BookUpdate:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 1
+        title:
+          type: string
+          example: 星を継ぐもの
+        titleKana:
+          type: string
+          example: ホシヲツグモノ
+        author:
+          type: string
+          example: ジェイムズ・P・ホーガン
+        publisherId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 1
+        userId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 1
+        price:
+          type: integer
+          minimum: 0
+          example: 500
+      required:
+        - id
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+          example: 500
+        message:
+          type: string
+          example: 予想外のエラーが発生しました。 エラー内容：...
+      required:
+        - code
+        - message
