@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.kien.book.common.Page
 import com.kien.book.model.dto.book.*
 import com.kien.book.service.BookService
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.whenever
@@ -39,40 +40,45 @@ class BookControllerTest {
         fun bookService(): BookService = mock(BookService::class.java)
     }
 
-    @Test
-    fun `getBookById should return book when exists`() {
-        val bookId = 1L
-        val bookView = BookView(
-            id = bookId,
-            title = "Kotlin入門",
-            titleKana = "コトリン ニュウモン",
-            author = "山田太郎",
-            publisherId = 1L,
-            publisherName = "技術出版社",
-            userId = 100L,
-            userName = "テストユーザー",
-            isDeleted = false,
-            createdAt = LocalDateTime.of(2025, 4, 28, 10, 0),
-            updatedAt = LocalDateTime.of(2025, 4, 28, 10, 0)
-        )
-        whenever(bookService.getBookById(bookId)).thenReturn(bookView)
+    @Nested
+    inner class GetBookByIdTest {
 
-        mockMvc.get("/books/$bookId")
-            .andExpect {
-                status { isOk() }
-                content { json(objectMapper.writeValueAsString(bookView)) }
-            }
-    }
+        @Test
+        fun `getBookById should return book when exists`() {
+            val bookId = 1L
+            val bookView = BookView(
+                id = bookId,
+                title = "Kotlin入門",
+                titleKana = "コトリン ニュウモン",
+                author = "山田太郎",
+                publisherId = 1L,
+                publisherName = "技術出版社",
+                userId = 100L,
+                userName = "テストユーザー",
+                price = 1200,
+                isDeleted = false,
+                createdAt = LocalDateTime.of(2025, 4, 28, 10, 0),
+                updatedAt = LocalDateTime.of(2025, 4, 28, 10, 0)
+            )
+            whenever(bookService.getBookById(bookId)).thenReturn(bookView)
 
-    @Test
-    fun `getBookById should return 404 when book not found`() {
-        val bookId = 1L
-        whenever(bookService.getBookById(bookId)).thenReturn(null)
+            mockMvc.get("/books/$bookId")
+                .andExpect {
+                    status { isOk() }
+                    content { json(objectMapper.writeValueAsString(bookView)) }
+                }
+        }
 
-        mockMvc.get("/books/$bookId")
-            .andExpect {
-                status { isNotFound() }
-            }
+        @Test
+        fun `getBookById should return 404 when book not found`() {
+            val bookId = 1L
+            whenever(bookService.getBookById(bookId)).thenReturn(null)
+
+            mockMvc.get("/books/$bookId")
+                .andExpect {
+                    status { isNotFound() }
+                }
+        }
     }
 
     @Test
