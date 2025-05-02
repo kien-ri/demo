@@ -14,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Nested
 import java.time.LocalDateTime
 
 @ExtendWith(MockitoExtension::class)
@@ -28,36 +29,41 @@ class BookServiceTest {
     @InjectMocks
     private lateinit var bookService: BookService
 
-    @Test
-    fun `getBookById should return BookView when book exists`() {
-        val bookId = 1L
-        val bookView = BookView(
-            id = bookId,
-            title = "Kotlin入門",
-            titleKana = "コトリン ニュウモン",
-            author = "山田太郎",
-            publisherId = 1L,
-            publisherName = "技術出版社",
-            userId = 100L,
-            userName = "テストユーザー",
-            isDeleted = false,
-            createdAt = LocalDateTime.of(2025, 4, 28, 10, 0),
-            updatedAt = LocalDateTime.of(2025, 4, 28, 10, 0)
-        )
-        whenever(bookMapper.getById(bookId)).thenReturn(bookView)
+    @Nested
+    inner class GetBookByIdTest {
+        @Test
+        fun `return BookView when book exists`() {
+            val bookId = 1L
+            val bookView = BookView(
+                id = bookId,
+                title = "Kotlin入門",
+                titleKana = "コトリン ニュウモン",
+                author = "山田太郎",
+                publisherId = 1L,
+                publisherName = "技術出版社",
+                userId = 100L,
+                userName = "テストユーザー",
+                price = 2500,
+                isDeleted = false,
+                createdAt = LocalDateTime.of(2025, 4, 28, 10, 0),
+                updatedAt = LocalDateTime.of(2025, 4, 28, 10, 0)
+            )
+            whenever(bookMapper.getById(bookId)).thenReturn(bookView)
 
-        val result = bookService.getBookById(bookId)
-        assertThat(result).isEqualTo(bookView)
+            val result = bookService.getBookById(bookId)
+            assertThat(result).isEqualTo(bookView)
+        }
+
+        @Test
+        fun `return null when book does not exist`() {
+            val bookId = 1L
+            whenever(bookMapper.getById(bookId)).thenReturn(null)
+
+            val result = bookService.getBookById(bookId)
+            assertThat(result).isNull()
+        }
     }
 
-    @Test
-    fun `getBookById should return null when book does not exist`() {
-        val bookId = 1L
-        whenever(bookMapper.getById(bookId)).thenReturn(null)
-
-        val result = bookService.getBookById(bookId)
-        assertThat(result).isNull()
-    }
 
     @Test
     fun `getBooksByCondition should return bookPage`() {

@@ -44,7 +44,7 @@ class BookControllerTest {
     inner class GetBookByIdTest {
 
         @Test
-        fun `getBookById should return book when exists`() {
+        fun `return book when exists`() {
             val bookId = 1L
             val bookView = BookView(
                 id = bookId,
@@ -55,7 +55,7 @@ class BookControllerTest {
                 publisherName = "技術出版社",
                 userId = 100L,
                 userName = "テストユーザー",
-                price = 1200,
+                price = 2500,
                 isDeleted = false,
                 createdAt = LocalDateTime.of(2025, 4, 28, 10, 0),
                 updatedAt = LocalDateTime.of(2025, 4, 28, 10, 0)
@@ -70,7 +70,7 @@ class BookControllerTest {
         }
 
         @Test
-        fun `getBookById should return 404 when book not found`() {
+        fun `return 404 when not found`() {
             val bookId = 1L
             whenever(bookService.getBookById(bookId)).thenReturn(null)
 
@@ -78,6 +78,36 @@ class BookControllerTest {
                 .andExpect {
                     status { isNotFound() }
                 }
+        }
+
+        @Test
+        fun `return 400 when param invalid`() {
+            var strId = "abc"
+            mockMvc.get("/books/$strId").andExpect { status { isBadRequest() } }
+
+            val doubleId = 1.5
+            mockMvc.get("/books/$doubleId").andExpect { status { isBadRequest() } }
+
+            val negativeId = -5
+            mockMvc.get("/books/$negativeId").andExpect { status { isBadRequest() } }
+        }
+    }
+
+    @Test
+    fun `registerBook should return 204`() {
+        val bookCreate = BookCreate(
+            title = "Kotlin入門",
+            titleKana = "コトリン ニュウモン",
+            author = "山田太郎",
+            publisherId = 1L,
+            userId = 100L
+        )
+
+        mockMvc.post("/books") {
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsString(bookCreate)
+        }.andExpect {
+            status { isNoContent() }
         }
     }
 
@@ -111,24 +141,6 @@ class BookControllerTest {
         }.andExpect {
             status { isOk() }
             content { json(objectMapper.writeValueAsString(page)) }
-        }
-    }
-
-    @Test
-    fun `registerBook should return 204`() {
-        val bookCreate = BookCreate(
-            title = "Kotlin入門",
-            titleKana = "コトリン ニュウモン",
-            author = "山田太郎",
-            publisherId = 1L,
-            userId = 100L
-        )
-
-        mockMvc.post("/books") {
-            contentType = MediaType.APPLICATION_JSON
-            content = objectMapper.writeValueAsString(bookCreate)
-        }.andExpect {
-            status { isNoContent() }
         }
     }
 

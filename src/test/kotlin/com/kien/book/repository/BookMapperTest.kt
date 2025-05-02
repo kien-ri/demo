@@ -1,8 +1,5 @@
 package com.kien.book.repository
 
-import com.kien.book.model.Book
-import com.kien.book.model.dto.book.BookCondition
-import com.kien.book.model.dto.book.BookCreate
 import com.kien.book.model.dto.book.BookView
 import org.junit.jupiter.api.Test
 import org.mybatis.spring.boot.test.autoconfigure.MybatisTest
@@ -11,6 +8,7 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.jdbc.Sql
 import org.springframework.test.context.jdbc.Sql.ExecutionPhase
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Nested
 import java.time.LocalDateTime
 
 @MybatisTest
@@ -22,104 +20,91 @@ class BookMapperTest {
     @Autowired
     private lateinit var bookMapper: BookMapper
 
-    @Test
-    fun `getById should return BookView when book exists`() {
-        val result = bookMapper.getById(1L)
+    @Nested
+    inner class GetByIdTest {
+        @Test
+        fun `return BookView when book exists`() {
+            val bookId = 1L
+            val result = bookMapper.getById(bookId)
 
-        assertThat(result).isNotNull()
-        assertThat(result).isEqualTo(
-            BookView(
-                id = 1L,
-                title = "Kotlin入門",
-                titleKana = "コトリン ニュウモン",
-                author = "山田太郎",
-                publisherId = 1L,
-                publisherName = "技術出版社",
-                userId = 100L,
-                userName = "テストユーザー",
-                isDeleted = false,
-                createdAt = LocalDateTime.of(2023, 1, 1, 10, 0),
-                updatedAt = LocalDateTime.of(2023, 1, 1, 10, 0)
+            assertThat(result).isNotNull()
+            assertThat(result).isEqualTo(
+                BookView(
+                    id = bookId,
+                    title = "Kotlin入門",
+                    titleKana = "コトリン ニュウモン",
+                    author = "山田太郎",
+                    publisherId = 1L,
+                    publisherName = "技術出版社",
+                    userId = 100L,
+                    userName = "テストユーザー",
+                    price = 2500,
+                    isDeleted = false,
+                    createdAt = LocalDateTime.of(2023, 1, 1, 10, 0),
+                    updatedAt = LocalDateTime.of(2023, 1, 1, 10, 0)
+                )
             )
-        )
-    }
+        }
 
-    @Test
-    fun `getById should return BookView with null publisherName when publisher is deleted`() {
-        val result = bookMapper.getById(5L)
+        @Test
+        fun `return null when book does not exist`() {
+            val result = bookMapper.getById(999L)
+            assertThat(result).isNull()
+        }
 
-        assertThat(result).isNotNull()
-        assertThat(result).isEqualTo(
-            BookView(
-                id = 5L,
-                title = "データベース基礎",
-                titleKana = "データベース キソ",
-                author = "山本花子",
-                publisherId = null,
-                publisherName = null,
-                userId = 102L,
-                userName = "鈴木一郎",
-                isDeleted = false,
-                createdAt = LocalDateTime.of(2023, 2, 2, 10, 0),
-                updatedAt = LocalDateTime.of(2023, 2, 2, 10, 0)
+        @Test
+        fun `return null when book is logically deleted`() {
+            val result = bookMapper.getById(3L)
+            assertThat(result).isNull()
+        }
+
+        @Test
+        fun `return BookView with null publisher info when publisher is deleted`() {
+            val bookId = 5L
+            val result = bookMapper.getById(bookId)
+
+            assertThat(result).isNotNull()
+            assertThat(result).isEqualTo(
+                BookView(
+                    id = bookId,
+                    title = "データベース基礎",
+                    titleKana = "データベース キソ",
+                    author = "山本花子",
+                    publisherId = null,
+                    publisherName = null,
+                    userId = 102L,
+                    userName = "鈴木一郎",
+                    price = 2500,
+                    isDeleted = false,
+                    createdAt = LocalDateTime.of(2023, 2, 2, 10, 0),
+                    updatedAt = LocalDateTime.of(2023, 2, 2, 10, 0)
+                )
             )
-        )
-    }
+        }
 
-    @Test
-    fun `getById should return BookView with null userName when user is deleted`() {
-        val result = bookMapper.getById(6L)
+        @Test
+        fun `return BookView with null user info when user is deleted`() {
+            val bookId = 6L
+            val result = bookMapper.getById(bookId)
 
-        assertThat(result).isNotNull()
-        assertThat(result).isEqualTo(
-            BookView(
-                id = 6L,
-                title = "アルゴリズム入門",
-                titleKana = "アルゴリズム ニュウモン",
-                author = "田中一",
-                publisherId = 3L,
-                publisherName = "文芸出版社",
-                userId = null,
-                userName = null,
-                isDeleted = false,
-                createdAt = LocalDateTime.of(2023, 2, 3, 10, 0),
-                updatedAt = LocalDateTime.of(2023, 2, 3, 10, 0)
+            assertThat(result).isNotNull()
+            assertThat(result).isEqualTo(
+                BookView(
+                    id = bookId,
+                    title = "アルゴリズム入門",
+                    titleKana = "アルゴリズム ニュウモン",
+                    author = "田中一",
+                    publisherId = 3L,
+                    publisherName = "文芸出版社",
+                    userId = null,
+                    userName = null,
+                    price = 3500,
+                    isDeleted = false,
+                    createdAt = LocalDateTime.of(2023, 2, 3, 10, 0),
+                    updatedAt = LocalDateTime.of(2023, 2, 3, 10, 0)
+                )
             )
-        )
-    }
-
-    @Test
-    fun `getById should return BookView with null publisherName and userName when both are deleted`() {
-        val result = bookMapper.getById(7L)
-
-        assertThat(result).isNotNull()
-        assertThat(result).isEqualTo(
-            BookView(
-                id = 7L,
-                title = "ネットワーク入門",
-                titleKana = "ネットワーク ニュウモン",
-                author = "高橋健",
-                publisherId = null,
-                publisherName = null,
-                userId = null,
-                userName = null,
-                isDeleted = false,
-                createdAt = LocalDateTime.of(2023, 2, 4, 10, 0),
-                updatedAt = LocalDateTime.of(2023, 2, 4, 10, 0)
-            )
-        )
-    }
-
-    @Test
-    fun `getById should return null when book does not exist`() {
-        val result = bookMapper.getById(999L)
-        assertThat(result).isNull()
-    }
-
-    @Test
-    fun `getById should return null when book is logically deleted`() {
-        val result = bookMapper.getById(3L)
-        assertThat(result).isNull()
+        }
     }
 
     @Test
