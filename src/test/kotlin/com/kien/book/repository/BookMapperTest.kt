@@ -339,7 +339,7 @@ class BookMapperTest {
                 title = "ネットワーク入門",
                 titleKana = "ネットワーク ニュウモン",
                 author = "高橋健",
-                publisherId = 4L,
+                publisherId = null,
                 publisherName = null,
                 userId = null,
                 userName = null,
@@ -465,6 +465,11 @@ class BookMapperTest {
 
     @Test
     fun `deleteLogically should soft delete book and return affected rows`() {
+        val book = bookMapper.getById(1L)
+        assertThat(book).isNotNull()
+        assertThat(book?.id).isEqualTo(1L)
+        assertThat(book?.isDeleted).isEqualTo(false)
+
         val affectedRows = bookMapper.deleteLogically(1L)
         assertThat(affectedRows).isEqualTo(1)
         val deletedBook = bookMapper.getById(1L)
@@ -472,34 +477,123 @@ class BookMapperTest {
     }
 
     @Test
+    fun `deleteLogically should return 0 when book id does not exist`() {
+        val notExistRow = bookMapper.getById(999L)
+        assertThat(notExistRow).isNull()
+
+        val affectedRows = bookMapper.deleteLogically(999L)
+        assertThat(affectedRows).isEqualTo(0)
+    }
+
+    @Test
+    fun `deleteLogically should return 0 when book is already logically deleted`() {
+        val deletedRow = bookMapper.getById(3L)
+        assertThat(deletedRow).isNull()
+
+        val affectedRows = bookMapper.deleteLogically(3L)
+        assertThat(affectedRows).isEqualTo(0)
+    }
+
+    @Test
     fun `deleteBatchLogically should soft delete multiple books and return affected rows`() {
-        val affectedRows = bookMapper.deleteBatchLogically(listOf(1L, 2L))
-        assertThat(affectedRows).isEqualTo(2)
+        val book1 = bookMapper.getById(1L)
+        val book2 = bookMapper.getById(2L)
+        val book4 = bookMapper.getById(4L)
+        assertThat(book1).isNotNull()
+        assertThat(book2).isNotNull()
+        assertThat(book4).isNotNull()
+
+        val affectedRows = bookMapper.deleteBatchLogically(listOf(1L, 2L, 4L))
+        assertThat(affectedRows).isEqualTo(3)
         assertThat(bookMapper.getById(1L)).isNull()
         assertThat(bookMapper.getById(2L)).isNull()
+        assertThat(bookMapper.getById(4L)).isNull()
+    }
+
+    @Test
+    fun `deleteBatchLogically should return 0 book is deleted or not exsit`() {
+        val book3 = bookMapper.getById(3L)
+        val book999 = bookMapper.getById(999L)
+        assertThat(book3).isNull()
+        assertThat(book999).isNull()
+
+        val affectedRows = bookMapper.deleteBatchLogically(listOf(3L, 999L))
+        assertThat(affectedRows).isEqualTo(0)
+        assertThat(bookMapper.getById(3L)).isNull()
+        assertThat(bookMapper.getById(999L)).isNull()
     }
 
     @Test
     fun `update should update book and return affected rows`() {
         val book = Book(
             id = 1L,
-            title = "Kotlin入門 Updated",
-            titleKana = "コトリン ニュウモン",
-            author = "山田太郎",
-            publisherId = 1L,
-            userId = 100L
+            title = "最新版Kotlin",
+            titleKana = "サイシンバン コトリン",
+            author = "田中四",
+            publisherId = 2L,
+            userId = 101L,
         )
+
+        val pre = bookMapper.getById(1L)
+        assertThat(pre?.title).isEqualTo("Kotlin入門")
+        assertThat(pre?.titleKana).isEqualTo("コトリン ニュウモン")
+        assertThat(pre?.author).isEqualTo("山田太郎")
+        assertThat(pre?.publisherId).isEqualTo(1L)
+        assertThat(pre?.userId).isEqualTo(100L)
+
+        val startTime = LocalDateTime.now()
         val affectedRows = bookMapper.update(book)
+        val endTime = LocalDateTime.now()
 
         assertThat(affectedRows).isEqualTo(1)
         val updatedBook = bookMapper.getById(1L)
         assertThat(updatedBook).isNotNull()
-        assertThat(updatedBook?.title).isEqualTo("Kotlin入門 Updated")
-        assertThat(updatedBook?.titleKana).isEqualTo("コトリン ニュウモン")
-        assertThat(updatedBook?.author).isEqualTo("山田太郎")
-        assertThat(updatedBook?.publisherId).isEqualTo(1L)
-        assertThat(updatedBook?.publisherName).isEqualTo("技術出版社")
-        assertThat(updatedBook?.userId).isEqualTo(100L)
-        assertThat(updatedBook?.userName).isEqualTo("テストユーザー")
+        assertThat(updatedBook?.title).isEqualTo("最新版Kotlin")
+        assertThat(updatedBook?.titleKana).isEqualTo("サイシンバン コトリン")
+        assertThat(updatedBook?.author).isEqualTo("田中四")
+        assertThat(updatedBook?.publisherId).isEqualTo(2L)
+        assertThat(updatedBook?.userId).isEqualTo(101L)
+        assertThat(updatedBook?.updatedAt).isAfterOrEqualTo(startTime)
+        assertThat(updatedBook?.updatedAt).isBeforeOrEqualTo(endTime)
+    }
+
+    @Test
+    fun `update should return 0 when book id does not exist`() {
+        val book = Book(
+            id = 999L,
+            title = "存在しない書籍",
+            titleKana = "ソンザイシナイショセキ",
+            author = "佐藤花子",
+            publisherId = 5L,
+            userId = 104L
+        )
+
+        val notExistBook = bookMapper.getById(999L)
+        assertThat(notExistBook).isNull()
+
+        val affectedRows = bookMapper.update(book)
+        assertThat(affectedRows).isEqualTo(0)
+        val bookAfterUpdate = bookMapper.getById(999L)
+        assertThat(bookAfterUpdate).isNull()
+    }
+
+    @Test
+    fun `update should return 0 when book is deleted`() {
+        val book = Book(
+            id = 3L,
+            title = "削除された書籍",
+            titleKana = "サクジョサレタショセキ",
+            author = "佐藤花子",
+            publisherId = 5L,
+            userId = 104L
+        )
+
+        val deletedBook = bookMapper.getById(3L)
+        assertThat(deletedBook).isNull()
+
+        val affectedRows = bookMapper.update(book)
+        assertThat(affectedRows).isEqualTo(0)
+        val bookAfterUpdate = bookMapper.getById(3L)
+        assertThat(bookAfterUpdate).isNull()
     }
 }

@@ -118,16 +118,17 @@
         VALUES(#{title}, #{titleKana}, #{author}, #{publisherId}, #{userId})
     </insert>
 
-    <update id="delete" parameterType="long">
+    <update id="deleteLogically" parameterType="long">
         UPDATE
             `books`
         SET
             is_deleted = true
         WHERE
             id = #{id}
+        AND is_deleted = false
     </update>
 
-    <update id="deleteBatch" parameterType="List">
+    <update id="deleteBatchLogically" parameterType="List">
         UPDATE
             `books`
         SET
@@ -138,6 +139,7 @@
         <foreach collection="ids" item="id" open="(" separator="," close=")">
             #{id}
         </foreach>
+        AND is_deleted = false
     </update>
 
     <update id="update" parameterType="Book">
@@ -151,6 +153,7 @@
             user_id = #{userId}
         WHERE
             id = #{id}
+        AND is_deleted = false
     </update>
 
 </mapper>

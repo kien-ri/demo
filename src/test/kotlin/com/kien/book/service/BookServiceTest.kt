@@ -62,9 +62,9 @@ class BookServiceTest {
     @Test
     fun `getBooksByCondition should return bookPage`() {
         val condition = BookCondition(
-            title = "%Kotlin%",
-            titleKana = "%コトリン%",
-            author = "%山田%",
+            title = "Kotlin",
+            titleKana = "コトリン",
+            author = "山田",
             pageSize = 10,
             currentPage = 1
         )
@@ -98,9 +98,72 @@ class BookServiceTest {
     }
 
     @Test
+    fun `getBooksByCondition should return bookPage with multiple books when multiple records match`() {
+        val condition = BookCondition(
+            title = "入門",
+            pageSize = 10,
+            currentPage = 1
+        )
+        val bookViews = listOf(
+            BookView(
+                id = 1L,
+                title = "Kotlin入門",
+                titleKana = "コトリン ニュウモン",
+                author = "山田太郎",
+                publisherId = 1L,
+                publisherName = "技術出版社",
+                userId = 100L,
+                userName = "テストユーザー",
+                isDeleted = false,
+                createdAt = LocalDateTime.of(2025, 4, 28, 10, 0),
+                updatedAt = LocalDateTime.of(2025, 4, 28, 10, 0)
+            ),
+            BookView(
+                id = 2L,
+                title = "Java入門",
+                titleKana = "ジャバー ニュウモン",
+                author = "田中太郎",
+                publisherId = 2L,
+                publisherName = "教育出版社",
+                userId = 101L,
+                userName = "佐藤花子",
+                isDeleted = false,
+                createdAt = LocalDateTime.of(2025, 4, 28, 10, 0),
+                updatedAt = LocalDateTime.of(2025, 4, 28, 10, 0)
+            ),
+            BookView(
+                id = 4L,
+                title = "Spring Boot 入門",
+                titleKana = "スプリング ブート ニュウモン",
+                author = "佐藤次郎",
+                publisherId = 3L,
+                publisherName = "文芸出版社",
+                userId = 102L,
+                userName = "鈴木一郎",
+                isDeleted = false,
+                createdAt = LocalDateTime.of(2025, 4, 28, 10, 0),
+                updatedAt = LocalDateTime.of(2025, 4, 28, 10, 0)
+            )
+        )
+        whenever(bookMapper.getCountByCondition(condition)).thenReturn(3)
+        whenever(bookMapper.getListByCondition(condition)).thenReturn(bookViews)
+
+        val result = bookService.getBooksByCondition(condition)
+        assertThat(result).isEqualTo(
+            Page(
+                pageSize = 10,
+                currentPage = 1,
+                totalCount = 3,
+                totalPages = 1,
+                content = bookViews
+            )
+        )
+    }
+
+    @Test
     fun `getBooksByCondition should return empty page when no books found`() {
         val condition = BookCondition(
-            title = "%Kotlin%",
+            title = "Kotlin",
             pageSize = 10,
             currentPage = 1
         )
