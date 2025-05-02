@@ -1,10 +1,33 @@
-CREATE TABLE posts (
+CREATE TABLE publisher (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    title VARCHAR(255) NOT NULL,
-    content TEXT NOT NULL,
+    name VARCHAR(255),
+    name_kana VARCHAR(255),
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
+INSERT INTO publisher (name, name_kana, is_deleted) VALUES
+('集英社', 'シュウエイシャ', FALSE),
+('講談社', 'コウダンシャ', FALSE),
+('KADOKAWA', 'カドカワ', FALSE),
+('小学館', 'ショウガクカン', FALSE),
+('幻冬舎', 'ゲントウシャ', FALSE);
+
+CREATE TABLE `user` (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255),
+    login_id VARCHAR(255),
+    password VARCHAR(255),
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+INSERT INTO `user` (name, login_id, password, is_deleted) VALUES
+('山田太郎', 'yamada.taro', 'password123', FALSE),
+('佐藤花子', 'satou.hanako', 'securepass', FALSE),
+('田中一郎', 'tanaka.ichiro', 'mysecret', FALSE),
+('鈴木美咲', 'suzuki.misaki', 'testuser', FALSE),
+('高橋健太', 'takahashi.kenta', 'anotherpw', FALSE);
 
 CREATE TABLE books (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -29,34 +52,3 @@ INSERT INTO books (title, title_kana, author, publisher_id, user_id, is_deleted)
 ('ハリー・ポッターと賢者の石', 'ハリーポッタートケンジャノイシ', 'J.K.ローリング', NULL, 1, FALSE),
 ('ある夜、雪の中で', 'アルヨルユキノナカデ', 'アガサ・クリスティ', 5, 2, FALSE),
 ('そして誰もいなくなった', 'ソシテダレモイナクナッタ', 'アガサ・クリスティ', 5, 3, TRUE);
-
-CREATE TABLE publisher (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255),
-    name_kana VARCHAR(255),
-    is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-INSERT INTO publisher (name, name_kana, is_deleted) VALUES
-('集英社', 'シュウエイシャ', FALSE),
-('講談社', 'コウダンシャ', FALSE),
-('KADOKAWA', 'カドカワ', FALSE),
-('小学館', 'ショウガクカン', FALSE),
-('幻冬舎', 'ゲントウシャ', FALSE);
-
-CREATE TABLE user (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255),
-    login_id VARCHAR(255),
-    password VARCHAR(255),
-    is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-INSERT INTO user (name, login_id, password, is_deleted) VALUES
-('山田太郎', 'yamada.taro', 'password123', FALSE),
-('佐藤花子', 'satou.hanako', 'securepass', FALSE),
-('田中一郎', 'tanaka.ichiro', 'mysecret', FALSE),
-('鈴木美咲', 'suzuki.misaki', 'testuser', FALSE),
-('高橋健太', 'takahashi.kenta', 'anotherpw', FALSE);

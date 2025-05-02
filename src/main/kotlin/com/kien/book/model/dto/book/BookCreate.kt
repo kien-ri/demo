@@ -17,5 +17,8 @@ data class BookCreate(
     val publisherId: Long,
 
     @field:Min(value = 1)
-    val userId: Long
+    val userId: Long,
+
+    @field:Min(0)
+    val price: Int
 )

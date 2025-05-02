@@ -1,16 +1,13 @@
 package com.kien.book.controller;
 
 import com.kien.book.common.Page
-import com.kien.book.model.Book
 import com.kien.book.model.dto.book.*
 import com.kien.book.service.BookService
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Positive
-import org.springframework.beans.BeanUtils
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
@@ -56,14 +53,14 @@ class BookController(private val bookService: BookService) {
     }
 
     @DeleteMapping("/{id}")
-    fun deleteBook(@PathVariable @Positive id: Long): ResponseEntity<Void> {
-        bookService.deleteBook(id)
+    fun deleteBookLogically(@PathVariable @Positive id: Long): ResponseEntity<Void> {
+        bookService.deleteBookLogically(id)
         return ResponseEntity.noContent().build()
     }
 
     @DeleteMapping("/batch")
-    fun deleteBooks(@RequestParam @Positive ids: List<Long>): ResponseEntity<Void> {
-        bookService.deleteBooks(ids)
+    fun deleteBooksLogically(@RequestParam @Positive ids: List<Long>): ResponseEntity<Void> {
+        bookService.deleteBooksLogically(ids)
         return ResponseEntity.noContent().build()
     }
 

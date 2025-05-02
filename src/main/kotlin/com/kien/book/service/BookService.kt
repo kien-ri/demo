@@ -1,5 +1,6 @@
 package com.kien.book.service
 
+import com.kien.book.common.CustomException
 import com.kien.book.model.dto.book.BookCondition
 import com.kien.book.common.Page
 import com.kien.book.model.Book
@@ -20,9 +21,21 @@ class BookService(
     }
 
     fun getBooksByCondition(bookCondition: BookCondition): Page<BookView> {
-        bookCondition.title?.let { if (it.isNotEmpty()) bookCondition.title = "%$it%" }
-        bookCondition.titleKana?.let { if (it.isNotEmpty()) bookCondition.title = "%$it%" }
-        bookCondition.author?.let { if (it.isNotEmpty()) bookCondition.author = "%$it%" }
+        if (bookCondition.minPrice != null) {
+            require(bookCondition.minPrice >= 0) {
+                throw CustomException("エラー：下限金額にマイナスの値を指定できません。")
+            }
+        }
+        if (bookCondition.maxPrice != null) {
+            require(bookCondition.maxPrice >= 0) {
+                throw CustomException("エラー：上限金額にマイナスの値を指定できません。")
+            }
+        }
+        if (bookCondition.minPrice != null && bookCondition.maxPrice != null) {
+            require(bookCondition.minPrice <= bookCondition.maxPrice) {
+                throw CustomException("エラー：下限金額が上限金額より大きいです。")
+            }
+        }
 
         val totalCount = bookMapper.getCountByCondition(bookCondition);
 
@@ -58,12 +71,12 @@ class BookService(
         )
     }
 
-    fun deleteBook(id: Long) {
-        bookMapper.delete(id)
+    fun deleteBookLogically(id: Long) {
+        bookMapper.deleteLogically(id)
     }
 
-    fun deleteBooks(ids: List<Long>) {
-        bookMapper.deleteBatch(ids)
+    fun deleteBooksLogically(ids: List<Long>) {
+        bookMapper.deleteBatchLogically(ids)
     }
 
     @Transactional
