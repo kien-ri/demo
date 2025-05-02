@@ -135,6 +135,7 @@ paths:
                       publisherName: 岩波書店
                       userId: 1
                       userName: 神里 綾華
+                      price: 1200
                       createdAt: '2025-04-24T07:22:13Z'
                       updatedAt: '2025-04-24T07:22:13Z'
                     - id: 2
@@ -145,6 +146,7 @@ paths:
                       publisherName: 岩波書店
                       userId: 2
                       userName: 山田 太郎
+                      price: 500
                       createdAt: '2025-04-25T08:30:00Z'
                       updatedAt: '2025-04-25T08:30:00Z'
         '404':
@@ -281,11 +283,13 @@ paths:
                     author: ジェイムズ・P・ホーガン
                     publisherId: 1
                     userId: 1
+                    price: 700
                   - title: ガニメデの優しい巨人
                     titleKana: ガニメデノヤサシイキョジン
                     author: ジェイムズ・P・ホーガン
                     publisherId: 1
                     userId: 2
+                    price: 1300
       responses:
         '204':
           description: OK
@@ -360,12 +364,14 @@ paths:
                     author: ジェイムズ・P・ホーガン
                     publisherId: 1
                     userId: 1
+                    price: 500
                   - id: 2
                     title: ガニメデの優しい巨人（改訂版）
                     titleKana: ガニメデノヤサシイキョジンカイテイバン
                     author: ジェイムズ・P・ホーガン
                     publisherId: 1
                     userId: 2
+                    price: 800
       responses:
         '204':
           description: OK
@@ -410,6 +416,10 @@ components:
           format: int64
           minimum: 1
           example: 1
+        price:
+          type: integer
+          minimum: 0
+          example: 500
         createdAt:
           type: string
           format: date-time
@@ -455,6 +465,10 @@ components:
         userName:
           type: string
           example: 神里 綾華
+        price:
+          type: integer
+          minimum: 0
+          example: 500
         createdAt:
           type: string
           format: date-time
@@ -490,12 +504,17 @@ components:
           format: int64
           minimum: 1
           example: 1
+        price:
+          type: integer
+          minimum: 0
+          example: 500
       required:
         - title
         - titleKana
         - author
         - publisherId
         - userId
+        - price
     BookUpdate:
       type: object
       properties:
@@ -523,6 +542,10 @@ components:
           format: int64
           minimum: 1
           example: 1
+        price:
+          type: integer
+          minimum: 0
+          example: 500
       required:
         - id
     Error:

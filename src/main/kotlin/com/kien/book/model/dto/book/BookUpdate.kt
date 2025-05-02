@@ -10,7 +10,8 @@ data class BookUpdate(
     @field:NotBlank val titleKana: String,
     @field:NotBlank val author: String,
     @field:Min(1) val publisherId: Long,
-    @field:Min(1) val userId: Long
+    @field:Min(1) val userId: Long,
+    @field:Min(0) val price: Int
 ) {
     fun toEntity() = Book(
         id,
@@ -18,6 +19,7 @@ data class BookUpdate(
         titleKana,
         author,
         publisherId,
-        userId
+        userId,
+        price
     )
 }

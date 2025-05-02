@@ -3,11 +3,13 @@ package com.kien.book.model.dto.book
 import jakarta.validation.constraints.Min
 
 data class BookCondition(
-    var title: String? = null,
-    var titleKana: String? = null,
-    var author: String? = null,
+    val title: String? = null,
+    val titleKana: String? = null,
+    val author: String? = null,
     val publisherId: Long? = null,
     val userId: Long? = null,
+    val minPrice: Int? = null,
+    val maxPrice: Int? = null,
     @field:Min(value = 1)
     val pageSize: Int,
     @field:Min(value = 1)

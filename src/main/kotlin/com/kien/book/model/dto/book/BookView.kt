@@ -12,6 +12,7 @@ data class BookView(
     val publisherName: String?,
     val userId: Long?,
     val userName: String?,
+    val price: Int?,
     val isDeleted: Boolean = false,
     val createdAt: LocalDateTime,
     val updatedAt: LocalDateTime
