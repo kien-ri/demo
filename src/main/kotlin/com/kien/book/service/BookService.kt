@@ -71,12 +71,12 @@ class BookService(
         )
     }
 
-    fun deleteBook(id: Long) {
-        bookMapper.delete(id)
+    fun deleteBookLogically(id: Long) {
+        bookMapper.deleteLogically(id)
     }
 
-    fun deleteBooks(ids: List<Long>) {
-        bookMapper.deleteBatch(ids)
+    fun deleteBooksLogically(ids: List<Long>) {
+        bookMapper.deleteBatchLogically(ids)
     }
 
     @Transactional

@@ -13,7 +13,7 @@ INSERT INTO publisher (name, name_kana, is_deleted) VALUES
 ('小学館', 'ショウガクカン', FALSE),
 ('幻冬舎', 'ゲントウシャ', FALSE);
 
-CREATE TABLE user (
+CREATE TABLE `user` (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255),
     login_id VARCHAR(255),
@@ -22,7 +22,7 @@ CREATE TABLE user (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
-INSERT INTO user (name, login_id, password, is_deleted) VALUES
+INSERT INTO `user` (name, login_id, password, is_deleted) VALUES
 ('山田太郎', 'yamada.taro', 'password123', FALSE),
 ('佐藤花子', 'satou.hanako', 'securepass', FALSE),
 ('田中一郎', 'tanaka.ichiro', 'mysecret', FALSE),

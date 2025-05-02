@@ -53,14 +53,14 @@ class BookController(private val bookService: BookService) {
     }
 
     @DeleteMapping("/{id}")
-    fun deleteBook(@PathVariable @Positive id: Long): ResponseEntity<Void> {
-        bookService.deleteBook(id)
+    fun deleteBookLogically(@PathVariable @Positive id: Long): ResponseEntity<Void> {
+        bookService.deleteBookLogically(id)
         return ResponseEntity.noContent().build()
     }
 
     @DeleteMapping("/batch")
-    fun deleteBooks(@RequestParam @Positive ids: List<Long>): ResponseEntity<Void> {
-        bookService.deleteBooks(ids)
+    fun deleteBooksLogically(@RequestParam @Positive ids: List<Long>): ResponseEntity<Void> {
+        bookService.deleteBooksLogically(ids)
         return ResponseEntity.noContent().build()
     }
 
