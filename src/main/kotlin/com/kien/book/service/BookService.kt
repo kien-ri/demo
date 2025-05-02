@@ -21,21 +21,19 @@ class BookService(
     }
 
     fun getBooksByCondition(bookCondition: BookCondition): Page<BookView> {
-        if (bookCondition.minPrice != null || bookCondition.maxPrice != null) {
-            if (bookCondition.minPrice != null) {
-                require(bookCondition.minPrice >= 0) {
-                    throw CustomException("エラー：下限金額にマイナスの値を指定できません。")
-                }
+        if (bookCondition.minPrice != null) {
+            require(bookCondition.minPrice >= 0) {
+                throw CustomException("エラー：下限金額にマイナスの値を指定できません。")
             }
-            if (bookCondition.maxPrice != null) {
-                require(bookCondition.maxPrice >= 0) {
-                    throw CustomException("エラー：上限金額にマイナスの値を指定できません。")
-                }
+        }
+        if (bookCondition.maxPrice != null) {
+            require(bookCondition.maxPrice >= 0) {
+                throw CustomException("エラー：上限金額にマイナスの値を指定できません。")
             }
-            if (bookCondition.minPrice != null && bookCondition.maxPrice != null) {
-                require(bookCondition.minPrice <= bookCondition.maxPrice) {
-                    throw CustomException("エラー：下限金額が上限金額より大きいです。")
-                }
+        }
+        if (bookCondition.minPrice != null && bookCondition.maxPrice != null) {
+            require(bookCondition.minPrice <= bookCondition.maxPrice) {
+                throw CustomException("エラー：下限金額が上限金額より大きいです。")
             }
         }
 
