@@ -24,7 +24,7 @@ class BookController(private val bookService: BookService) {
     fun getBookById(@PathVariable @Positive id: Long): ResponseEntity<BookView> {
         val bookView = bookService.getBookById(id)
         return if (bookView == null) {
-            ResponseEntity.notFound().build()
+            ResponseEntity.noContent().build()
         } else {
             ResponseEntity.ok(bookView)
         }
