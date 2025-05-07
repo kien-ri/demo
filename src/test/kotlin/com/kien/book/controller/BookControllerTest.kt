@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.kien.book.common.Page
 import com.kien.book.model.dto.book.*
 import com.kien.book.service.BookService
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.whenever
@@ -202,32 +203,35 @@ class BookControllerTest {
         }
     }
 
-    @Test
-    fun `updateBooks should return 204 when batch update succeeds`() {
-        val bookUpdates = listOf(
-            BookUpdate(
-                id = 1L,
-                title = "Kotlin入門",
-                titleKana = "コトリン ニュウモン",
-                author = "山田太郎",
-                publisherId = 1L,
-                userId = 100L
-            ),
-            BookUpdate(
-                id = 2L,
-                title = "Spring Boot入門",
-                titleKana = "スプリング ブート ニュウモン",
-                author = "佐藤花子",
-                publisherId = 2L,
-                userId = 101L
+    @Nested
+    inner class UpdateBooksTest {
+        @Test
+        fun `updateBooks should return 204 when batch update succeeds`() {
+            val bookUpdates = listOf(
+                BookUpdate(
+                    id = 1L,
+                    title = "Kotlin入門",
+                    titleKana = "コトリン ニュウモン",
+                    author = "山田太郎",
+                    publisherId = 1L,
+                    userId = 100L
+                ),
+                BookUpdate(
+                    id = 2L,
+                    title = "Spring Boot入門",
+                    titleKana = "スプリング ブート ニュウモン",
+                    author = "佐藤花子",
+                    publisherId = 2L,
+                    userId = 101L
+                )
             )
-        )
 
-        mockMvc.put("/books/batch") {
-            contentType = MediaType.APPLICATION_JSON
-            content = objectMapper.writeValueAsString(bookUpdates)
-        }.andExpect {
-            status { isNoContent() }
+            mockMvc.put("/books/batch") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(bookUpdates)
+            }.andExpect {
+                status { isNoContent() }
+            }
         }
     }
 }

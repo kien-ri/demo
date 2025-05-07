@@ -14,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Nested
 import java.time.LocalDateTime
 
 @ExtendWith(MockitoExtension::class)
@@ -248,31 +249,34 @@ class BookServiceTest {
         verify(bookMapper).update(book)
     }
 
-    @Test
-    fun `updateBooks should call batchService with update operation`() {
-        val books = listOf(
-            Book(
-                id = 1L,
-                title = "Kotlin入門",
-                titleKana = "コトリン ニュウモン",
-                author = "山田太郎",
-                publisherId = 1L,
-                userId = 100L
-            ),
-            Book(
-                id = 2L,
-                title = "Spring Boot入門",
-                titleKana = "スプリング ブート ニュウモン",
-                author = "佐藤花子",
-                publisherId = 2L,
-                userId = 101L
+    @Nested
+    inner class UpdateBooksTest {
+        @Test
+        fun `updateBooks should call batchService with update operation`() {
+            val books = listOf(
+                Book(
+                    id = 1L,
+                    title = "Kotlin入門",
+                    titleKana = "コトリン ニュウモン",
+                    author = "山田太郎",
+                    publisherId = 1L,
+                    userId = 100L
+                ),
+                Book(
+                    id = 2L,
+                    title = "Spring Boot入門",
+                    titleKana = "スプリング ブート ニュウモン",
+                    author = "佐藤花子",
+                    publisherId = 2L,
+                    userId = 101L
+                )
             )
-        )
-        bookService.updateBooks(books)
-        verify(batchService).batchProcess(
-            dataList = books,
-            mapperClass = BookMapper::class.java,
-            operation = BookMapper::update
-        )
+            bookService.updateBooks(books)
+            verify(batchService).batchProcess(
+                dataList = books,
+                mapperClass = BookMapper::class.java,
+                operation = BookMapper::update
+            )
+        }
     }
 }
