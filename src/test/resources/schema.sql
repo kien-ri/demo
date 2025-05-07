@@ -16,9 +16,9 @@ CREATE TABLE `user` (
 
 CREATE TABLE books (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    title VARCHAR(255) NOT NULL,
-    title_kana VARCHAR(255) NOT NULL,
-    author VARCHAR(255) NOT NULL,
+    title VARCHAR(255),
+    title_kana VARCHAR(255),
+    author VARCHAR(255),
     publisher_id BIGINT,
     user_id BIGINT,
     price INT,
