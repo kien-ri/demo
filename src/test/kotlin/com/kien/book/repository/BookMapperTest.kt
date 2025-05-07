@@ -11,6 +11,7 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.jdbc.Sql
 import org.springframework.test.context.jdbc.Sql.ExecutionPhase
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Nested
 import java.time.LocalDateTime
 
 @MybatisTest
@@ -430,37 +431,41 @@ class BookMapperTest {
         )
     }
 
-    @Test
-    fun `save should insert book`() {
-        val temp = bookMapper.getById(9L)
-        assertThat(temp).isEqualTo(null)
+    @Nested
+    inner class SaveTest {
 
-        val startTime = LocalDateTime.now()
+        @Test
+        fun `save should insert book`() {
+            val temp = bookMapper.getById(9L)
+            assertThat(temp).isEqualTo(null)
 
-        val bookCreate = BookCreate(
-            title = "Python入門",
-            titleKana = "パイソン ニュウモン",
-            author = "佐藤花子",
-            publisherId = 5L,
-            userId = 104L
-        )
-        val affectedRows = bookMapper.save(bookCreate)
-        assertThat(affectedRows).isEqualTo(1)
+            val startTime = LocalDateTime.now()
 
-        val endTime = LocalDateTime.now()
+            val bookCreate = BookCreate(
+                title = "Python入門",
+                titleKana = "パイソン ニュウモン",
+                author = "佐藤花子",
+                publisherId = 5L,
+                userId = 104L
+            )
+            val affectedRows = bookMapper.save(bookCreate)
+            assertThat(affectedRows).isEqualTo(1)
 
-        val insertedBook = bookMapper.getById(9L)
-        assertThat(insertedBook).isNotNull()
-        assertThat(insertedBook?.title).isEqualTo("Python入門")
-        assertThat(insertedBook?.titleKana).isEqualTo("パイソン ニュウモン")
-        assertThat(insertedBook?.author).isEqualTo("佐藤花子")
-        assertThat(insertedBook?.publisherId).isEqualTo(5L)
-        assertThat(insertedBook?.publisherName).isEqualTo("歴史出版社")
-        assertThat(insertedBook?.userId).isEqualTo(104L)
-        assertThat(insertedBook?.userName).isEqualTo("中村健太")
-        assertThat(insertedBook?.createdAt).isNotNull()
-        assertThat(insertedBook?.createdAt).isAfterOrEqualTo(startTime)
-        assertThat(insertedBook?.createdAt).isBeforeOrEqualTo(endTime)
+            val endTime = LocalDateTime.now()
+
+            val insertedBook = bookMapper.getById(9L)
+            assertThat(insertedBook).isNotNull()
+            assertThat(insertedBook?.title).isEqualTo("Python入門")
+            assertThat(insertedBook?.titleKana).isEqualTo("パイソン ニュウモン")
+            assertThat(insertedBook?.author).isEqualTo("佐藤花子")
+            assertThat(insertedBook?.publisherId).isEqualTo(5L)
+            assertThat(insertedBook?.publisherName).isEqualTo("歴史出版社")
+            assertThat(insertedBook?.userId).isEqualTo(104L)
+            assertThat(insertedBook?.userName).isEqualTo("中村健太")
+            assertThat(insertedBook?.createdAt).isNotNull()
+            assertThat(insertedBook?.createdAt).isAfterOrEqualTo(startTime)
+            assertThat(insertedBook?.createdAt).isBeforeOrEqualTo(endTime)
+        }
     }
 
     @Test

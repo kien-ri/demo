@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.kien.book.common.Page
 import com.kien.book.model.dto.book.*
 import com.kien.book.service.BookService
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.whenever
@@ -108,58 +109,62 @@ class BookControllerTest {
         }
     }
 
-    @Test
-    fun `registerBook should return 204`() {
-        val bookCreate = BookCreate(
-            title = "Kotlin入門",
-            titleKana = "コトリン ニュウモン",
-            author = "山田太郎",
-            publisherId = 1L,
-            userId = 100L
-        )
+    @Nested
+    inner class RegisterBookTest {
 
-        mockMvc.post("/books") {
-            contentType = MediaType.APPLICATION_JSON
-            content = objectMapper.writeValueAsString(bookCreate)
-        }.andExpect {
-            status { isNoContent() }
+        @Test
+        fun `return 204`() {
+            val bookCreate = BookCreate(
+                title = "Kotlin入門",
+                titleKana = "コトリン ニュウモン",
+                author = "山田太郎",
+                publisherId = 1L,
+                userId = 100L
+            )
+
+            mockMvc.post("/books") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(bookCreate)
+            }.andExpect {
+                status { isNoContent() }
+            }
         }
-    }
 
-    @Test
-    fun `registerBook should return 400 when param Invalid`() {
-        val invalidParam = BookCreate(
-            title = "",
-            titleKana = "",
-            author = "山田太郎",
-            publisherId = 1L,
-            userId = 100L
-        )
+        @Test
+        fun `registerBook should return 400 when param Invalid`() {
+            val invalidParam = BookCreate(
+                title = "",
+                titleKana = "",
+                author = "山田太郎",
+                publisherId = 1L,
+                userId = 100L
+            )
 
-        mockMvc.post("/books") {
-            contentType = MediaType.APPLICATION_JSON
-            content = objectMapper.writeValueAsString(invalidParam)
-        }.andExpect {
-            status { isBadRequest() }
+            mockMvc.post("/books") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(invalidParam)
+            }.andExpect {
+                status { isBadRequest() }
+            }
         }
-    }
 
-    @Test
-    fun `registerBook should return 500 when creation fails`() {
-        val bookCreate = BookCreate(
-            title = "Kotlin入門",
-            titleKana = "コトリン ニュウモン",
-            author = "山田太郎",
-            publisherId = 1L,
-            userId = 100L
-        )
-        whenever(bookService.registerBook(bookCreate)).thenThrow(RuntimeException())
+        @Test
+        fun `registerBook should return 500 when creation fails`() {
+            val bookCreate = BookCreate(
+                title = "Kotlin入門",
+                titleKana = "コトリン ニュウモン",
+                author = "山田太郎",
+                publisherId = 1L,
+                userId = 100L
+            )
+            whenever(bookService.registerBook(bookCreate)).thenThrow(RuntimeException())
 
-        mockMvc.post("/books") {
-            contentType = MediaType.APPLICATION_JSON
-            content = objectMapper.writeValueAsString(bookCreate)
-        }.andExpect {
-            status { isInternalServerError() }
+            mockMvc.post("/books") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(bookCreate)
+            }.andExpect {
+                status { isInternalServerError() }
+            }
         }
     }
 
