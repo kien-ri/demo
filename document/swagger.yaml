@@ -189,10 +189,24 @@ paths:
                   - type: array
                     items:
                       $ref: '#/components/schemas/BookView'
-        '404':
+        '204':
           description: 指定IDの書籍が見つかりません
+        '400':
+          description: |
+            不正なリクエスト - 無効な書籍IDが指定されました。以下のケースで発生します：
+            - IDが整数でない場合（例：文字列、浮動小数点数）
+            - IDが負の数または0の場合
           content:
-            application/json: {}
+            application/json:
+              examples:
+                invalidType:
+                  summary: IDの型がミスマッチした場合
+                  value:
+                    error: "無効なリクエストです。URLをチェックしてください"
+                negative:
+                  summary: 0以下の値が指定された場合
+                  value:
+                    Positive: "0 より大きな値にしてください"
         default:
           description: 予想外のエラー
           content:

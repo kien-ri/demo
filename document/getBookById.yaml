@@ -1,0 +1,239 @@
+openapi: '3.0.3'
+info:
+  title: 書籍管理システム
+  version: '1.0'
+servers:
+  - url: https://localhost:8080/
+tags:
+  - name: book
+    description: 書籍情報関連処理
+  - name: user
+    description: ユーザ関連の処理
+paths:
+  /book/{id}:
+    get:
+      tags:
+        - book
+      summary: 書籍情報の取得（ID指定）
+      description: |
+        指定されたIDに基づいて単一の書籍情報を取得します。
+        例: `GET /books/1`
+      operationId: getBookById
+      parameters:
+        - name: id
+          in: path
+          description: 取得する書籍のID
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          example: 1
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/BookView'
+                  - type: array
+                    items:
+                      $ref: '#/components/schemas/BookView'
+        '204':
+          description: 指定IDの書籍が見つかりません
+        '400':
+          description: |
+            不正なリクエスト - 無効な書籍IDが指定されました。以下のケースで発生します：
+            - IDが整数でない場合（例：文字列、浮動小数点数）
+            - IDが負の数または0の場合
+          content:
+            application/json:
+              examples:
+                invalidType:
+                  summary: IDの型がミスマッチした場合
+                  value:
+                    error: "無効なリクエストです。URLをチェックしてください"
+                negative:
+                  summary: 0以下の値が指定された場合
+                  value:
+                    Positive: "0 より大きな値にしてください"
+        default:
+          description: 予想外のエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  schemas:
+    Book:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 1
+        title:
+          type: string
+          example: 星を継ぐもの
+        titleKana:
+          type: string
+          example: ホシヲツグモノ
+        author:
+          type: string
+          example: ジェイムズ・P・ホーガン
+        publisherId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 1
+        userId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 1
+        price:
+          type: integer
+          minimum: 0
+          example: 500
+        createdAt:
+          type: string
+          format: date-time
+          example: '2025-04-24T07:22:13Z'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2025-04-24T07:22:13Z'
+      required:
+        - id
+        - createdAt
+        - updatedAt
+    BookView:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 1
+        title:
+          type: string
+          example: 星を継ぐもの
+        titleKana:
+          type: string
+          example: ホシヲツグモノ
+        author:
+          type: string
+          example: ジェイムズ・P・ホーガン
+        publisherId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 1
+        publisherName:
+          type: string
+          example: 岩波書店
+        userId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 1
+        userName:
+          type: string
+          example: 神里 綾華
+        price:
+          type: integer
+          minimum: 0
+          example: 500
+        createdAt:
+          type: string
+          format: date-time
+          example: '2025-04-24T07:22:13Z'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2025-04-24T07:22:13Z'
+      required:
+        - id
+        - createdAt
+        - updatedAt
+    BookCreate:
+      type: object
+      description: 書籍情報登録用のデータオブジェクト
+      properties:
+        title:
+          type: string
+          example: 星を継ぐもの
+        titleKana:
+          type: string
+          example: ホシヲツグモノ
+        author:
+          type: string
+          example: ジェイムズ・P・ホーガン
+        publisherId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 1
+        userId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 1
+        price:
+          type: integer
+          minimum: 0
+          example: 500
+      required:
+        - title
+        - titleKana
+        - author
+        - publisherId
+        - userId
+        - price
+    BookUpdate:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 1
+        title:
+          type: string
+          example: 星を継ぐもの
+        titleKana:
+          type: string
+          example: ホシヲツグモノ
+        author:
+          type: string
+          example: ジェイムズ・P・ホーガン
+        publisherId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 1
+        userId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 1
+        price:
+          type: integer
+          minimum: 0
+          example: 500
+      required:
+        - id
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+          example: 500
+        message:
+          type: string
+          example: 予想外のエラーが発生しました。 エラー内容：...
+      required:
+        - code
+        - message
