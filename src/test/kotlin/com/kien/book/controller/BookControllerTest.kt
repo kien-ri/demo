@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.kien.book.common.Page
 import com.kien.book.model.dto.book.*
 import com.kien.book.service.BookService
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.whenever
@@ -75,36 +76,59 @@ class BookControllerTest {
             }
     }
 
-    @Test
-    fun `getBooksByCondition should return paginated books`() {
-        val condition = BookCondition(
-            title = "Kotlin",
-            pageSize = 10,
-            currentPage = 1
-        )
-        val bookView = BookView(
-            id = 1L,
-            title = "Kotlin入門",
-            titleKana = "コトリン ニュウモン",
-            author = "山田太郎",
-            publisherId = 1L,
-            publisherName = "技術出版社",
-            userId = 100L,
-            userName = "テストユーザー",
-            isDeleted = false,
-            createdAt = LocalDateTime.of(2025, 4, 28, 10, 0),
-            updatedAt = LocalDateTime.of(2025, 4, 28, 10, 0)
-        )
-        val page = Page(10, 1, 1, 1, listOf(bookView))
-        whenever(bookService.getBooksByCondition(condition)).thenReturn(page)
+    @Nested
+    inner class GetBooksByCondition {
+        @Test
+        fun `return 200 when books match the condition`() {
+            val condition = BookCondition(
+                title = "Kotlin",
+                pageSize = 10,
+                currentPage = 1
+            )
+            val bookView = BookView(
+                id = 1L,
+                title = "Kotlin入門",
+                titleKana = "コトリン ニュウモン",
+                author = "山田太郎",
+                publisherId = 1L,
+                publisherName = "技術出版社",
+                userId = 100L,
+                userName = "テストユーザー",
+                price = 2500,
+                isDeleted = false,
+                createdAt = LocalDateTime.of(2025, 4, 28, 10, 0),
+                updatedAt = LocalDateTime.of(2025, 4, 28, 10, 0)
+            )
+            val page = Page(10, 1, 1, 1, listOf(bookView))
+            whenever(bookService.getBooksByCondition(condition)).thenReturn(page)
 
-        mockMvc.get("/books") {
-            param("title", condition.title!!)
-            param("pageSize", condition.pageSize.toString())
-            param("currentPage", condition.currentPage.toString())
-        }.andExpect {
-            status { isOk() }
-            content { json(objectMapper.writeValueAsString(page)) }
+            mockMvc.get("/books") {
+                param("title", condition.title!!)
+                param("pageSize", condition.pageSize.toString())
+                param("currentPage", condition.currentPage.toString())
+            }.andExpect {
+                status { isOk() }
+                content { json(objectMapper.writeValueAsString(page)) }
+            }
+        }
+
+        @Test
+        fun `return 404 when no books match the condition`() {
+            val condition = BookCondition(
+                title = "マッチしない検索条件",
+                pageSize = 10,
+                currentPage = 1
+            )
+            val emptyPage = Page<BookView>(10, 1, 0, 0, emptyList())
+            whenever(bookService.getBooksByCondition(condition)).thenReturn(emptyPage)
+
+            mockMvc.get("/books") {
+                param("title", condition.title!!)
+                param("pageSize", condition.pageSize.toString())
+                param("currentPage", condition.currentPage.toString())
+            }.andExpect {
+                status { isNotFound() }
+            }
         }
     }
 
