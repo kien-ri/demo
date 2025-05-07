@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.kien.book.common.Page
 import com.kien.book.model.dto.book.*
 import com.kien.book.service.BookService
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.whenever
@@ -163,13 +164,16 @@ class BookControllerTest {
         }
     }
 
-    @Test
-    fun `deleteBookLogically should return 204 when deletion succeeds`() {
-        val bookId = 1L
-        mockMvc.delete("/books/$bookId")
-            .andExpect {
-                status { isNoContent() }
-            }
+    @Nested
+    inner class DeleteBookLogicallyTest {
+        @Test
+        fun `return 204 when deletion succeeds`() {
+            val bookId = 1L
+            mockMvc.delete("/books/$bookId")
+                .andExpect {
+                    status { isNoContent() }
+                }
+        }
     }
 
     @Test

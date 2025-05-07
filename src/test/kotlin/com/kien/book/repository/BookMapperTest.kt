@@ -11,6 +11,7 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.jdbc.Sql
 import org.springframework.test.context.jdbc.Sql.ExecutionPhase
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Nested
 import java.time.LocalDateTime
 
 @MybatisTest
@@ -463,35 +464,38 @@ class BookMapperTest {
         assertThat(insertedBook?.createdAt).isBeforeOrEqualTo(endTime)
     }
 
-    @Test
-    fun `deleteLogically should soft delete book and return affected rows`() {
-        val book = bookMapper.getById(1L)
-        assertThat(book).isNotNull()
-        assertThat(book?.id).isEqualTo(1L)
-        assertThat(book?.isDeleted).isEqualTo(false)
+    @Nested
+    inner class DeleteLogicallyTest {
+        @Test
+        fun `deleteLogically should soft delete book and return affected rows`() {
+            val book = bookMapper.getById(1L)
+            assertThat(book).isNotNull()
+            assertThat(book?.id).isEqualTo(1L)
+            assertThat(book?.isDeleted).isEqualTo(false)
 
-        val affectedRows = bookMapper.deleteLogically(1L)
-        assertThat(affectedRows).isEqualTo(1)
-        val deletedBook = bookMapper.getById(1L)
-        assertThat(deletedBook).isNull()
-    }
+            val affectedRows = bookMapper.deleteLogically(1L)
+            assertThat(affectedRows).isEqualTo(1)
+            val deletedBook = bookMapper.getById(1L)
+            assertThat(deletedBook).isNull()
+        }
 
-    @Test
-    fun `deleteLogically should return 0 when book id does not exist`() {
-        val notExistRow = bookMapper.getById(999L)
-        assertThat(notExistRow).isNull()
+        @Test
+        fun `deleteLogically should return 0 when book id does not exist`() {
+            val notExistRow = bookMapper.getById(999L)
+            assertThat(notExistRow).isNull()
 
-        val affectedRows = bookMapper.deleteLogically(999L)
-        assertThat(affectedRows).isEqualTo(0)
-    }
+            val affectedRows = bookMapper.deleteLogically(999L)
+            assertThat(affectedRows).isEqualTo(0)
+        }
 
-    @Test
-    fun `deleteLogically should return 0 when book is already logically deleted`() {
-        val deletedRow = bookMapper.getById(3L)
-        assertThat(deletedRow).isNull()
+        @Test
+        fun `deleteLogically should return 0 when book is already logically deleted`() {
+            val deletedRow = bookMapper.getById(3L)
+            assertThat(deletedRow).isNull()
 
-        val affectedRows = bookMapper.deleteLogically(3L)
-        assertThat(affectedRows).isEqualTo(0)
+            val affectedRows = bookMapper.deleteLogically(3L)
+            assertThat(affectedRows).isEqualTo(0)
+        }
     }
 
     @Test
