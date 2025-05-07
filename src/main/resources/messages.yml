@@ -1,0 +1,4 @@
+errors:
+  invalidRequest: "無効なリクエストです。URLをチェックしてください。"
+  invalidValue: "入力された値が無効です。"
+  unexpectedError: "予想外のエラーが発生しました。エラー内容："
