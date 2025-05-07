@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.kien.book.common.Page
 import com.kien.book.model.dto.book.*
 import com.kien.book.service.BookService
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.whenever
@@ -182,23 +183,26 @@ class BookControllerTest {
         }
     }
 
-    @Test
-    fun `updateBook should return 204 when update succeeds`() {
-        val bookId = 1L
-        val bookUpdate = BookUpdate(
-            id = bookId,
-            title = "Kotlin入門 Old Edition",
-            titleKana = "コトリン ニュウモン",
-            author = "山田太郎",
-            publisherId = 1L,
-            userId = 100L
-        )
+    @Nested
+    inner class UpdateBookTest {
+        @Test
+        fun `updateBook should return 204 when update succeeds`() {
+            val bookId = 1L
+            val bookUpdate = BookUpdate(
+                id = bookId,
+                title = "Kotlin入門 Old Edition",
+                titleKana = "コトリン ニュウモン",
+                author = "山田太郎",
+                publisherId = 1L,
+                userId = 100L
+            )
 
-        mockMvc.put("/books/$bookId") {
-            contentType = MediaType.APPLICATION_JSON
-            content = objectMapper.writeValueAsString(bookUpdate)
-        }.andExpect {
-            status { isNoContent() }
+            mockMvc.put("/books/$bookId") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(bookUpdate)
+            }.andExpect {
+                status { isNoContent() }
+            }
         }
     }
 

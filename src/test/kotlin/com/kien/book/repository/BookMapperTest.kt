@@ -11,6 +11,7 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.jdbc.Sql
 import org.springframework.test.context.jdbc.Sql.ExecutionPhase
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Nested
 import java.time.LocalDateTime
 
 @MybatisTest
@@ -523,77 +524,80 @@ class BookMapperTest {
         assertThat(bookMapper.getById(999L)).isNull()
     }
 
-    @Test
-    fun `update should update book and return affected rows`() {
-        val book = Book(
-            id = 1L,
-            title = "最新版Kotlin",
-            titleKana = "サイシンバン コトリン",
-            author = "田中四",
-            publisherId = 2L,
-            userId = 101L,
-        )
+    @Nested
+    inner class UpdateTest {
+        @Test
+        fun `update should update book and return affected rows`() {
+            val book = Book(
+                id = 1L,
+                title = "最新版Kotlin",
+                titleKana = "サイシンバン コトリン",
+                author = "田中四",
+                publisherId = 2L,
+                userId = 101L,
+            )
 
-        val pre = bookMapper.getById(1L)
-        assertThat(pre?.title).isEqualTo("Kotlin入門")
-        assertThat(pre?.titleKana).isEqualTo("コトリン ニュウモン")
-        assertThat(pre?.author).isEqualTo("山田太郎")
-        assertThat(pre?.publisherId).isEqualTo(1L)
-        assertThat(pre?.userId).isEqualTo(100L)
+            val pre = bookMapper.getById(1L)
+            assertThat(pre?.title).isEqualTo("Kotlin入門")
+            assertThat(pre?.titleKana).isEqualTo("コトリン ニュウモン")
+            assertThat(pre?.author).isEqualTo("山田太郎")
+            assertThat(pre?.publisherId).isEqualTo(1L)
+            assertThat(pre?.userId).isEqualTo(100L)
 
-        val startTime = LocalDateTime.now()
-        val affectedRows = bookMapper.update(book)
-        val endTime = LocalDateTime.now()
+            val startTime = LocalDateTime.now()
+            val affectedRows = bookMapper.update(book)
+            val endTime = LocalDateTime.now()
 
-        assertThat(affectedRows).isEqualTo(1)
-        val updatedBook = bookMapper.getById(1L)
-        assertThat(updatedBook).isNotNull()
-        assertThat(updatedBook?.title).isEqualTo("最新版Kotlin")
-        assertThat(updatedBook?.titleKana).isEqualTo("サイシンバン コトリン")
-        assertThat(updatedBook?.author).isEqualTo("田中四")
-        assertThat(updatedBook?.publisherId).isEqualTo(2L)
-        assertThat(updatedBook?.userId).isEqualTo(101L)
-        assertThat(updatedBook?.updatedAt).isAfterOrEqualTo(startTime)
-        assertThat(updatedBook?.updatedAt).isBeforeOrEqualTo(endTime)
-    }
+            assertThat(affectedRows).isEqualTo(1)
+            val updatedBook = bookMapper.getById(1L)
+            assertThat(updatedBook).isNotNull()
+            assertThat(updatedBook?.title).isEqualTo("最新版Kotlin")
+            assertThat(updatedBook?.titleKana).isEqualTo("サイシンバン コトリン")
+            assertThat(updatedBook?.author).isEqualTo("田中四")
+            assertThat(updatedBook?.publisherId).isEqualTo(2L)
+            assertThat(updatedBook?.userId).isEqualTo(101L)
+            assertThat(updatedBook?.updatedAt).isAfterOrEqualTo(startTime)
+            assertThat(updatedBook?.updatedAt).isBeforeOrEqualTo(endTime)
+        }
 
-    @Test
-    fun `update should return 0 when book id does not exist`() {
-        val book = Book(
-            id = 999L,
-            title = "存在しない書籍",
-            titleKana = "ソンザイシナイショセキ",
-            author = "佐藤花子",
-            publisherId = 5L,
-            userId = 104L
-        )
+        @Test
+        fun `update should return 0 when book id does not exist`() {
+            val book = Book(
+                id = 999L,
+                title = "存在しない書籍",
+                titleKana = "ソンザイシナイショセキ",
+                author = "佐藤花子",
+                publisherId = 5L,
+                userId = 104L
+            )
 
-        val notExistBook = bookMapper.getById(999L)
-        assertThat(notExistBook).isNull()
+            val notExistBook = bookMapper.getById(999L)
+            assertThat(notExistBook).isNull()
 
-        val affectedRows = bookMapper.update(book)
-        assertThat(affectedRows).isEqualTo(0)
-        val bookAfterUpdate = bookMapper.getById(999L)
-        assertThat(bookAfterUpdate).isNull()
-    }
+            val affectedRows = bookMapper.update(book)
+            assertThat(affectedRows).isEqualTo(0)
+            val bookAfterUpdate = bookMapper.getById(999L)
+            assertThat(bookAfterUpdate).isNull()
+        }
 
-    @Test
-    fun `update should return 0 when book is deleted`() {
-        val book = Book(
-            id = 3L,
-            title = "削除された書籍",
-            titleKana = "サクジョサレタショセキ",
-            author = "佐藤花子",
-            publisherId = 5L,
-            userId = 104L
-        )
+        @Test
+        fun `update should return 0 when book is deleted`() {
+            val book = Book(
+                id = 3L,
+                title = "削除された書籍",
+                titleKana = "サクジョサレタショセキ",
+                author = "佐藤花子",
+                publisherId = 5L,
+                userId = 104L
+            )
 
-        val deletedBook = bookMapper.getById(3L)
-        assertThat(deletedBook).isNull()
+            val deletedBook = bookMapper.getById(3L)
+            assertThat(deletedBook).isNull()
 
-        val affectedRows = bookMapper.update(book)
-        assertThat(affectedRows).isEqualTo(0)
-        val bookAfterUpdate = bookMapper.getById(3L)
-        assertThat(bookAfterUpdate).isNull()
+            val affectedRows = bookMapper.update(book)
+            assertThat(affectedRows).isEqualTo(0)
+            val bookAfterUpdate = bookMapper.getById(3L)
+            assertThat(bookAfterUpdate).isNull()
+        }
     }
 }
