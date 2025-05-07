@@ -14,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Nested
 import java.time.LocalDateTime
 
 @ExtendWith(MockitoExtension::class)
@@ -227,11 +228,14 @@ class BookServiceTest {
         verify(bookMapper).deleteLogically(bookId)
     }
 
-    @Test
-    fun `deleteBooksLogically should call deleteBatch on BookMapper`() {
-        val ids = listOf(1L, 2L)
-        bookService.deleteBooksLogically(ids)
-        verify(bookMapper).deleteBatchLogically(ids)
+    @Nested
+    inner class DeleteBooksLogicallyTest {
+        @Test
+        fun `deleteBooksLogically should call deleteBatch on BookMapper`() {
+            val ids = listOf(1L, 2L)
+            bookService.deleteBooksLogically(ids)
+            verify(bookMapper).deleteBatchLogically(ids)
+        }
     }
 
     @Test

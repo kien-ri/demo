@@ -11,6 +11,7 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.jdbc.Sql
 import org.springframework.test.context.jdbc.Sql.ExecutionPhase
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Nested
 import java.time.LocalDateTime
 
 @MybatisTest
@@ -494,33 +495,37 @@ class BookMapperTest {
         assertThat(affectedRows).isEqualTo(0)
     }
 
-    @Test
-    fun `deleteBatchLogically should soft delete multiple books and return affected rows`() {
-        val book1 = bookMapper.getById(1L)
-        val book2 = bookMapper.getById(2L)
-        val book4 = bookMapper.getById(4L)
-        assertThat(book1).isNotNull()
-        assertThat(book2).isNotNull()
-        assertThat(book4).isNotNull()
+    @Nested
+    inner class DeleteBatchLogicallyTest {
 
-        val affectedRows = bookMapper.deleteBatchLogically(listOf(1L, 2L, 4L))
-        assertThat(affectedRows).isEqualTo(3)
-        assertThat(bookMapper.getById(1L)).isNull()
-        assertThat(bookMapper.getById(2L)).isNull()
-        assertThat(bookMapper.getById(4L)).isNull()
-    }
+        @Test
+        fun `deleteBatchLogically should soft delete multiple books and return affected rows`() {
+            val book1 = bookMapper.getById(1L)
+            val book2 = bookMapper.getById(2L)
+            val book4 = bookMapper.getById(4L)
+            assertThat(book1).isNotNull()
+            assertThat(book2).isNotNull()
+            assertThat(book4).isNotNull()
 
-    @Test
-    fun `deleteBatchLogically should return 0 book is deleted or not exsit`() {
-        val book3 = bookMapper.getById(3L)
-        val book999 = bookMapper.getById(999L)
-        assertThat(book3).isNull()
-        assertThat(book999).isNull()
+            val affectedRows = bookMapper.deleteBatchLogically(listOf(1L, 2L, 4L))
+            assertThat(affectedRows).isEqualTo(3)
+            assertThat(bookMapper.getById(1L)).isNull()
+            assertThat(bookMapper.getById(2L)).isNull()
+            assertThat(bookMapper.getById(4L)).isNull()
+        }
 
-        val affectedRows = bookMapper.deleteBatchLogically(listOf(3L, 999L))
-        assertThat(affectedRows).isEqualTo(0)
-        assertThat(bookMapper.getById(3L)).isNull()
-        assertThat(bookMapper.getById(999L)).isNull()
+        @Test
+        fun `deleteBatchLogically should return 0 book is deleted or not exsit`() {
+            val book3 = bookMapper.getById(3L)
+            val book999 = bookMapper.getById(999L)
+            assertThat(book3).isNull()
+            assertThat(book999).isNull()
+
+            val affectedRows = bookMapper.deleteBatchLogically(listOf(3L, 999L))
+            assertThat(affectedRows).isEqualTo(0)
+            assertThat(bookMapper.getById(3L)).isNull()
+            assertThat(bookMapper.getById(999L)).isNull()
+        }
     }
 
     @Test

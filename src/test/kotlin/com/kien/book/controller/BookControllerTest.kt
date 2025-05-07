@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.kien.book.common.Page
 import com.kien.book.model.dto.book.*
 import com.kien.book.service.BookService
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.whenever
@@ -172,13 +173,16 @@ class BookControllerTest {
             }
     }
 
-    @Test
-    fun `deleteBooksLogically should return 204 when batch deletion succeeds`() {
-        mockMvc.delete("/books/batch") {
-            contentType = MediaType.APPLICATION_JSON
-            content = objectMapper.writeValueAsString(listOf(1L, 2L))
-        }.andExpect {
-            status { isNoContent() }
+    @Nested
+    inner class DeleteBooksLogicallyTest {
+        @Test
+        fun `return 204 when batch deletion succeeds`() {
+            mockMvc.delete("/books/batch") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(listOf(1L, 2L))
+            }.andExpect {
+                status { isNoContent() }
+            }
         }
     }
 
