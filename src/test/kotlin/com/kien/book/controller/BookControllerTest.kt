@@ -1,6 +1,7 @@
 package com.kien.book.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.kien.book.common.ErrorMessageLoader
 import com.kien.book.common.Page
 import com.kien.book.model.dto.book.*
 import com.kien.book.service.BookService
@@ -38,13 +39,16 @@ class BookControllerTest {
     class TestConfig {
         @Bean
         fun bookService(): BookService = mock(BookService::class.java)
+
+        @Bean
+        fun errorMessageLoader(): ErrorMessageLoader = ErrorMessageLoader()
     }
 
     @Nested
     inner class GetBookByIdTest {
 
         @Test
-        fun `return book when exists`() {
+        fun `return 200 and book when exists`() {
             val bookId = 1L
             val bookView = BookView(
                 id = bookId,
@@ -70,26 +74,39 @@ class BookControllerTest {
         }
 
         @Test
-        fun `return 404 when not found`() {
+        fun `return 204 when not found`() {
             val bookId = 1L
             whenever(bookService.getBookById(bookId)).thenReturn(null)
 
             mockMvc.get("/books/$bookId")
                 .andExpect {
-                    status { isNotFound() }
+                    status { isNoContent() }
+                    content { null }
                 }
         }
 
         @Test
-        fun `return 400 when param invalid`() {
-            var strId = "abc"
-            mockMvc.get("/books/$strId").andExpect { status { isBadRequest() } }
-
-            val doubleId = 1.5
-            mockMvc.get("/books/$doubleId").andExpect { status { isBadRequest() } }
-
+        fun `return 400 when id is negative`() {
             val negativeId = -5
             mockMvc.get("/books/$negativeId").andExpect { status { isBadRequest() } }
+        }
+
+        @Test
+        fun `return 400 when id is zero`() {
+            val zeroId = 0
+            mockMvc.get("/books/$zeroId").andExpect { status { isBadRequest() } }
+        }
+
+        @Test
+        fun `return 400 when id type is mismatched float`() {
+            val doubleId = 1.5
+            mockMvc.get("/books/$doubleId").andExpect { status { isBadRequest() } }
+        }
+
+        @Test
+        fun `return 400 when id type is mismatched str`() {
+            var strId = "abc"
+            mockMvc.get("/books/$strId").andExpect { status { isBadRequest() } }
         }
     }
 

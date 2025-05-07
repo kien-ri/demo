@@ -14,13 +14,13 @@ import java.time.LocalDateTime
 @MybatisTest
 @ActiveProfiles("test")
 @Sql(scripts = ["/schema.sql"], executionPhase = ExecutionPhase.BEFORE_TEST_CLASS)
-@Sql(scripts = ["/data.sql"], executionPhase = ExecutionPhase.BEFORE_TEST_CLASS)
 class BookMapperTest {
 
     @Autowired
     private lateinit var bookMapper: BookMapper
 
     @Nested
+    @Sql(scripts = ["/test-data/getById.sql"], executionPhase = ExecutionPhase.BEFORE_TEST_CLASS)
     inner class GetByIdTest {
         @Test
         fun `return BookView when book exists`() {
@@ -54,54 +54,54 @@ class BookMapperTest {
 
         @Test
         fun `return null when book is logically deleted`() {
-            val result = bookMapper.getById(3L)
+            val result = bookMapper.getById(2L)
             assertThat(result).isNull()
         }
 
         @Test
         fun `return BookView with null publisher info when publisher is deleted`() {
-            val bookId = 5L
+            val bookId = 3L
             val result = bookMapper.getById(bookId)
 
             assertThat(result).isNotNull()
             assertThat(result).isEqualTo(
                 BookView(
                     id = bookId,
-                    title = "データベース基礎",
-                    titleKana = "データベース キソ",
-                    author = "山本花子",
+                    title = "Java入門",
+                    titleKana = "ジャバー ニュウモン",
+                    author = "田中太郎",
                     publisherId = null,
                     publisherName = null,
-                    userId = 102L,
-                    userName = "鈴木一郎",
-                    price = 2500,
+                    userId = 100L,
+                    userName = "テストユーザー",
+                    price = 2000,
                     isDeleted = false,
-                    createdAt = LocalDateTime.of(2023, 2, 2, 10, 0),
-                    updatedAt = LocalDateTime.of(2023, 2, 2, 10, 0)
+                    createdAt = LocalDateTime.of(2023, 1, 1, 10, 0),
+                    updatedAt = LocalDateTime.of(2023, 1, 1, 10, 0)
                 )
             )
         }
 
         @Test
         fun `return BookView with null user info when user is deleted`() {
-            val bookId = 6L
+            val bookId = 4L
             val result = bookMapper.getById(bookId)
 
             assertThat(result).isNotNull()
             assertThat(result).isEqualTo(
                 BookView(
                     id = bookId,
-                    title = "アルゴリズム入門",
-                    titleKana = "アルゴリズム ニュウモン",
-                    author = "田中一",
-                    publisherId = 3L,
-                    publisherName = "文芸出版社",
+                    title = "Spring Boot 入門",
+                    titleKana = "スプリング ブート ニュウモン",
+                    author = "佐藤次郎",
+                    publisherId = 1L,
+                    publisherName = "技術出版社",
                     userId = null,
                     userName = null,
-                    price = 3500,
+                    price = 3000,
                     isDeleted = false,
-                    createdAt = LocalDateTime.of(2023, 2, 3, 10, 0),
-                    updatedAt = LocalDateTime.of(2023, 2, 3, 10, 0)
+                    createdAt = LocalDateTime.of(2023, 2, 1, 10, 0),
+                    updatedAt = LocalDateTime.of(2023, 2, 1, 10, 0)
                 )
             )
         }
