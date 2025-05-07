@@ -14,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Nested
 import java.time.LocalDateTime
 
 @ExtendWith(MockitoExtension::class)
@@ -194,30 +195,34 @@ class BookServiceTest {
         verify(bookMapper).save(bookCreate)
     }
 
-    @Test
-    fun `registerBooks should call batchService with save operation`() {
-        val bookCreates = listOf(
-            BookCreate(
-                title = "Kotlin入門",
-                titleKana = "コトリン ニュウモン",
-                author = "山田太郎",
-                publisherId = 1L,
-                userId = 100L
-            ),
-            BookCreate(
-                title = "Spring Boot入門",
-                titleKana = "スプリング ブート ニュウモン",
-                author = "佐藤花子",
-                publisherId = 2L,
-                userId = 101L
+    @Nested
+    inner class RegisterBooksTest {
+
+        @Test
+        fun `registerBooks should call batchService with save operation`() {
+            val bookCreates = listOf(
+                BookCreate(
+                    title = "Kotlin入門",
+                    titleKana = "コトリン ニュウモン",
+                    author = "山田太郎",
+                    publisherId = 1L,
+                    userId = 100L
+                ),
+                BookCreate(
+                    title = "Spring Boot入門",
+                    titleKana = "スプリング ブート ニュウモン",
+                    author = "佐藤花子",
+                    publisherId = 2L,
+                    userId = 101L
+                )
             )
-        )
-        bookService.registerBooks(bookCreates)
-        verify(batchService).batchProcess(
-            dataList = bookCreates,
-            mapperClass = BookMapper::class.java,
-            operation = BookMapper::save
-        )
+            bookService.registerBooks(bookCreates)
+            verify(batchService).batchProcess(
+                dataList = bookCreates,
+                mapperClass = BookMapper::class.java,
+                operation = BookMapper::save
+            )
+        }
     }
 
     @Test
