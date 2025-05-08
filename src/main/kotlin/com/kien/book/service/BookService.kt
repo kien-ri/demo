@@ -5,6 +5,7 @@ import com.kien.book.model.dto.book.BookCondition
 import com.kien.book.common.Page
 import com.kien.book.model.Book
 import com.kien.book.model.dto.book.BookCreate
+import com.kien.book.model.dto.book.BookCreatedResponse
 import com.kien.book.model.dto.book.BookView
 import com.kien.book.repository.BookMapper
 import org.springframework.stereotype.Service
@@ -59,13 +60,28 @@ class BookService(
         )
     }
 
-    fun registerBook(bookCreate: BookCreate) {
-        bookMapper.save(bookCreate)
+    @Transactional
+    fun registerBook(bookCreate: BookCreate): BookCreatedResponse {
+        val book = bookCreate.toEntity()
+
+        val insertedCount = bookMapper.save(book)
+        if (insertedCount <= 0) throw CustomException("書籍情報が正しく登録されませんでした。")
+
+        // id from mybatis useGeneratedKeys
+        val bookId = book.id ?: throw CustomException("書籍情報保存に失敗しました：IDが生成されませんでした")
+        val bookTitle = book.title ?: ""
+
+        return BookCreatedResponse(
+            id = bookId,
+            title = bookTitle
+        )
     }
 
     fun registerBooks(bookCreates: List<BookCreate>) {
+        val books = bookCreates.map { it.toEntity() }
+
         batchService.batchProcess(
-            dataList = bookCreates,
+            dataList = books,
             mapperClass = BookMapper::class.java,
             operation = BookMapper::save
         )

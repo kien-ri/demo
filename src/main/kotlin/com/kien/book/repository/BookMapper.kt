@@ -15,7 +15,7 @@ interface BookMapper {
 
     fun getListByCondition(bookCondition: BookCondition): List<BookView>
 
-    fun save(bookCreate: BookCreate): Int
+    fun save(book: Book): Int
 
     fun deleteLogically(id: Long): Int
 

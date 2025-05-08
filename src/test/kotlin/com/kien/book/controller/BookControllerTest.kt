@@ -119,6 +119,7 @@ class BookControllerTest {
                 titleKana = "コトリン ニュウモン",
                 author = "山田太郎",
                 publisherId = 1L,
+                price = 2500,
                 userId = 100L
             )
 
@@ -137,6 +138,7 @@ class BookControllerTest {
                 titleKana = "",
                 author = "山田太郎",
                 publisherId = 1L,
+                price = 2500,
                 userId = 100L
             )
 
@@ -151,10 +153,12 @@ class BookControllerTest {
         @Test
         fun `registerBook should return 500 when creation fails`() {
             val bookCreate = BookCreate(
+                id = null,
                 title = "Kotlin入門",
                 titleKana = "コトリン ニュウモン",
                 author = "山田太郎",
                 publisherId = 1L,
+                price = 2500,
                 userId = 100L
             )
             whenever(bookService.registerBook(bookCreate)).thenThrow(RuntimeException())

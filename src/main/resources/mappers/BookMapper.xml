@@ -127,22 +127,28 @@
         </if>
     </select>
 
-    <insert id="save" parameterType="BookCreate">
-        INSERT INTO `books`(
-            title,
-            title_kana,
-            author,
-            publisher_id,
-            user_id,
-            price
+    <insert id="save" parameterType="Book" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO `books` (
+        <if test="id != null">
+            id,
+        </if>
+        title,
+        title_kana,
+        author,
+        publisher_id,
+        user_id,
+        price
         )
         VALUES (
-            #{title},
-            #{titleKana},
-            #{author},
-            #{publisherId},
-            #{userId},
-            #{price}
+        <if test="id != null">
+            #{id},
+        </if>
+        #{title},
+        #{titleKana},
+        #{author},
+        #{publisherId},
+        #{userId},
+        #{price}
         )
     </insert>
 

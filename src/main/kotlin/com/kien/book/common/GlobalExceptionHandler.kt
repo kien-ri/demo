@@ -1,5 +1,7 @@
 package com.kien.book.common
 
+import org.springframework.dao.DataIntegrityViolationException
+import org.springframework.dao.DuplicateKeyException
 import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatusCode
 import org.springframework.http.ResponseEntity
@@ -10,6 +12,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.ResponseBody
 import org.springframework.web.method.annotation.HandlerMethodValidationException
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
+import java.sql.SQLIntegrityConstraintViolationException
 
 @ControllerAdvice
 @ResponseBody
@@ -43,6 +46,23 @@ class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentTypeMismatchException::class)
     fun handleMethodArgumentTypeMismatch(e: MethodArgumentTypeMismatchException): ResponseEntity<String> {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("無効なリクエストです。URLをチェックしてください。")
+    }
+
+    @ExceptionHandler(DuplicateKeyException::class)
+    fun handleDuplicateKey(e: DuplicateKeyException): ResponseEntity<Any> {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body("プライマリキーが重複しました。別の値にしてください")
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException::class)
+    fun handleSQLIntegrityConstrainViolation(e: DataIntegrityViolationException): ResponseEntity<Any> {
+        val rootCause = e.rootCause
+        if (rootCause is SQLIntegrityConstraintViolationException) {
+            val vendorCode = rootCause.errorCode
+            when (vendorCode) {
+                1452 -> return ResponseEntity.status(HttpStatus.CONFLICT).body("存在しない外部キーを指定しました。")
+            }
+        }
+        throw e
     }
 
     @ExceptionHandler(RuntimeException::class)
