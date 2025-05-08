@@ -206,7 +206,7 @@ paths:
                 negative:
                   summary: 0以下の値が指定された場合
                   value:
-                    Positive: "0 より大きな値にしてください"
+                    id: "入力された値が無効です。"
         default:
           description: 予想外のエラー
           content:

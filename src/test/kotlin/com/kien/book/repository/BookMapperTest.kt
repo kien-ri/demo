@@ -19,9 +19,20 @@ class BookMapperTest {
     @Autowired
     private lateinit var bookMapper: BookMapper
 
+    /*
+        テスト実行する度に@Sqlで指定したSQLファイル内のINSERT文でテストデータが挿入されます。
+     */
     @Nested
-    @Sql(scripts = ["/test-data/getById.sql"], executionPhase = ExecutionPhase.BEFORE_TEST_CLASS)
+    @Sql(
+        scripts = [
+                    "/repository/data/books/getById/publisher.sql",
+                    "/repository/data/books/getById/user.sql",
+                    "/repository/data/books/getById/books.sql"
+                   ],
+        executionPhase = ExecutionPhase.BEFORE_TEST_CLASS
+    )
     inner class GetByIdTest {
+
         @Test
         fun `return BookView when book exists`() {
             val bookId = 1L
@@ -46,18 +57,27 @@ class BookMapperTest {
             )
         }
 
+        /*
+            テーブルに存在しないIDの行を取得するテスト
+         */
         @Test
         fun `return null when book does not exist`() {
             val result = bookMapper.getById(999L)
             assertThat(result).isNull()
         }
 
+        /*
+            テーブルに存在するIDだが、is_deletedフラグがtrueのデータを取得するテスト
+         */
         @Test
         fun `return null when book is logically deleted`() {
             val result = bookMapper.getById(2L)
             assertThat(result).isNull()
         }
 
+        /*
+            書籍情報と結びつく出版社情報が、そのテーブルで論理削除された場合をテスト
+         */
         @Test
         fun `return BookView with null publisher info when publisher is deleted`() {
             val bookId = 3L
@@ -82,8 +102,12 @@ class BookMapperTest {
             )
         }
 
+        /*
+            書籍情報と結びつく登録者(ユーザ)情報が、そのテーブルで論理削除された場合をテスト
+         */
         @Test
         fun `return BookView with null user info when user is deleted`() {
+            // id = 4 の書籍情報の登録者(ユーザ)ID = 101、ユーザテーブルのID = 101の行は論理削除されている
             val bookId = 4L
             val result = bookMapper.getById(bookId)
 

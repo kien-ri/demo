@@ -1,6 +1,7 @@
 package com.kien.book.service
 
 import com.kien.book.common.CustomException
+import com.kien.book.common.ErrorMessages
 import com.kien.book.model.dto.book.BookCondition
 import com.kien.book.common.Page
 import com.kien.book.model.Book
@@ -14,9 +15,11 @@ import kotlin.math.ceil
 @Service
 class BookService(
     private val bookMapper: BookMapper,
-    private val batchService: BatchService
+    private val batchService: BatchService,
+    private val em: ErrorMessages
 ) {
     fun getBookById(id: Long): BookView? {
+        require(id >= 1) { throw CustomException(em.invalidValue) }
         return bookMapper.getById(id)
     }
 

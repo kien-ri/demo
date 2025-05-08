@@ -1,5 +1,7 @@
 package com.kien.book.service
 
+import com.kien.book.common.CustomException
+import com.kien.book.common.ErrorMessages
 import com.kien.book.model.Book
 import com.kien.book.model.dto.book.BookCondition
 import com.kien.book.model.dto.book.BookCreate
@@ -15,22 +17,30 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.assertThrows
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 import java.time.LocalDateTime
 
-@ExtendWith(MockitoExtension::class)
+@SpringBootTest
 class BookServiceTest {
 
-    @Mock
+    @MockitoBean
     private lateinit var bookMapper: BookMapper
 
-    @Mock
+    @MockitoBean
     private lateinit var batchService: BatchService
 
-    @InjectMocks
+    @Autowired
     private lateinit var bookService: BookService
+
+    @Autowired
+    private lateinit var em: ErrorMessages
 
     @Nested
     inner class GetBookByIdTest {
+
         @Test
         fun `return BookView when book exists`() {
             val bookId = 1L
@@ -54,13 +64,34 @@ class BookServiceTest {
             assertThat(result).isEqualTo(bookView)
         }
 
+        /*
+            mapperからnullが返ってくる場合を想定
+            その理由が論理削除か存在しないかはserviceと関係ない
+         */
         @Test
         fun `return null when book does not exist`() {
             val bookId = 1L
             whenever(bookMapper.getById(bookId)).thenReturn(null)
-
             val result = bookService.getBookById(bookId)
             assertThat(result).isNull()
+        }
+
+        @Test
+        fun `throw CustomException when id is negative`() {
+            val bookId = -1L
+            val e = assertThrows<CustomException> {
+                bookService.getBookById(bookId)
+            }
+            assertThat(e.message).isEqualTo(em.invalidValue)
+        }
+
+        @Test
+        fun `throw CustomException when id is zero`() {
+            val bookId = 0L
+            val e = assertThrows<CustomException> {
+                bookService.getBookById(bookId)
+            }
+            assertThat(e.message).isEqualTo(em.invalidValue)
         }
     }
 
