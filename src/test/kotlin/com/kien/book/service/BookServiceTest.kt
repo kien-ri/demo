@@ -14,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Nested
 import java.time.LocalDateTime
 
 @ExtendWith(MockitoExtension::class)
@@ -181,17 +182,22 @@ class BookServiceTest {
         )
     }
 
-    @Test
-    fun `registerBook should call save on BookMapper`() {
-        val bookCreate = BookCreate(
-            title = "Kotlin入門",
-            titleKana = "コトリン ニュウモン",
-            author = "山田太郎",
-            publisherId = 1L,
-            userId = 100L
-        )
-        bookService.registerBook(bookCreate)
-        verify(bookMapper).save(bookCreate)
+    @Nested
+    inner class RegisterBookTest {
+
+        @Test
+        fun `call save on BookMapper`() {
+            val bookCreate = BookCreate(
+                title = "Kotlin入門",
+                titleKana = "コトリン ニュウモン",
+                author = "山田太郎",
+                publisherId = 1L,
+                userId = 100L
+            )
+            bookService.registerBook(bookCreate)
+            verify(bookMapper).save(bookCreate)
+        }
+
     }
 
     @Test

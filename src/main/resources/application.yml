@@ -12,3 +12,13 @@ mybatis:
   configuration:
     map-underscore-to-camel-case: true
   type-aliases-package: com.kien.book.model
+
+messages:
+  errors:
+    invalidRequest: "無効なリクエストです。URLをチェックしてください。"
+    invalidValue: "入力された値が無効です。"
+    unexpectedError: "予想外のエラーが発生しました。エラー内容："
+    duplicateKey: "プライマリキーが重複しました。別の値にしてください"
+    nonExistentFK: "存在しない外部キーです。"
+    insertError: "書籍情報が正しく登録されませんでした。"
+    noIdGenerated: "書籍情報保存に失敗しました：IDが生成されませんでした"

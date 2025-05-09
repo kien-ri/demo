@@ -5,8 +5,10 @@ import com.kien.book.model.dto.book.BookCondition
 import com.kien.book.common.Page
 import com.kien.book.model.Book
 import com.kien.book.model.dto.book.BookCreate
+import com.kien.book.model.dto.book.BookCreatedResponse
 import com.kien.book.model.dto.book.BookView
 import com.kien.book.repository.BookMapper
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import kotlin.math.ceil
@@ -16,6 +18,13 @@ class BookService(
     private val bookMapper: BookMapper,
     private val batchService: BatchService
 ) {
+
+    @Value("\${messages.errors.insertError}")
+    val MSG_INSERT_ERROR: String = ""
+
+    @Value("\${messages.errors.noIdGenerated}")
+    val MSG_NO_ID_GENERATED: String = ""
+
     fun getBookById(id: Long): BookView? {
         return bookMapper.getById(id)
     }
@@ -59,13 +68,27 @@ class BookService(
         )
     }
 
-    fun registerBook(bookCreate: BookCreate) {
-        bookMapper.save(bookCreate)
+    @Transactional
+    fun registerBook(bookCreate: BookCreate): BookCreatedResponse {
+        val book = bookCreate.toEntity()
+        // mybatisのuseGeneratedKeys機能で、bookにDBで新たに生成されたidが付与される
+        val insertedCount = bookMapper.save(book)
+
+        if (insertedCount <= 0) throw CustomException(MSG_INSERT_ERROR)
+        val bookId = book.id ?: throw CustomException(MSG_NO_ID_GENERATED)
+
+        val bookTitle = book.title ?: ""
+        return BookCreatedResponse(
+            id = bookId,
+            title = bookTitle
+        )
     }
 
     fun registerBooks(bookCreates: List<BookCreate>) {
+        val books = bookCreates.map { it.toEntity() }
+
         batchService.batchProcess(
-            dataList = bookCreates,
+            dataList = books,
             mapperClass = BookMapper::class.java,
             operation = BookMapper::save
         )
