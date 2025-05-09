@@ -8,6 +8,7 @@ import jakarta.validation.constraints.NotNull
 // 書籍情報新規登録するのに必要な情報をまとめたDTOクラス
 data class BookCreate(
 
+    // id指定して登録する場合はidを入力し、指定しない場合はnull
     @field:Min(1)
     val id: Long?,
 

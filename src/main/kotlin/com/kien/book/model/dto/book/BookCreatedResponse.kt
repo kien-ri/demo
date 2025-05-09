@@ -5,5 +5,5 @@ package com.kien.book.model.dto.book
  */
 data class BookCreatedResponse(
     val id: Long,
-    val title: String
+    val title: String?
 )

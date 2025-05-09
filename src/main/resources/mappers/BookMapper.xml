@@ -128,28 +128,17 @@
     </select>
 
     <insert id="save" parameterType="Book" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO `books` (
-        <if test="id != null">
-            id,
-        </if>
-        title,
-        title_kana,
-        author,
-        publisher_id,
-        user_id,
-        price
-        )
-        VALUES (
-        <if test="id != null">
-            #{id},
-        </if>
-        #{title},
-        #{titleKana},
-        #{author},
-        #{publisherId},
-        #{userId},
-        #{price}
-        )
+        INSERT INTO `books`
+        SET
+            <if test="id != null">
+                id = #{id},
+            </if>
+            title = #{title},
+            title_kana = #{titleKana},
+            author = #{author},
+            publisher_id = #{publisherId},
+            user_id = #{userId},
+            price = #{price}
     </insert>
 
     <update id="deleteLogically" parameterType="long">

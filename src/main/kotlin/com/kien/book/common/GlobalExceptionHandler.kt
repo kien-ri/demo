@@ -1,5 +1,6 @@
 package com.kien.book.common
 
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.http.HttpStatus
@@ -17,6 +18,12 @@ import java.sql.SQLIntegrityConstraintViolationException
 @ControllerAdvice
 @ResponseBody
 class GlobalExceptionHandler {
+
+    @Value("\${messages.errors.duplicateKey}")
+    val MSG_DUPLICATE_KEY: String = ""
+
+    @Value("\${messages.errors.nonExistentFK}")
+    val MSG_NONEXISTENT_FK: String = ""
 
     @ExceptionHandler(CustomException::class)
     fun customExceptionHandler(e: CustomException): ResponseEntity<String> {
@@ -50,7 +57,10 @@ class GlobalExceptionHandler {
 
     @ExceptionHandler(DuplicateKeyException::class)
     fun handleDuplicateKey(e: DuplicateKeyException): ResponseEntity<Any> {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body("プライマリキーが重複しました。別の値にしてください")
+        val responseBody = object {
+            val error: String = MSG_DUPLICATE_KEY
+        }
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(responseBody)
     }
 
     @ExceptionHandler(DataIntegrityViolationException::class)
@@ -59,7 +69,12 @@ class GlobalExceptionHandler {
         if (rootCause is SQLIntegrityConstraintViolationException) {
             val vendorCode = rootCause.errorCode
             when (vendorCode) {
-                1452 -> return ResponseEntity.status(HttpStatus.CONFLICT).body("存在しない外部キーを指定しました。")
+                1452 -> {
+                    val responseBody = object {
+                        val error: String = MSG_NONEXISTENT_FK
+                    }
+                    return ResponseEntity.status(HttpStatus.CONFLICT).body(responseBody)
+                }
             }
         }
         throw e
