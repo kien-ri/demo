@@ -1,7 +1,6 @@
 package com.kien.book.service
 
 import com.kien.book.common.CustomException
-import com.kien.book.common.ErrorMessages
 import com.kien.book.model.Book
 import com.kien.book.model.dto.book.BookCondition
 import com.kien.book.model.dto.book.BookCreate
@@ -35,9 +34,6 @@ class BookServiceTest {
     @Autowired
     private lateinit var bookService: BookService
 
-    @Autowired
-    private lateinit var em: ErrorMessages
-
     @Nested
     inner class GetBookByIdTest {
 
@@ -64,9 +60,9 @@ class BookServiceTest {
             assertThat(result).isEqualTo(bookView)
         }
 
-        /*
-            mapperからnullが返ってくる場合を想定
-            その理由が論理削除か存在しないかはserviceと関係ない
+        /**
+         * mapperからnullが返ってくる場合を想定
+         * その理由が論理削除か存在しないかはserviceと関係ない
          */
         @Test
         fun `return null when book does not exist`() {
@@ -82,7 +78,8 @@ class BookServiceTest {
             val e = assertThrows<CustomException> {
                 bookService.getBookById(bookId)
             }
-            assertThat(e.message).isEqualTo(em.invalidValue)
+            val expectedMsg = "入力された値が無効です。"
+            assertThat(e.message).isEqualTo(expectedMsg)
         }
 
         @Test
@@ -91,7 +88,8 @@ class BookServiceTest {
             val e = assertThrows<CustomException> {
                 bookService.getBookById(bookId)
             }
-            assertThat(e.message).isEqualTo(em.invalidValue)
+            val expectedMsg = "入力された値が無効です。"
+            assertThat(e.message).isEqualTo(expectedMsg)
         }
     }
 

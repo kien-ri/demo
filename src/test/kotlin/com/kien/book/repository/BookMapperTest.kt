@@ -19,8 +19,8 @@ class BookMapperTest {
     @Autowired
     private lateinit var bookMapper: BookMapper
 
-    /*
-        テスト実行する度に@Sqlで指定したSQLファイル内のINSERT文でテストデータが挿入されます。
+    /**
+     * テスト実行する度に@Sqlで指定したSQLファイル内のINSERT文でテストデータが挿入されます。
      */
     @Nested
     @Sql(
@@ -28,7 +28,7 @@ class BookMapperTest {
                     "/repository/data/books/getById/publisher.sql",
                     "/repository/data/books/getById/user.sql",
                     "/repository/data/books/getById/books.sql"
-                   ],
+                  ],
         executionPhase = ExecutionPhase.BEFORE_TEST_CLASS
     )
     inner class GetByIdTest {
@@ -57,8 +57,8 @@ class BookMapperTest {
             )
         }
 
-        /*
-            テーブルに存在しないIDの行を取得するテスト
+        /**
+         * テーブルに存在しないIDの行を取得するテスト
          */
         @Test
         fun `return null when book does not exist`() {
@@ -66,8 +66,8 @@ class BookMapperTest {
             assertThat(result).isNull()
         }
 
-        /*
-            テーブルに存在するIDだが、is_deletedフラグがtrueのデータを取得するテスト
+        /**
+         * テーブルに存在するIDだが、is_deletedフラグがtrueのデータを取得するテスト
          */
         @Test
         fun `return null when book is logically deleted`() {
@@ -75,8 +75,8 @@ class BookMapperTest {
             assertThat(result).isNull()
         }
 
-        /*
-            書籍情報と結びつく出版社情報が、そのテーブルで論理削除された場合をテスト
+        /**
+         * 書籍情報と結びつく出版社情報が、そのテーブルで論理削除された場合をテスト
          */
         @Test
         fun `return BookView with null publisher info when publisher is deleted`() {
@@ -102,8 +102,8 @@ class BookMapperTest {
             )
         }
 
-        /*
-            書籍情報と結びつく登録者(ユーザ)情報が、そのテーブルで論理削除された場合をテスト
+        /**
+         * 書籍情報と結びつく登録者(ユーザ)情報が、そのテーブルで論理削除された場合をテスト
          */
         @Test
         fun `return BookView with null user info when user is deleted`() {

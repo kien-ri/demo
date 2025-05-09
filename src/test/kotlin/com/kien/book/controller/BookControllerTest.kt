@@ -1,7 +1,6 @@
 package com.kien.book.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.kien.book.common.ErrorMessages
 import com.kien.book.common.Page
 import com.kien.book.model.dto.book.*
 import com.kien.book.service.BookService
@@ -15,6 +14,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import java.time.LocalDateTime
 import org.mockito.Mockito.mock
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
@@ -34,9 +34,6 @@ class BookControllerTest {
 
     @MockitoBean
     private lateinit var bookService: BookService
-
-    @Autowired
-    private lateinit var em: ErrorMessages
 
     @TestConfiguration
     class TestConfig {
@@ -66,11 +63,11 @@ class BookControllerTest {
             )
             whenever(bookService.getBookById(bookId)).thenReturn(bookView)
 
-            mockMvc.get("/books/$bookId")
-                .andExpect {
-                    status { isOk() }
-                    content { json(objectMapper.writeValueAsString(bookView)) }
-                }
+            val mvcResult = mockMvc.get("/books/$bookId")
+            mvcResult.andExpect {
+                status { isOk() }
+                content { json(objectMapper.writeValueAsString(bookView)) }
+            }
         }
 
         @Test
@@ -78,19 +75,22 @@ class BookControllerTest {
             val bookId = 1L
             whenever(bookService.getBookById(bookId)).thenReturn(null)
 
-            mockMvc.get("/books/$bookId")
-                .andExpect {
-                    status { isNoContent() }
-                    content { null }
-                }
+            // debugでresponseを確認するため一旦変数宣言
+            val mvcResult = mockMvc.get("/books/$bookId")
+            mvcResult.andExpect {
+                status { isNoContent() }
+                content { null }
+            }
         }
 
         @Test
         fun `return 400 when id is negative`() {
             val negativeId = -1
-            val expectedResponse = mapOf("id" to em.invalidValue)
+            val expectedMsg = "入力された値が無効です。"
+            val expectedResponse = mapOf("id" to expectedMsg)
 
-            mockMvc.get("/books/$negativeId").andExpect {
+            val mvcResult = mockMvc.get("/books/$negativeId")
+            mvcResult.andExpect {
                 status { isBadRequest() }
                 content { json(objectMapper.writeValueAsString(expectedResponse)) }
             }
@@ -99,9 +99,11 @@ class BookControllerTest {
         @Test
         fun `return 400 when id is zero`() {
             val zeroId = 0
-            val expectedResponse = mapOf("id" to em.invalidValue)
+            val expectedMsg = "入力された値が無効です。"
+            val expectedResponse = mapOf("id" to expectedMsg)
 
-            mockMvc.get("/books/$zeroId").andExpect {
+            val mvcResult = mockMvc.get("/books/$zeroId")
+            mvcResult.andExpect {
                 status { isBadRequest() }
                 content { json(objectMapper.writeValueAsString(expectedResponse)) }
             }
@@ -110,9 +112,11 @@ class BookControllerTest {
         @Test
         fun `return 400 when id type is mismatched float`() {
             val doubleId = 1.5
-            val expectedResponse = mapOf("error" to em.invalidRequest)
+            val expectedMsg = "無効なリクエストです。URLをチェックしてください。"
+            val expectedResponse = mapOf("error" to expectedMsg)
 
-            mockMvc.get("/books/$doubleId").andExpect {
+            val mvcResult = mockMvc.get("/books/$doubleId")
+            mvcResult.andExpect {
                 status { isBadRequest() }
                 content { json(objectMapper.writeValueAsString(expectedResponse)) }
             }
@@ -121,9 +125,11 @@ class BookControllerTest {
         @Test
         fun `return 400 when id type is mismatched str`() {
             var strId = "abc"
-            val expectedResponse = mapOf("error" to em.invalidRequest)
+            val expectedMsg = "無効なリクエストです。URLをチェックしてください。"
+            val expectedResponse = mapOf("error" to expectedMsg)
 
-            mockMvc.get("/books/$strId").andExpect {
+            val mvcResult = mockMvc.get("/books/$strId")
+            mvcResult.andExpect {
                 status { isBadRequest() }
                 content { json(objectMapper.writeValueAsString(expectedResponse)) }
             }
@@ -131,9 +137,11 @@ class BookControllerTest {
 
         @Test
         fun `return 400 when no param`() {
-            val expectedResponse = mapOf("error" to em.invalidRequest)
+            val expectedMsg = "無効なリクエストです。URLをチェックしてください。"
+            val expectedResponse = mapOf("error" to expectedMsg)
 
-            mockMvc.get("/books/").andExpect {
+            val mvcResult = mockMvc.get("/books/")
+            mvcResult.andExpect {
                 status { isBadRequest() }
                 content { json(objectMapper.writeValueAsString(expectedResponse)) }
             }

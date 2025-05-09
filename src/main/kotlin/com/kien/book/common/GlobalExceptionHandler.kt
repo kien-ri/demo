@@ -1,5 +1,6 @@
 package com.kien.book.common
 
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.support.DefaultMessageSourceResolvable
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -14,7 +15,16 @@ import org.springframework.web.servlet.resource.NoResourceFoundException
 
 @ControllerAdvice
 @ResponseBody
-class GlobalExceptionHandler(private val em: ErrorMessages) {
+class GlobalExceptionHandler {
+
+    @Value("\${messages.errors.invalidRequest}")
+    val MSG_INVALID_REQUEST: String = ""
+
+    @Value("\${messages.errors.invalidValue}")
+    val MSG_INVALID_VALUE: String = ""
+
+    @Value("\${messages.errors.unexpectedError}")
+    val MSG_UNEXPECTED_ERROR: String = ""
 
     @ExceptionHandler(CustomException::class)
     fun customExceptionHandler(e: CustomException): ResponseEntity<String> {
@@ -24,7 +34,7 @@ class GlobalExceptionHandler(private val em: ErrorMessages) {
     @ExceptionHandler(MethodArgumentNotValidException::class)
     fun handleValidationExceptions(e: MethodArgumentNotValidException): ResponseEntity<Map<String, String>> {
         val errors = e.bindingResult.fieldErrors.associate { error ->
-            error.field to em.invalidValue
+            error.field to MSG_INVALID_VALUE
         }
         return ResponseEntity(errors, HttpStatus.BAD_REQUEST)
     }
@@ -34,7 +44,7 @@ class GlobalExceptionHandler(private val em: ErrorMessages) {
         val errors = e.allErrors.associate { error ->
             val resolvable = error.arguments?.firstOrNull() as? DefaultMessageSourceResolvable
             val parameterName = resolvable?.codes?.lastOrNull() ?: "unknown"
-            parameterName to em.invalidValue
+            parameterName to MSG_INVALID_VALUE
         }
         return ResponseEntity(errors, HttpStatus.BAD_REQUEST)
     }
@@ -42,7 +52,7 @@ class GlobalExceptionHandler(private val em: ErrorMessages) {
     @ExceptionHandler(MethodArgumentTypeMismatchException::class)
     fun handleMethodArgumentTypeMismatch(e: MethodArgumentTypeMismatchException): ResponseEntity<Any> {
         val responseBody = object {
-            val error: String = em.invalidRequest
+            val error: String = MSG_INVALID_REQUEST
         }
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseBody)
     }
@@ -50,7 +60,7 @@ class GlobalExceptionHandler(private val em: ErrorMessages) {
     @ExceptionHandler(NoResourceFoundException::class)
     fun handleNoResourceFound(e: NoResourceFoundException): ResponseEntity<Any> {
         val responseBody = object {
-            val error: String = em.invalidRequest
+            val error: String = MSG_INVALID_REQUEST
         }
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseBody)
     }
@@ -58,7 +68,7 @@ class GlobalExceptionHandler(private val em: ErrorMessages) {
     @ExceptionHandler(RuntimeException::class)
     fun exceptionHandler(e: RuntimeException): ResponseEntity<String> {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-            .body(em.unexpectedError + e.message)
+            .body(MSG_UNEXPECTED_ERROR + e.message)
     }
 
 }
