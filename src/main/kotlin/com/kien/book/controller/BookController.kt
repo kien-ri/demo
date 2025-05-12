@@ -21,10 +21,10 @@ import org.springframework.web.bind.annotation.RestController;
 class BookController(private val bookService: BookService) {
 
     @GetMapping("/{id}")
-    fun getBookById(@PathVariable id: Long): ResponseEntity<BookView> {
+    fun getBookById(@PathVariable @Positive id: Long): ResponseEntity<BookView> {
         val bookView = bookService.getBookById(id)
         return if (bookView == null) {
-            ResponseEntity.notFound().build()
+            ResponseEntity.noContent().build()
         } else {
             ResponseEntity.ok(bookView)
         }

@@ -7,6 +7,7 @@ import com.kien.book.model.Book
 import com.kien.book.model.dto.book.BookCreate
 import com.kien.book.model.dto.book.BookView
 import com.kien.book.repository.BookMapper
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import kotlin.math.ceil
@@ -14,9 +15,14 @@ import kotlin.math.ceil
 @Service
 class BookService(
     private val bookMapper: BookMapper,
-    private val batchService: BatchService
+    private val batchService: BatchService,
 ) {
+
+    @Value("\${messages.errors.invalidValue}")
+    val MSG_INVALID_VALUE: String = ""
+
     fun getBookById(id: Long): BookView? {
+        require(id >= 1) { throw CustomException(MSG_INVALID_VALUE) }
         return bookMapper.getById(id)
     }
 
