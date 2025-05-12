@@ -73,10 +73,16 @@ class BookService(
         )
     }
 
+    /**
+     *  書籍情報保存、保存された書籍情報のidとタイトルを戻す
+     *
+     *  MyBatis の useGeneratedKeys 機能を使用して、INSERT 操作後にデータベースで自動生成された主キー ID が
+     *  book オブジェクトの id フィールドに設定されます。
+     *  また、ID を明示的に指定した場合、指定した ID が使用され、自動生成は行われません。
+     */
     @Transactional
     fun registerBook(bookCreate: BookCreate): BookCreatedResponse {
         val book = bookCreate.toEntity()
-        // (id指定の有無に関わらず)mybatisのuseGeneratedKeys機能で、insert後bookにDBで新たに生成されたidが付与される
         val insertedCount = bookMapper.save(book)
 
         if (insertedCount <= 0) throw CustomException(MSG_INSERT_ERROR)
