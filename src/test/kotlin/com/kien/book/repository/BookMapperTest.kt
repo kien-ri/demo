@@ -1,5 +1,6 @@
 package com.kien.book.repository
 
+import com.kien.book.model.Book
 import com.kien.book.model.dto.book.BookView
 import org.junit.jupiter.api.Test
 import org.mybatis.spring.boot.test.autoconfigure.MybatisTest
@@ -9,11 +10,14 @@ import org.springframework.test.context.jdbc.Sql
 import org.springframework.test.context.jdbc.Sql.ExecutionPhase
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
+import org.springframework.dao.DataIntegrityViolationException
+import org.springframework.dao.DuplicateKeyException
 import java.time.LocalDateTime
+import kotlin.test.assertFailsWith
 
 @MybatisTest
 @ActiveProfiles("test")
-@Sql(scripts = ["/schema.sql"], executionPhase = ExecutionPhase.BEFORE_TEST_CLASS)
+//@Sql(scripts = ["/schema.sql"], executionPhase = ExecutionPhase.BEFORE_TEST_CLASS)
 class BookMapperTest {
 
     @Autowired
@@ -23,6 +27,7 @@ class BookMapperTest {
      * テスト実行する度に@Sqlで指定したSQLファイル内のINSERT文でテストデータが挿入されます。
      */
     @Nested
+    @Sql(scripts = ["/schema.sql"], executionPhase = ExecutionPhase.BEFORE_TEST_CLASS)
     @Sql(
         scripts = [
                     "/repository/data/books/getById/publisher.sql",
@@ -41,7 +46,7 @@ class BookMapperTest {
             assertThat(result).isNotNull()
             assertThat(result).isEqualTo(
                 BookView(
-                    id = bookId,
+                    id = 1L,
                     title = "Kotlin入門",
                     titleKana = "コトリン ニュウモン",
                     author = "山田太郎",
@@ -440,39 +445,145 @@ class BookMapperTest {
     }
 
     @Nested
+    @Sql(scripts = ["/schema.sql"], executionPhase = ExecutionPhase.BEFORE_TEST_CLASS)
+    @Sql(
+        scripts = [
+            "/repository/data/books/save/publisher.sql",
+            "/repository/data/books/save/user.sql",
+            "/repository/data/books/save/books.sql"
+        ],
+        executionPhase = ExecutionPhase.BEFORE_TEST_CLASS
+    )
     inner class SaveTest {
 
         @Test
-        fun `save should insert book`() {
-            val temp = bookMapper.getById(9L)
+        fun `save should insert book without id`() {
+            val temp = bookMapper.getById(5L)
             assertThat(temp).isEqualTo(null)
 
             val startTime = LocalDateTime.now()
 
-            val bookCreate = BookCreate(
+            val book = Book(
+                id = null,
                 title = "Python入門",
                 titleKana = "パイソン ニュウモン",
                 author = "佐藤花子",
-                publisherId = 5L,
-                userId = 104L
+                publisherId = 1L,
+                userId = 100L,
+                price = 2500,
             )
-            val affectedRows = bookMapper.save(bookCreate)
+            val affectedRows = bookMapper.save(book)
             assertThat(affectedRows).isEqualTo(1)
 
             val endTime = LocalDateTime.now()
 
-            val insertedBook = bookMapper.getById(9L)
+            assertThat(book.id).isEqualTo(5L)
+
+            val insertedBook = bookMapper.getById(5L)
             assertThat(insertedBook).isNotNull()
             assertThat(insertedBook?.title).isEqualTo("Python入門")
             assertThat(insertedBook?.titleKana).isEqualTo("パイソン ニュウモン")
             assertThat(insertedBook?.author).isEqualTo("佐藤花子")
-            assertThat(insertedBook?.publisherId).isEqualTo(5L)
-            assertThat(insertedBook?.publisherName).isEqualTo("歴史出版社")
-            assertThat(insertedBook?.userId).isEqualTo(104L)
-            assertThat(insertedBook?.userName).isEqualTo("中村健太")
+            assertThat(insertedBook?.publisherId).isEqualTo(1L)
+            assertThat(insertedBook?.publisherName).isEqualTo("技術出版社")
+            assertThat(insertedBook?.userId).isEqualTo(100L)
+            assertThat(insertedBook?.userName).isEqualTo("テストユーザー")
             assertThat(insertedBook?.createdAt).isNotNull()
             assertThat(insertedBook?.createdAt).isAfterOrEqualTo(startTime)
             assertThat(insertedBook?.createdAt).isBeforeOrEqualTo(endTime)
+        }
+
+        @Test
+        fun `save should insert book with specified id`() {
+            val temp = bookMapper.getById(10L)
+            assertThat(temp).isEqualTo(null)
+
+            val startTime = LocalDateTime.now()
+
+            val book = Book(
+                id = 10L,
+                title = "Go入門",
+                titleKana = "ゴー ニュウモン",
+                author = "山本一郎",
+                publisherId = 1L,
+                userId = 100L,
+                price = 2800
+            )
+            val affectedRows = bookMapper.save(book)
+            assertThat(affectedRows).isEqualTo(1)
+
+            val endTime = LocalDateTime.now()
+
+            assertThat(book.id).isEqualTo(10L)
+
+            val insertedBook = bookMapper.getById(10L)
+            assertThat(insertedBook).isNotNull()
+            assertThat(insertedBook?.title).isEqualTo("Go入門")
+            assertThat(insertedBook?.titleKana).isEqualTo("ゴー ニュウモン")
+            assertThat(insertedBook?.author).isEqualTo("山本一郎")
+            assertThat(insertedBook?.publisherId).isEqualTo(1L)
+            assertThat(insertedBook?.publisherName).isEqualTo("技術出版社")
+            assertThat(insertedBook?.userId).isEqualTo(100L)
+            assertThat(insertedBook?.userName).isEqualTo("テストユーザー")
+            assertThat(insertedBook?.price).isEqualTo(2800)
+            assertThat(insertedBook?.isDeleted).isEqualTo(false)
+            assertThat(insertedBook?.createdAt).isNotNull()
+            assertThat(insertedBook?.createdAt).isAfterOrEqualTo(startTime)
+            assertThat(insertedBook?.createdAt).isBeforeOrEqualTo(endTime)
+            assertThat(insertedBook?.updatedAt).isNotNull()
+            assertThat(insertedBook?.updatedAt).isAfterOrEqualTo(startTime)
+            assertThat(insertedBook?.updatedAt).isBeforeOrEqualTo(endTime)
+        }
+
+        @Test
+        fun `save should throw DuplicateKeyException when id is duplicated`() {
+            val book = Book(
+                id = 1L,
+                title = "Python入門",
+                titleKana = "パイソン ニュウモン",
+                author = "佐藤花子",
+                publisherId = 1L,
+                userId = 100L,
+                price = 2500
+            )
+
+            assertFailsWith<DuplicateKeyException> {
+                bookMapper.save(book)
+            }
+        }
+
+        @Test
+        fun `save should throw DataIntegrityViolationException when publisherId does not exist`() {
+            val book = Book(
+                id = 5L,
+                title = "Python入門",
+                titleKana = "パイソン ニュウモン",
+                author = "佐藤花子",
+                publisherId = 999L,
+                userId = 100L,
+                price = 2500
+            )
+
+            assertFailsWith<DataIntegrityViolationException> {
+                bookMapper.save(book)
+            }
+        }
+
+        @Test
+        fun `save should throw DataIntegrityViolationException when userId does not exist`() {
+            val book = Book(
+                id = 5L,
+                title = "Python入門",
+                titleKana = "パイソン ニュウモン",
+                author = "佐藤花子",
+                publisherId = 1L,
+                userId = 999L,
+                price = 2500
+            )
+
+            assertFailsWith<DataIntegrityViolationException> {
+                bookMapper.save(book)
+            }
         }
     }
 

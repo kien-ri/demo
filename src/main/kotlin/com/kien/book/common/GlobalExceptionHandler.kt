@@ -100,9 +100,12 @@ class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(RuntimeException::class)
-    fun exceptionHandler(e: RuntimeException): ResponseEntity<String> {
+    fun exceptionHandler(e: RuntimeException): ResponseEntity<Any> {
+        val responseBody = object {
+            val error: String = MSG_UNEXPECTED_ERROR + e.message
+        }
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-            .body(MSG_UNEXPECTED_ERROR + e.message)
+            .body(responseBody)
     }
 
 }

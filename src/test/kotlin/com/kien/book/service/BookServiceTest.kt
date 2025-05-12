@@ -6,6 +6,7 @@ import com.kien.book.model.dto.book.BookCondition
 import com.kien.book.model.dto.book.BookCreate
 import com.kien.book.model.dto.book.BookView
 import com.kien.book.common.Page
+import com.kien.book.model.dto.book.BookCreatedResponse
 import com.kien.book.repository.BookMapper
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -15,12 +16,18 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.argumentCaptor
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.dao.DataIntegrityViolationException
+import org.springframework.dao.DuplicateKeyException
 import org.springframework.test.context.bean.override.mockito.MockitoBean
+import java.sql.SQLIntegrityConstraintViolationException
 import java.time.LocalDateTime
+import kotlin.test.assertFailsWith
 
 @SpringBootTest
 class BookServiceTest {
@@ -109,127 +116,170 @@ class BookServiceTest {
             titleKana = "コトリン ニュウモン",
             author = "山田太郎",
             publisherId = 1L,
-            publisherName = "技術出版社",
-            userId = 100L,
-            userName = "テストユーザー",
-            isDeleted = false,
-            createdAt = LocalDateTime.of(2025, 4, 28, 10, 0),
-            updatedAt = LocalDateTime.of(2025, 4, 28, 10, 0)
+            price = 2500,
+            userId = 100L
         )
-        val bookViews = listOf(bookView)
-        whenever(bookMapper.getCountByCondition(condition)).thenReturn(1)
-        whenever(bookMapper.getListByCondition(condition)).thenReturn(bookViews)
-
-        val result = bookService.getBooksByCondition(condition)
-        assertThat(result).isEqualTo(
-            Page(
-                pageSize = 10,
-                currentPage = 1,
-                totalCount = 1,
-                totalPages = 1,
-                content = bookViews
-            )
-        )
-    }
-
-    @Test
-    fun `getBooksByCondition should return bookPage with multiple books when multiple records match`() {
-        val condition = BookCondition(
-            title = "入門",
-            pageSize = 10,
-            currentPage = 1
-        )
-        val bookViews = listOf(
-            BookView(
-                id = 1L,
-                title = "Kotlin入門",
-                titleKana = "コトリン ニュウモン",
-                author = "山田太郎",
-                publisherId = 1L,
-                publisherName = "技術出版社",
-                userId = 100L,
-                userName = "テストユーザー",
-                isDeleted = false,
-                createdAt = LocalDateTime.of(2025, 4, 28, 10, 0),
-                updatedAt = LocalDateTime.of(2025, 4, 28, 10, 0)
-            ),
-            BookView(
-                id = 2L,
-                title = "Java入門",
-                titleKana = "ジャバー ニュウモン",
-                author = "田中太郎",
-                publisherId = 2L,
-                publisherName = "教育出版社",
-                userId = 101L,
-                userName = "佐藤花子",
-                isDeleted = false,
-                createdAt = LocalDateTime.of(2025, 4, 28, 10, 0),
-                updatedAt = LocalDateTime.of(2025, 4, 28, 10, 0)
-            ),
-            BookView(
-                id = 4L,
-                title = "Spring Boot 入門",
-                titleKana = "スプリング ブート ニュウモン",
-                author = "佐藤次郎",
-                publisherId = 3L,
-                publisherName = "文芸出版社",
-                userId = 102L,
-                userName = "鈴木一郎",
-                isDeleted = false,
-                createdAt = LocalDateTime.of(2025, 4, 28, 10, 0),
-                updatedAt = LocalDateTime.of(2025, 4, 28, 10, 0)
-            )
-        )
-        whenever(bookMapper.getCountByCondition(condition)).thenReturn(3)
-        whenever(bookMapper.getListByCondition(condition)).thenReturn(bookViews)
-
-        val result = bookService.getBooksByCondition(condition)
-        assertThat(result).isEqualTo(
-            Page(
-                pageSize = 10,
-                currentPage = 1,
-                totalCount = 3,
-                totalPages = 1,
-                content = bookViews
-            )
-        )
-    }
-
-    @Test
-    fun `getBooksByCondition should return empty page when no books found`() {
-        val condition = BookCondition(
-            title = "Kotlin",
-            pageSize = 10,
-            currentPage = 1
-        )
-        whenever(bookMapper.getCountByCondition(condition)).thenReturn(0)
-
-        val result = bookService.getBooksByCondition(condition)
-        assertThat(result).isEqualTo(
-            Page(
-                pageSize = 10,
-                currentPage = 0,
-                totalCount = 0,
-                totalPages = 0,
-                content = emptyList<BookView>()
-            )
-        )
-    }
-
-    @Nested
-    inner class RegisterBookTest {
 
         @Test
-        fun `call save on BookMapper`() {
-            val bookCreate = BookCreate(
-                title = "Kotlin入門",
-                titleKana = "コトリン ニュウモン",
-                author = "山田太郎",
-                publisherId = 1L,
-                userId = 100L
-            )
-            bookService.registerBook(bookCreate)
-            verify(bookMapper).save(bookCreate)
+        fun `return BookCreatedResponse when register succeeds without id`() {
+            val book = validBookCreate.toEntity()
+            val captor = argumentCaptor<Book>()
+            whenever(bookMapper.save(captor.capture())).then {
+                captor.firstValue.id = 1L
+                1
+            }
+
+            val result = bookService.registerBook(validBookCreate)
+
+            assertEquals(BookCreatedResponse(id = 1L, title = "Kotlin入門"), result)
+        }
+
+        @Test
+        fun `should return BookCreatedResponse when register succeeds with valid id`() {
+            val bookCreateWithId = validBookCreate.copy(id = 222L)
+            val book = bookCreateWithId.toEntity()
+            whenever(bookMapper.save(book)).thenReturn(1)
+
+            val result = bookService.registerBook(bookCreateWithId)
+
+            assertEquals(BookCreatedResponse(id = 222L, title = "Kotlin入門"), result)
+        }
+
+        @Test
+        fun `should throw CustomException when id is negative`() {
+            val bookCreateWithNegativeId = validBookCreate.copy(id = -1L)
+
+            val exception = assertFailsWith<CustomException> {
+                bookService.registerBook(bookCreateWithNegativeId)
+            }
+            assertEquals("書籍IDは正数である必要があります", exception.message)
+        }
+
+        @Test
+        fun `should throw CustomException when id is zero`() {
+            val bookCreateWithZeroId = validBookCreate.copy(id = 0L)
+
+            val exception = assertFailsWith<CustomException> {
+                bookService.registerBook(bookCreateWithZeroId)
+            }
+            assertEquals("書籍IDは正数である必要があります", exception.message)
+        }
+
+        @Test
+        fun `should throw CustomException when price is negative`() {
+            val bookCreateWithNegativePrice = validBookCreate.copy(price = -1)
+
+            val exception = assertFailsWith<CustomException> {
+                bookService.registerBook(bookCreateWithNegativePrice)
+            }
+            assertEquals("価格は0以上である必要があります", exception.message)
+        }
+
+        @Test
+        fun `should throw CustomException when publisherId is negative`() {
+            val bookCreateWithNegativePublisherId = validBookCreate.copy(publisherId = -1L)
+
+            val exception = assertFailsWith<CustomException> {
+                bookService.registerBook(bookCreateWithNegativePublisherId)
+            }
+            assertEquals("出版社IDは正の数ものである必要があります", exception.message)
+        }
+
+        @Test
+        fun `should throw CustomException when publisherId is zero`() {
+            val bookCreateWithZeroPublisherId = validBookCreate.copy(publisherId = 0L)
+
+            val exception = assertFailsWith<CustomException> {
+                bookService.registerBook(bookCreateWithZeroPublisherId)
+            }
+            assertEquals("出版社IDは正の数ものである必要があります", exception.message)
+        }
+
+        @Test
+        fun `should throw CustomException when userId is negative`() {
+            val bookCreateWithNegativeUserId = validBookCreate.copy(userId = -1L)
+
+            val exception = assertFailsWith<CustomException> {
+                bookService.registerBook(bookCreateWithNegativeUserId)
+            }
+            assertEquals("ユーザーIDは正の数である必要があります", exception.message)
+        }
+
+        @Test
+        fun `should throw CustomException when userId is zero`() {
+            val bookCreateWithZeroUserId = validBookCreate.copy(userId = 0L)
+
+            val exception = assertFailsWith<CustomException> {
+                bookService.registerBook(bookCreateWithZeroUserId)
+            }
+            assertEquals("ユーザーIDは正の数である必要があります", exception.message)
+        }
+
+        @Test
+        fun `should throw DuplicateKeyException when id is duplicated`() {
+            val bookCreateWithId = validBookCreate.copy(id = 1L)
+            val book = bookCreateWithId.toEntity()
+            whenever(bookMapper.save(book)).thenThrow(DuplicateKeyException("Duplicate key"))
+
+            assertFailsWith<DuplicateKeyException> {
+                bookService.registerBook(bookCreateWithId)
+            }
+        }
+
+        @Test
+        fun `should throw DataIntegrityViolationException when publisherId does not exist`() {
+            val bookCreateWithInvalidPublisherId = validBookCreate.copy(publisherId = 11111111L)
+            val book = bookCreateWithInvalidPublisherId.toEntity()
+            val sqlException = SQLIntegrityConstraintViolationException("Foreign key constraint violation", "FOREIGN_KEY", 1452, null)
+            whenever(bookMapper.save(book)).thenThrow(DataIntegrityViolationException("Foreign key violation", sqlException))
+
+            assertFailsWith<DataIntegrityViolationException> {
+                bookService.registerBook(bookCreateWithInvalidPublisherId)
+            }
+        }
+
+        @Test
+        fun `should throw DataIntegrityViolationException when userId does not exist`() {
+            val bookCreateWithInvalidUserId = validBookCreate.copy(userId = 10000000L)
+            val book = bookCreateWithInvalidUserId.toEntity()
+            val sqlException = SQLIntegrityConstraintViolationException("Foreign key constraint violation", "FOREIGN_KEY", 1452, null)
+            whenever(bookMapper.save(book)).thenThrow(DataIntegrityViolationException("Foreign key violation", sqlException))
+
+            assertFailsWith<DataIntegrityViolationException> {
+                bookService.registerBook(bookCreateWithInvalidUserId)
+            }
+        }
+
+        @Test
+        fun `should throw CustomException when insert fails`() {
+            val book = validBookCreate.toEntity()
+            whenever(bookMapper.save(book)).thenReturn(0)
+
+            val exception = assertFailsWith<CustomException> {
+                bookService.registerBook(validBookCreate)
+            }
+            assertEquals("書籍情報が正しく登録されませんでした。", exception.message)
+        }
+
+        @Test
+        fun `should throw CustomException when id is not generated`() {
+            val book = validBookCreate.toEntity().copy(id = null)
+            whenever(bookMapper.save(book)).thenReturn(1)
+
+            val exception = assertFailsWith<CustomException> {
+                bookService.registerBook(validBookCreate)
+            }
+            assertEquals("書籍情報保存に失敗しました：IDが生成されませんでした", exception.message)
+        }
+
+        @Test
+        fun `should throw RuntimeException when unexpected error occurs`() {
+            val book = validBookCreate.toEntity()
+            whenever(bookMapper.save(book)).thenThrow(RuntimeException("unknow error"))
+
+            assertFailsWith<RuntimeException> {
+                bookService.registerBook(validBookCreate)
+            }
         }
 
     }

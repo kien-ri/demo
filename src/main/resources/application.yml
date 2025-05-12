@@ -22,3 +22,7 @@ messages:
     nonExistentFK: "存在しない外部キーです。"
     insertError: "書籍情報が正しく登録されませんでした。"
     noIdGenerated: "書籍情報保存に失敗しました：IDが生成されませんでした"
+    invalidBookId: "書籍IDは正数である必要があります"
+    invalidPirce: "価格は0以上である必要があります"
+    invalidPublisherId: "出版社IDは正の数ものである必要があります"
+    invalidUserId: "ユーザーIDは正の数である必要があります"

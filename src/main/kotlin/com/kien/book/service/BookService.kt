@@ -22,12 +22,23 @@ class BookService(
     @Value("\${messages.errors.invalidValue}")
     val MSG_INVALID_VALUE: String = ""
 
-
     @Value("\${messages.errors.insertError}")
     val MSG_INSERT_ERROR: String = ""
 
     @Value("\${messages.errors.noIdGenerated}")
     val MSG_NO_ID_GENERATED: String = ""
+
+    @Value("\${messages.errors.invalidBookId}")
+    val MSG_INVALID_BOOK_ID: String = ""
+
+    @Value("\${messages.errors.invalidPirce}")
+    val MSG_INVALID_PRICE: String = ""
+
+    @Value("\${messages.errors.invalidPublisherId}")
+    val MSG_INVALID_PUBLISHER_ID: String = ""
+
+    @Value("\${messages.errors.invalidUserId}")
+    val MSG_INVALID_USER_ID: String = ""
 
     fun getBookById(id: Long): BookView? {
         require(id >= 1) { throw CustomException(MSG_INVALID_VALUE) }
@@ -82,6 +93,17 @@ class BookService(
      */
     @Transactional
     fun registerBook(bookCreate: BookCreate): BookCreatedResponse {
+
+        // IDが指定されている場合、0以下でないことを確認
+        bookCreate.id?.let { id ->
+            if (id <= 0) throw CustomException(MSG_INVALID_BOOK_ID)
+        }
+        // 出版社IDが正の数であることを確認
+        if (bookCreate.publisherId != null && bookCreate.publisherId <= 0) throw CustomException(MSG_INVALID_PUBLISHER_ID)
+        // ユーザーIDが正の数であることを確認
+        if (bookCreate.userId != null && bookCreate.userId <= 0) throw CustomException(MSG_INVALID_USER_ID)
+        if (bookCreate.price != null && bookCreate.price < 0) throw CustomException(MSG_INVALID_PRICE)
+
         val book = bookCreate.toEntity()
         val insertedCount = bookMapper.save(book)
 

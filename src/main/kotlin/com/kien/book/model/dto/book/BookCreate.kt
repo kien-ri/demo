@@ -25,10 +25,10 @@ data class BookCreate(
     val author: String?,
 
     @field:Min(1)
-    val publisherId: Long,
+    val publisherId: Long?,
 
     @field:Min(1)
-    val userId: Long,
+    val userId: Long?,
 
     @field:NotNull
     @field:Min(0)
