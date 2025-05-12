@@ -16,8 +16,12 @@ import kotlin.math.ceil
 @Service
 class BookService(
     private val bookMapper: BookMapper,
-    private val batchService: BatchService
+    private val batchService: BatchService,
 ) {
+
+    @Value("\${messages.errors.invalidValue}")
+    val MSG_INVALID_VALUE: String = ""
+
 
     @Value("\${messages.errors.insertError}")
     val MSG_INSERT_ERROR: String = ""
@@ -26,6 +30,7 @@ class BookService(
     val MSG_NO_ID_GENERATED: String = ""
 
     fun getBookById(id: Long): BookView? {
+        require(id >= 1) { throw CustomException(MSG_INVALID_VALUE) }
         return bookMapper.getById(id)
     }
 
