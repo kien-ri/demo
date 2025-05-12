@@ -76,16 +76,15 @@ class BookService(
     @Transactional
     fun registerBook(bookCreate: BookCreate): BookCreatedResponse {
         val book = bookCreate.toEntity()
-        // mybatisのuseGeneratedKeys機能で、bookにDBで新たに生成されたidが付与される
+        // (id指定の有無に関わらず)mybatisのuseGeneratedKeys機能で、insert後bookにDBで新たに生成されたidが付与される
         val insertedCount = bookMapper.save(book)
 
         if (insertedCount <= 0) throw CustomException(MSG_INSERT_ERROR)
         val bookId = book.id ?: throw CustomException(MSG_NO_ID_GENERATED)
 
-        val bookTitle = book.title ?: ""
         return BookCreatedResponse(
             id = bookId,
-            title = bookTitle
+            title = book.title
         )
     }
 
