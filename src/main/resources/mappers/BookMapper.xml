@@ -138,7 +138,9 @@
             author = #{author},
             publisher_id = #{publisherId},
             user_id = #{userId},
-            price = #{price}
+            price = #{price},
+            created_at = #{createdAt},
+            updated_at = #{updatedAt}
     </insert>
 
     <update id="deleteLogically" parameterType="long">

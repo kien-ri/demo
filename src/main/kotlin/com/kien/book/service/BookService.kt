@@ -9,8 +9,10 @@ import com.kien.book.model.dto.book.BookCreatedResponse
 import com.kien.book.model.dto.book.BookView
 import com.kien.book.repository.BookMapper
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.cglib.core.Local
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
 import kotlin.math.ceil
 
 @Service
@@ -94,19 +96,20 @@ class BookService(
     @Transactional
     fun registerBook(bookCreate: BookCreate): BookCreatedResponse {
 
-        // IDが指定されている場合、0以下でないことを確認
+        // バリデーション
         bookCreate.id?.let { id ->
             if (id <= 0) throw CustomException(MSG_INVALID_BOOK_ID)
         }
-        // 出版社IDが正の数であることを確認
         if (bookCreate.publisherId != null && bookCreate.publisherId <= 0) throw CustomException(MSG_INVALID_PUBLISHER_ID)
-        // ユーザーIDが正の数であることを確認
         if (bookCreate.userId != null && bookCreate.userId <= 0) throw CustomException(MSG_INVALID_USER_ID)
         if (bookCreate.price != null && bookCreate.price < 0) throw CustomException(MSG_INVALID_PRICE)
 
+        // 作成時間と更新時間を設定
         val book = bookCreate.toEntity()
-        val insertedCount = bookMapper.save(book)
+        book.createdAt = LocalDateTime.now()
+        book.updatedAt = LocalDateTime.now()
 
+        val insertedCount = bookMapper.save(book)
         if (insertedCount <= 0) throw CustomException(MSG_INSERT_ERROR)
         val bookId = book.id ?: throw CustomException(MSG_NO_ID_GENERATED)
 

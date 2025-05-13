@@ -9,15 +9,21 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.jdbc.Sql
 import org.springframework.test.context.jdbc.Sql.ExecutionPhase
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.Order
+import org.junit.jupiter.api.TestMethodOrder
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.dao.DuplicateKeyException
+import java.sql.SQLIntegrityConstraintViolationException
 import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 import kotlin.test.assertFailsWith
 
 @MybatisTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
-//@Sql(scripts = ["/schema.sql"], executionPhase = ExecutionPhase.BEFORE_TEST_CLASS)
 class BookMapperTest {
 
     @Autowired
@@ -454,14 +460,21 @@ class BookMapperTest {
         ],
         executionPhase = ExecutionPhase.BEFORE_TEST_CLASS
     )
+    @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
     inner class SaveTest {
 
+        /**
+         * 新規登録するデータの主キーidを指定せずに登録するテスト
+         */
         @Test
+        @Order(1)
         fun `save should insert book without id`() {
+            // 事前にid=5のデータが存在しないことを検証
             val temp = bookMapper.getById(5L)
             assertThat(temp).isEqualTo(null)
 
-            val startTime = LocalDateTime.now()
+            // データが挿入されたタイミングが、startTimeとendTimeの間であることを確認するため
+            val startTime = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS)
 
             val book = Book(
                 id = null,
@@ -471,12 +484,17 @@ class BookMapperTest {
                 publisherId = 1L,
                 userId = 100L,
                 price = 2500,
+                createdAt = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS),
+                updatedAt = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS)
             )
             val affectedRows = bookMapper.save(book)
+
+            val endTime = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS)
+
+            // 挿入された行数が1であること
             assertThat(affectedRows).isEqualTo(1)
 
-            val endTime = LocalDateTime.now()
-
+            // mybatisのuseGeneratedKey機能が正しく挿入されたデータのidを賦与
             assertThat(book.id).isEqualTo(5L)
 
             val insertedBook = bookMapper.getById(5L)
@@ -491,14 +509,23 @@ class BookMapperTest {
             assertThat(insertedBook?.createdAt).isNotNull()
             assertThat(insertedBook?.createdAt).isAfterOrEqualTo(startTime)
             assertThat(insertedBook?.createdAt).isBeforeOrEqualTo(endTime)
+            assertThat(insertedBook?.updatedAt).isNotNull()
+            assertThat(insertedBook?.updatedAt).isAfterOrEqualTo(startTime)
+            assertThat(insertedBook?.updatedAt).isBeforeOrEqualTo(endTime)
         }
 
+        /**
+         * 新規登録するデータの主キーidを指定して登録するテスト
+         */
         @Test
+        @Order(2)
         fun `save should insert book with specified id`() {
+            // 事前にid=10のデータが存在しないことを検証
             val temp = bookMapper.getById(10L)
             assertThat(temp).isEqualTo(null)
 
-            val startTime = LocalDateTime.now()
+            // データが挿入されたタイミングが、startTimeとendTimeの間であることを確認するため
+            val startTime = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS)
 
             val book = Book(
                 id = 10L,
@@ -507,13 +534,18 @@ class BookMapperTest {
                 author = "山本一郎",
                 publisherId = 1L,
                 userId = 100L,
-                price = 2800
+                price = 2800,
+                createdAt = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS),
+                updatedAt = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS)
             )
             val affectedRows = bookMapper.save(book)
+
+            val endTime = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS)
+
+            // 挿入された行数が1であること
             assertThat(affectedRows).isEqualTo(1)
 
-            val endTime = LocalDateTime.now()
-
+            // mybatisのuseGeneratedKey機能が正しく挿入されたデータのidを賦与
             assertThat(book.id).isEqualTo(10L)
 
             val insertedBook = bookMapper.getById(10L)
@@ -535,6 +567,12 @@ class BookMapperTest {
             assertThat(insertedBook?.updatedAt).isBeforeOrEqualTo(endTime)
         }
 
+        /**
+         * 主キー重複の場合の動作をテスト
+         *
+         * テストデータとして、id=1~4のデータが事前に挿入される。
+         * このテスト内でid=1で指定してinsertを試すと、主キー重複のエラーになる。
+         */
         @Test
         fun `save should throw DuplicateKeyException when id is duplicated`() {
             val book = Book(
@@ -544,7 +582,9 @@ class BookMapperTest {
                 author = "佐藤花子",
                 publisherId = 1L,
                 userId = 100L,
-                price = 2500
+                price = 2500,
+                createdAt = LocalDateTime.now(),
+                updatedAt = LocalDateTime.now()
             )
 
             assertFailsWith<DuplicateKeyException> {
@@ -552,6 +592,11 @@ class BookMapperTest {
             }
         }
 
+        /**
+         * 以下の動作を検証する：
+         * 指定した外部キーが存在しない場合はDataIntegrityViolationExceptionが投げられ、
+         * その中にSQLIntegrityConstraintViolationExceptionとエラーコード1452が含まれる
+         */
         @Test
         fun `save should throw DataIntegrityViolationException when publisherId does not exist`() {
             val book = Book(
@@ -561,14 +606,25 @@ class BookMapperTest {
                 author = "佐藤花子",
                 publisherId = 999L,
                 userId = 100L,
-                price = 2500
+                price = 2500,
+                createdAt = LocalDateTime.now(),
+                updatedAt = LocalDateTime.now()
             )
 
-            assertFailsWith<DataIntegrityViolationException> {
+            val e = assertFailsWith<DataIntegrityViolationException> {
                 bookMapper.save(book)
             }
+            val rootCause = e.rootCause
+            assertThat(rootCause is SQLIntegrityConstraintViolationException)
+            val errorCode = (rootCause as SQLIntegrityConstraintViolationException).errorCode
+            assertThat(errorCode).isEqualTo(1452)
         }
 
+        /**
+         * 以下の動作を検証する：
+         * 指定した外部キーが存在しない場合はDataIntegrityViolationExceptionが投げられ、
+         * その中にSQLIntegrityConstraintViolationExceptionとエラーコード1452が含まれる
+         */
         @Test
         fun `save should throw DataIntegrityViolationException when userId does not exist`() {
             val book = Book(
@@ -578,12 +634,18 @@ class BookMapperTest {
                 author = "佐藤花子",
                 publisherId = 1L,
                 userId = 999L,
-                price = 2500
+                price = 2500,
+                createdAt = LocalDateTime.now(),
+                updatedAt = LocalDateTime.now()
             )
 
-            assertFailsWith<DataIntegrityViolationException> {
+            val e = assertFailsWith<DataIntegrityViolationException> {
                 bookMapper.save(book)
             }
+            val rootCause = e.rootCause
+            assertThat(rootCause is SQLIntegrityConstraintViolationException)
+            val errorCode = (rootCause as SQLIntegrityConstraintViolationException).errorCode
+            assertThat(errorCode).isEqualTo(1452)
         }
     }
 

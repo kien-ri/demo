@@ -236,6 +236,9 @@ class BookControllerTest {
             }
         }
 
+        /**
+         * 新規登録するデータの主キーidを指定して登録するテスト
+         */
         @Test
         fun `return 200(id,title) when register with id`() {
             val bookCreate = BookCreate(

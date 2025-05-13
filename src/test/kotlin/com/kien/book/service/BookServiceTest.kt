@@ -2,18 +2,11 @@ package com.kien.book.service
 
 import com.kien.book.common.CustomException
 import com.kien.book.model.Book
-import com.kien.book.model.dto.book.BookCondition
 import com.kien.book.model.dto.book.BookCreate
 import com.kien.book.model.dto.book.BookView
-import com.kien.book.common.Page
 import com.kien.book.model.dto.book.BookCreatedResponse
 import com.kien.book.repository.BookMapper
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -120,104 +113,117 @@ class BookServiceTest {
             userId = 100L
         )
 
+        /**
+         * ID指定なしでの書籍情報登録テスト
+         */
         @Test
         fun `return BookCreatedResponse when register succeeds without id`() {
-            val book = validBookCreate.toEntity()
+            // mybatisの生成されたidを賦与する機能をmockする
             val captor = argumentCaptor<Book>()
             whenever(bookMapper.save(captor.capture())).then {
                 captor.firstValue.id = 1L
-                1
+                1   // mapperのsaveメソッドの戻り値指定
             }
 
-            val result = bookService.registerBook(validBookCreate)
+            val expectedResult = BookCreatedResponse(id = 1L, title = "Kotlin入門")
+            val result = bookService.registerBook(bookCreate)
 
-            assertEquals(BookCreatedResponse(id = 1L, title = "Kotlin入門"), result)
+            assertEquals(expectedResult, result)
         }
 
+        /**
+         * ID指定して書籍情報登録するテスト
+         */
         @Test
-        fun `should return BookCreatedResponse when register succeeds with valid id`() {
-            val bookCreateWithId = validBookCreate.copy(id = 222L)
-            val book = bookCreateWithId.toEntity()
-            whenever(bookMapper.save(book)).thenReturn(1)
+        fun `return BookCreatedResponse when register succeeds with valid id`() {
+            val bookCreateWithId = bookCreate.copy(id = 222L)
 
+            // mybatisの生成されたidを賦与する機能をmockする
+            val captor = argumentCaptor<Book>()
+            whenever(bookMapper.save(captor.capture())).then {
+                captor.firstValue.id = 222L
+                1   // mapperのsaveメソッドの戻り値指定
+            }
+
+            val expectedResult = BookCreatedResponse(id = 222L, title = "Kotlin入門")
             val result = bookService.registerBook(bookCreateWithId)
 
-            assertEquals(BookCreatedResponse(id = 222L, title = "Kotlin入門"), result)
+            assertEquals(expectedResult, result)
         }
 
         @Test
         fun `should throw CustomException when id is negative`() {
-            val bookCreateWithNegativeId = validBookCreate.copy(id = -1L)
+            val bookCreateWithNegativeId = bookCreate.copy(id = -1L)
 
-            val exception = assertFailsWith<CustomException> {
+            val e = assertFailsWith<CustomException> {
                 bookService.registerBook(bookCreateWithNegativeId)
             }
-            assertEquals("書籍IDは正数である必要があります", exception.message)
+            assertEquals("書籍IDは正数である必要があります", e.message)
         }
 
         @Test
         fun `should throw CustomException when id is zero`() {
-            val bookCreateWithZeroId = validBookCreate.copy(id = 0L)
+            val bookCreateWithZeroId = bookCreate.copy(id = 0L)
 
-            val exception = assertFailsWith<CustomException> {
+            val e = assertFailsWith<CustomException> {
                 bookService.registerBook(bookCreateWithZeroId)
             }
-            assertEquals("書籍IDは正数である必要があります", exception.message)
+            assertEquals("書籍IDは正数である必要があります", e.message)
         }
 
         @Test
         fun `should throw CustomException when price is negative`() {
-            val bookCreateWithNegativePrice = validBookCreate.copy(price = -1)
+            val bookCreateWithNegativePrice = bookCreate.copy(price = -1)
 
-            val exception = assertFailsWith<CustomException> {
+            val e = assertFailsWith<CustomException> {
                 bookService.registerBook(bookCreateWithNegativePrice)
             }
-            assertEquals("価格は0以上である必要があります", exception.message)
+            assertEquals("価格は0以上である必要があります", e.message)
         }
 
         @Test
         fun `should throw CustomException when publisherId is negative`() {
-            val bookCreateWithNegativePublisherId = validBookCreate.copy(publisherId = -1L)
+            val bookCreateWithNegativePublisherId = bookCreate.copy(publisherId = -1L)
 
-            val exception = assertFailsWith<CustomException> {
+            val e = assertFailsWith<CustomException> {
                 bookService.registerBook(bookCreateWithNegativePublisherId)
             }
-            assertEquals("出版社IDは正の数ものである必要があります", exception.message)
+            assertEquals("出版社IDは正数である必要があります", e.message)
         }
 
         @Test
         fun `should throw CustomException when publisherId is zero`() {
-            val bookCreateWithZeroPublisherId = validBookCreate.copy(publisherId = 0L)
+            val bookCreateWithZeroPublisherId = bookCreate.copy(publisherId = 0L)
 
             val exception = assertFailsWith<CustomException> {
                 bookService.registerBook(bookCreateWithZeroPublisherId)
             }
-            assertEquals("出版社IDは正の数ものである必要があります", exception.message)
+            assertEquals("出版社IDは正数である必要があります", exception.message)
         }
 
         @Test
         fun `should throw CustomException when userId is negative`() {
-            val bookCreateWithNegativeUserId = validBookCreate.copy(userId = -1L)
+            val bookCreateWithNegativeUserId = bookCreate.copy(userId = -1L)
 
             val exception = assertFailsWith<CustomException> {
                 bookService.registerBook(bookCreateWithNegativeUserId)
             }
-            assertEquals("ユーザーIDは正の数である必要があります", exception.message)
+            assertEquals("ユーザーIDは正数である必要があります", exception.message)
         }
 
         @Test
         fun `should throw CustomException when userId is zero`() {
-            val bookCreateWithZeroUserId = validBookCreate.copy(userId = 0L)
+            val bookCreateWithZeroUserId = bookCreate.copy(userId = 0L)
 
             val exception = assertFailsWith<CustomException> {
                 bookService.registerBook(bookCreateWithZeroUserId)
             }
-            assertEquals("ユーザーIDは正の数である必要があります", exception.message)
+            assertEquals("ユーザーIDは正数である必要があります", exception.message)
         }
 
         @Test
         fun `should throw DuplicateKeyException when id is duplicated`() {
-            val bookCreateWithId = validBookCreate.copy(id = 1L)
+            val bookCreateWithId = bookCreate.copy(id = 1L)
             val book = bookCreateWithId.toEntity()
             whenever(bookMapper.save(book)).thenThrow(DuplicateKeyException("Duplicate key"))
 
@@ -226,59 +232,86 @@ class BookServiceTest {
             }
         }
 
+        /**
+         * 以下の動作を検証する：
+         * 指定した外部キーが存在しない場合はDataIntegrityViolationExceptionが投げられ、
+         * その中にSQLIntegrityConstraintViolationExceptionとエラーコード1452が含まれる
+         */
         @Test
         fun `should throw DataIntegrityViolationException when publisherId does not exist`() {
-            val bookCreateWithInvalidPublisherId = validBookCreate.copy(publisherId = 11111111L)
+            val bookCreateWithInvalidPublisherId = bookCreate.copy(publisherId = 11111111L)
             val book = bookCreateWithInvalidPublisherId.toEntity()
             val sqlException = SQLIntegrityConstraintViolationException("Foreign key constraint violation", "FOREIGN_KEY", 1452, null)
+
             whenever(bookMapper.save(book)).thenThrow(DataIntegrityViolationException("Foreign key violation", sqlException))
 
-            assertFailsWith<DataIntegrityViolationException> {
+            val e = assertFailsWith<DataIntegrityViolationException> {
                 bookService.registerBook(bookCreateWithInvalidPublisherId)
             }
+            val rootCause = e.rootCause
+            assertThat(rootCause is SQLIntegrityConstraintViolationException)
+            val errorCode = (rootCause as SQLIntegrityConstraintViolationException).errorCode
+            assertThat(errorCode).isEqualTo(1452)
         }
 
+        /**
+         * 以下の動作を検証する：
+         * 指定した外部キーが存在しない場合はDataIntegrityViolationExceptionが投げられ、
+         * その中にSQLIntegrityConstraintViolationExceptionとエラーコード1452が含まれる
+         */
         @Test
         fun `should throw DataIntegrityViolationException when userId does not exist`() {
-            val bookCreateWithInvalidUserId = validBookCreate.copy(userId = 10000000L)
+            val bookCreateWithInvalidUserId = bookCreate.copy(userId = 10000000L)
             val book = bookCreateWithInvalidUserId.toEntity()
             val sqlException = SQLIntegrityConstraintViolationException("Foreign key constraint violation", "FOREIGN_KEY", 1452, null)
             whenever(bookMapper.save(book)).thenThrow(DataIntegrityViolationException("Foreign key violation", sqlException))
 
-            assertFailsWith<DataIntegrityViolationException> {
+            val e = assertFailsWith<DataIntegrityViolationException> {
                 bookService.registerBook(bookCreateWithInvalidUserId)
             }
+            val rootCause = e.rootCause
+            assertThat(rootCause is SQLIntegrityConstraintViolationException)
+            val errorCode = (rootCause as SQLIntegrityConstraintViolationException).errorCode
+            assertThat(errorCode).isEqualTo(1452)
         }
 
+        /**
+         * データ1件をINSERT後、mapperから影響件数として1が返ってくるはず
+         * その戻り値が何らかの原因で0となった場合の動作をテストする
+         */
         @Test
         fun `should throw CustomException when insert fails`() {
-            val book = validBookCreate.toEntity()
+            val book = bookCreate.toEntity()
             whenever(bookMapper.save(book)).thenReturn(0)
 
-            val exception = assertFailsWith<CustomException> {
-                bookService.registerBook(validBookCreate)
+            val e = assertFailsWith<CustomException> {
+                bookService.registerBook(bookCreate)
             }
-            assertEquals("書籍情報が正しく登録されませんでした。", exception.message)
+            assertEquals("書籍情報が正しく登録されませんでした。", e.message)
         }
 
+        /**
+         * このテストは、MyBatisのuseGeneratedKeys機能が、書籍登録後にIDが生成されない状況を検証します。
+         * mapperのメソッドはmockで模擬し、実際動いていないので、ここれはMybatisが機能しません。それでIDが生成されない状況を模擬します。
+         */
         @Test
         fun `should throw CustomException when id is not generated`() {
-            val book = validBookCreate.toEntity().copy(id = null)
+            val book = bookCreate.toEntity().copy(id = null)
             whenever(bookMapper.save(book)).thenReturn(1)
 
-            val exception = assertFailsWith<CustomException> {
-                bookService.registerBook(validBookCreate)
+            val e = assertFailsWith<CustomException> {
+                bookService.registerBook(bookCreate)
             }
-            assertEquals("書籍情報保存に失敗しました：IDが生成されませんでした", exception.message)
+            assertEquals("書籍情報保存に失敗しました：IDが生成されませんでした", e.message)
         }
 
         @Test
         fun `should throw RuntimeException when unexpected error occurs`() {
-            val book = validBookCreate.toEntity()
-            whenever(bookMapper.save(book)).thenThrow(RuntimeException("unknow error"))
+            val book = bookCreate.toEntity()
+            whenever(bookMapper.save(book)).thenThrow(RuntimeException("模擬予想外エラー"))
 
             assertFailsWith<RuntimeException> {
-                bookService.registerBook(validBookCreate)
+                bookService.registerBook(bookCreate)
             }
         }
 
