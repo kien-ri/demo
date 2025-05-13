@@ -74,6 +74,9 @@ class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseBody)
     }
 
+    /**
+     * MySQL 主キー重複エラー
+     */
     @ExceptionHandler(DuplicateKeyException::class)
     fun handleDuplicateKey(e: DuplicateKeyException): ResponseEntity<Any> {
         val responseBody = object {
@@ -82,6 +85,9 @@ class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(responseBody)
     }
 
+    /**
+     * MySQL 外部キー制約エラー(存在しない外部キーを指定した場合)
+     */
     @ExceptionHandler(DataIntegrityViolationException::class)
     fun handleSQLIntegrityConstrainViolation(e: DataIntegrityViolationException): ResponseEntity<Any> {
         val rootCause = e.rootCause

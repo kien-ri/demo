@@ -12,6 +12,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -224,8 +225,7 @@ class BookServiceTest {
         @Test
         fun `should throw DuplicateKeyException when id is duplicated`() {
             val bookCreateWithId = bookCreate.copy(id = 1L)
-            val book = bookCreateWithId.toEntity()
-            whenever(bookMapper.save(book)).thenThrow(DuplicateKeyException("Duplicate key"))
+            whenever(bookMapper.save(any())).thenThrow(DuplicateKeyException("Duplicate key"))
 
             assertFailsWith<DuplicateKeyException> {
                 bookService.registerBook(bookCreateWithId)
@@ -240,10 +240,9 @@ class BookServiceTest {
         @Test
         fun `should throw DataIntegrityViolationException when publisherId does not exist`() {
             val bookCreateWithInvalidPublisherId = bookCreate.copy(publisherId = 11111111L)
-            val book = bookCreateWithInvalidPublisherId.toEntity()
             val sqlException = SQLIntegrityConstraintViolationException("Foreign key constraint violation", "FOREIGN_KEY", 1452, null)
 
-            whenever(bookMapper.save(book)).thenThrow(DataIntegrityViolationException("Foreign key violation", sqlException))
+            whenever(bookMapper.save(any())).thenThrow(DataIntegrityViolationException("Foreign key violation", sqlException))
 
             val e = assertFailsWith<DataIntegrityViolationException> {
                 bookService.registerBook(bookCreateWithInvalidPublisherId)
@@ -262,9 +261,8 @@ class BookServiceTest {
         @Test
         fun `should throw DataIntegrityViolationException when userId does not exist`() {
             val bookCreateWithInvalidUserId = bookCreate.copy(userId = 10000000L)
-            val book = bookCreateWithInvalidUserId.toEntity()
             val sqlException = SQLIntegrityConstraintViolationException("Foreign key constraint violation", "FOREIGN_KEY", 1452, null)
-            whenever(bookMapper.save(book)).thenThrow(DataIntegrityViolationException("Foreign key violation", sqlException))
+            whenever(bookMapper.save(any())).thenThrow(DataIntegrityViolationException("Foreign key violation", sqlException))
 
             val e = assertFailsWith<DataIntegrityViolationException> {
                 bookService.registerBook(bookCreateWithInvalidUserId)
@@ -281,8 +279,7 @@ class BookServiceTest {
          */
         @Test
         fun `should throw CustomException when insert fails`() {
-            val book = bookCreate.toEntity()
-            whenever(bookMapper.save(book)).thenReturn(0)
+            whenever(bookMapper.save(any())).thenReturn(0)
 
             val e = assertFailsWith<CustomException> {
                 bookService.registerBook(bookCreate)
@@ -296,8 +293,7 @@ class BookServiceTest {
          */
         @Test
         fun `should throw CustomException when id is not generated`() {
-            val book = bookCreate.toEntity().copy(id = null)
-            whenever(bookMapper.save(book)).thenReturn(1)
+            whenever(bookMapper.save(any())).thenReturn(1)
 
             val e = assertFailsWith<CustomException> {
                 bookService.registerBook(bookCreate)
@@ -307,8 +303,7 @@ class BookServiceTest {
 
         @Test
         fun `should throw RuntimeException when unexpected error occurs`() {
-            val book = bookCreate.toEntity()
-            whenever(bookMapper.save(book)).thenThrow(RuntimeException("模擬予想外エラー"))
+            whenever(bookMapper.save(any())).thenThrow(RuntimeException("模擬予想外エラー"))
 
             assertFailsWith<RuntimeException> {
                 bookService.registerBook(bookCreate)
