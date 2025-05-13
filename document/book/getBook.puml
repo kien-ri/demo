@@ -20,7 +20,7 @@ alt 結果がない場合
     DB -->> BookMapper : null
     BookMapper -->> BookService : null
     BookService -->> BookController : null
-    BookController -->> UI : 404
+    BookController -->> UI : OK、null
     UI -->> User : 存在しない
 end
 DB --> BookMapper -- : data

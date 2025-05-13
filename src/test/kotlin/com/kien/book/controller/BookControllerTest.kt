@@ -13,16 +13,17 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.context.annotation.Bean
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import java.time.LocalDateTime
-import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mockito.mock
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
+import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
-import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.*
 
-@ExtendWith(SpringExtension::class, MockitoExtension::class)
-@WebMvcTest(BookController::class)
-@Import(BookControllerTest.TestConfig::class)
+@SpringBootTest
+@AutoConfigureMockMvc
 class BookControllerTest {
 
     @Autowired
@@ -31,7 +32,7 @@ class BookControllerTest {
     @Autowired
     private lateinit var objectMapper: ObjectMapper
 
-    @Autowired
+    @MockitoBean
     private lateinit var bookService: BookService
 
     @TestConfiguration
@@ -40,40 +41,129 @@ class BookControllerTest {
         fun bookService(): BookService = mock(BookService::class.java)
     }
 
+    @Nested
+    inner class GetBookByIdTest {
+
+        @Test
+        fun `return 200 and book when exists`() {
+            val bookId = 1L
+            val bookView = BookView(
+                id = bookId,
+                title = "Kotlin入門",
+                titleKana = "コトリン ニュウモン",
+                author = "山田太郎",
+                publisherId = 1L,
+                publisherName = "技術出版社",
+                userId = 100L,
+                userName = "テストユーザー",
+                price = 2500,
+                isDeleted = false,
+                createdAt = LocalDateTime.of(2025, 4, 28, 10, 0),
+                updatedAt = LocalDateTime.of(2025, 4, 28, 10, 0)
+            )
+            whenever(bookService.getBookById(bookId)).thenReturn(bookView)
+
+            val mvcResult = mockMvc.get("/books/$bookId")
+            mvcResult.andExpect {
+                status { isOk() }
+                content { json(objectMapper.writeValueAsString(bookView)) }
+            }
+        }
+
+        @Test
+        fun `return 204 when not found`() {
+            val bookId = 1L
+            whenever(bookService.getBookById(bookId)).thenReturn(null)
+
+            // debugでresponseを確認するため一旦変数宣言
+            val mvcResult = mockMvc.get("/books/$bookId")
+            mvcResult.andExpect {
+                status { isNoContent() }
+                content { null }
+            }
+        }
+
+        @Test
+        fun `return 400 when id is negative`() {
+            val negativeId = -1
+            val expectedMsg = "入力された値が無効です。"
+            val expectedResponse = mapOf("id" to expectedMsg)
+
+            val mvcResult = mockMvc.get("/books/$negativeId")
+            mvcResult.andExpect {
+                status { isBadRequest() }
+                content { json(objectMapper.writeValueAsString(expectedResponse)) }
+            }
+        }
+
+        @Test
+        fun `return 400 when id is zero`() {
+            val zeroId = 0
+            val expectedMsg = "入力された値が無効です。"
+            val expectedResponse = mapOf("id" to expectedMsg)
+
+            val mvcResult = mockMvc.get("/books/$zeroId")
+            mvcResult.andExpect {
+                status { isBadRequest() }
+                content { json(objectMapper.writeValueAsString(expectedResponse)) }
+            }
+        }
+
+        @Test
+        fun `return 400 when id type is mismatched float`() {
+            val doubleId = 1.5
+            val expectedMsg = "無効なリクエストです。URLをチェックしてください。"
+            val expectedResponse = mapOf("error" to expectedMsg)
+
+            val mvcResult = mockMvc.get("/books/$doubleId")
+            mvcResult.andExpect {
+                status { isBadRequest() }
+                content { json(objectMapper.writeValueAsString(expectedResponse)) }
+            }
+        }
+
+        @Test
+        fun `return 400 when id type is mismatched str`() {
+            var strId = "abc"
+            val expectedMsg = "無効なリクエストです。URLをチェックしてください。"
+            val expectedResponse = mapOf("error" to expectedMsg)
+
+            val mvcResult = mockMvc.get("/books/$strId")
+            mvcResult.andExpect {
+                status { isBadRequest() }
+                content { json(objectMapper.writeValueAsString(expectedResponse)) }
+            }
+        }
+
+        @Test
+        fun `return 400 when no param`() {
+            val expectedMsg = "無効なリクエストです。URLをチェックしてください。"
+            val expectedResponse = mapOf("error" to expectedMsg)
+
+            val mvcResult = mockMvc.get("/books/")
+            mvcResult.andExpect {
+                status { isBadRequest() }
+                content { json(objectMapper.writeValueAsString(expectedResponse)) }
+            }
+        }
+    }
+
     @Test
-    fun `getBookById should return book when exists`() {
-        val bookId = 1L
-        val bookView = BookView(
-            id = bookId,
+    fun `registerBook should return 204`() {
+        val bookCreate = BookCreate(
             title = "Kotlin入門",
             titleKana = "コトリン ニュウモン",
             author = "山田太郎",
             publisherId = 1L,
-            publisherName = "技術出版社",
-            userId = 100L,
-            userName = "テストユーザー",
-            isDeleted = false,
-            createdAt = LocalDateTime.of(2025, 4, 28, 10, 0),
-            updatedAt = LocalDateTime.of(2025, 4, 28, 10, 0)
+            userId = 100L
         )
-        whenever(bookService.getBookById(bookId)).thenReturn(bookView)
 
-        mockMvc.get("/books/$bookId")
-            .andExpect {
-                status { isOk() }
-                content { json(objectMapper.writeValueAsString(bookView)) }
-            }
-    }
-
-    @Test
-    fun `getBookById should return 404 when book not found`() {
-        val bookId = 1L
-        whenever(bookService.getBookById(bookId)).thenReturn(null)
-
-        mockMvc.get("/books/$bookId")
-            .andExpect {
-                status { isNotFound() }
-            }
+        mockMvc.post("/books") {
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsString(bookCreate)
+        }.andExpect {
+            status { isNoContent() }
+        }
     }
 
     @Test
@@ -106,24 +196,6 @@ class BookControllerTest {
         }.andExpect {
             status { isOk() }
             content { json(objectMapper.writeValueAsString(page)) }
-        }
-    }
-
-    @Test
-    fun `registerBook should return 204`() {
-        val bookCreate = BookCreate(
-            title = "Kotlin入門",
-            titleKana = "コトリン ニュウモン",
-            author = "山田太郎",
-            publisherId = 1L,
-            userId = 100L
-        )
-
-        mockMvc.post("/books") {
-            contentType = MediaType.APPLICATION_JSON
-            content = objectMapper.writeValueAsString(bookCreate)
-        }.andExpect {
-            status { isNoContent() }
         }
     }
 
