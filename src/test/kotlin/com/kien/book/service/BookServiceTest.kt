@@ -113,6 +113,20 @@ class BookServiceTest {
             price = 2500,
             userId = 100L
         )
+    }
+
+    @Nested
+    inner class RegisterBookTest {
+
+        private val bookCreate = BookCreate(
+            id = null,
+            title = "Kotlin入門",
+            titleKana = "コトリン ニュウモン",
+            author = "山田太郎",
+            publisherId = 1L,
+            userId = 1L,
+            price = 2500
+        )
 
         /**
          * ID指定なしでの書籍情報登録テスト
@@ -309,7 +323,6 @@ class BookServiceTest {
                 bookService.registerBook(bookCreate)
             }
         }
-
     }
 
     @Test

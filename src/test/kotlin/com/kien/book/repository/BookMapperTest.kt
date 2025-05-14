@@ -1,5 +1,6 @@
 package com.kien.book.repository
 
+import com.kien.book.mapper.BooksTestMapper
 import com.kien.book.model.Book
 import com.kien.book.model.dto.book.BookView
 import org.junit.jupiter.api.Test
@@ -16,6 +17,8 @@ import org.junit.jupiter.api.TestMethodOrder
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.dao.DuplicateKeyException
+import org.springframework.jdbc.core.JdbcTemplate
+import org.springframework.test.annotation.Rollback
 import java.sql.SQLIntegrityConstraintViolationException
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
@@ -463,18 +466,21 @@ class BookMapperTest {
     @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
     inner class SaveTest {
 
+        @Autowired
+        private lateinit var booksTestMapper: BooksTestMapper
+
         /**
          * 新規登録するデータの主キーidを指定せずに登録するテスト
          */
         @Test
         @Order(1)
+        @Rollback(false)
         fun `save should insert book without id`() {
-            // 事前にid=5のデータが存在しないことを検証
-            val temp = bookMapper.getById(5L)
-            assertThat(temp).isEqualTo(null)
+            //現在の最大idが4で登録されていることを検証
+            val currentMaxId = booksTestMapper.getMaxId()
+            assertThat(currentMaxId).isEqualTo(4L)
 
-            // データが挿入されたタイミングが、startTimeとendTimeの間であることを確認するため
-            val startTime = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS)
+            val currentTime = LocalDateTime.of(2025, 5, 4, 13, 20, 10)
 
             val book = Book(
                 id = null,
@@ -484,34 +490,30 @@ class BookMapperTest {
                 publisherId = 1L,
                 userId = 100L,
                 price = 2500,
-                createdAt = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS),
-                updatedAt = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS)
+                createdAt = currentTime,
+                updatedAt = currentTime
             )
             val affectedRows = bookMapper.save(book)
-
-            val endTime = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS)
-
             // 挿入された行数が1であること
             assertThat(affectedRows).isEqualTo(1)
-
             // mybatisのuseGeneratedKey機能が正しく挿入されたデータのidを賦与
             assertThat(book.id).isEqualTo(5L)
 
             val insertedBook = bookMapper.getById(5L)
-            assertThat(insertedBook).isNotNull()
-            assertThat(insertedBook?.title).isEqualTo("Python入門")
-            assertThat(insertedBook?.titleKana).isEqualTo("パイソン ニュウモン")
-            assertThat(insertedBook?.author).isEqualTo("佐藤花子")
-            assertThat(insertedBook?.publisherId).isEqualTo(1L)
-            assertThat(insertedBook?.publisherName).isEqualTo("技術出版社")
-            assertThat(insertedBook?.userId).isEqualTo(100L)
-            assertThat(insertedBook?.userName).isEqualTo("テストユーザー")
-            assertThat(insertedBook?.createdAt).isNotNull()
-            assertThat(insertedBook?.createdAt).isAfterOrEqualTo(startTime)
-            assertThat(insertedBook?.createdAt).isBeforeOrEqualTo(endTime)
-            assertThat(insertedBook?.updatedAt).isNotNull()
-            assertThat(insertedBook?.updatedAt).isAfterOrEqualTo(startTime)
-            assertThat(insertedBook?.updatedAt).isBeforeOrEqualTo(endTime)
+            val expectedBook = BookView(
+                id = 5L,
+                title = "Python入門",
+                titleKana = "パイソン ニュウモン",
+                author = "佐藤花子",
+                publisherId = 1L,
+                publisherName = "技術出版社",
+                userId = 100L,
+                userName = "テストユーザー",
+                price = 2500,
+                createdAt = currentTime,
+                updatedAt = currentTime
+            )
+            assertThat(insertedBook).isEqualTo(expectedBook)
         }
 
         /**
@@ -519,13 +521,13 @@ class BookMapperTest {
          */
         @Test
         @Order(2)
+        @Rollback(false)
         fun `save should insert book with specified id`() {
             // 事前にid=10のデータが存在しないことを検証
             val temp = bookMapper.getById(10L)
             assertThat(temp).isEqualTo(null)
 
-            // データが挿入されたタイミングが、startTimeとendTimeの間であることを確認するため
-            val startTime = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS)
+            val currentTime = LocalDateTime.of(2025, 5, 4, 13, 20, 10)
 
             val book = Book(
                 id = 10L,
@@ -535,36 +537,81 @@ class BookMapperTest {
                 publisherId = 1L,
                 userId = 100L,
                 price = 2800,
-                createdAt = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS),
-                updatedAt = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS)
+                createdAt = currentTime,
+                updatedAt = currentTime
             )
             val affectedRows = bookMapper.save(book)
-
-            val endTime = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS)
-
             // 挿入された行数が1であること
             assertThat(affectedRows).isEqualTo(1)
-
             // mybatisのuseGeneratedKey機能が正しく挿入されたデータのidを賦与
             assertThat(book.id).isEqualTo(10L)
 
             val insertedBook = bookMapper.getById(10L)
-            assertThat(insertedBook).isNotNull()
-            assertThat(insertedBook?.title).isEqualTo("Go入門")
-            assertThat(insertedBook?.titleKana).isEqualTo("ゴー ニュウモン")
-            assertThat(insertedBook?.author).isEqualTo("山本一郎")
-            assertThat(insertedBook?.publisherId).isEqualTo(1L)
-            assertThat(insertedBook?.publisherName).isEqualTo("技術出版社")
-            assertThat(insertedBook?.userId).isEqualTo(100L)
-            assertThat(insertedBook?.userName).isEqualTo("テストユーザー")
-            assertThat(insertedBook?.price).isEqualTo(2800)
-            assertThat(insertedBook?.isDeleted).isEqualTo(false)
-            assertThat(insertedBook?.createdAt).isNotNull()
-            assertThat(insertedBook?.createdAt).isAfterOrEqualTo(startTime)
-            assertThat(insertedBook?.createdAt).isBeforeOrEqualTo(endTime)
-            assertThat(insertedBook?.updatedAt).isNotNull()
-            assertThat(insertedBook?.updatedAt).isAfterOrEqualTo(startTime)
-            assertThat(insertedBook?.updatedAt).isBeforeOrEqualTo(endTime)
+            val expectedBook = BookView(
+                id = 10L,
+                title = "Go入門",
+                titleKana = "ゴー ニュウモン",
+                author = "山本一郎",
+                publisherId = 1L,
+                publisherName = "技術出版社",
+                userId = 100L,
+                userName = "テストユーザー",
+                price = 2800,
+                createdAt = currentTime,
+                updatedAt = currentTime
+            )
+            assertThat(insertedBook).isEqualTo(expectedBook)
+        }
+
+        /**
+         * idのincrement機能をテストする
+         *
+         * @Order(3)で実行する順番を3番目とする。その前に、
+         * 1番目のテストでID指定なしのINSERTテストし、id = 5のデータをINSERTする
+         * 2番目のテストでID指定でid = 10 のデータをINSERTする
+         * ここではそれらに引き続き正しくid = 11のプライマリーキーが生成されることを検証
+         */
+        @Test
+        @Order(3)
+        fun `save should respect auto increment after manual id insertion`() {
+            //現在の最大idが10で登録されていることを検証
+            val currentMaxId = booksTestMapper.getMaxId()
+            assertThat(currentMaxId).isEqualTo(10L)
+
+            val currentTime = LocalDateTime.of(2025, 5, 4, 13, 20, 10)
+
+            val book = Book(
+                id = null,
+                title = "Java実践ガイド",
+                titleKana = "ジャバ ジッセン ガイド",
+                author = "田中太郎",
+                publisherId = 1L,
+                userId = 100L,
+                price = 3200,
+                createdAt = currentTime,
+                updatedAt = currentTime
+            )
+            val affectedRows = bookMapper.save(book)
+            // 挿入された行数が1であること
+            assertThat(affectedRows).isEqualTo(1)
+            // mybatisのuseGeneratedKey機能が正しく挿入されたデータのidを賦与
+            assertThat(book.id).isEqualTo(11L)
+
+            val insertedBook = bookMapper.getById(11L)
+            val expectedBook = BookView(
+                id = 11L,
+                title = "Java実践ガイド",
+                titleKana = "ジャバ ジッセン ガイド",
+                author = "田中太郎",
+                publisherId = 1L,
+                publisherName = "技術出版社",
+                userId = 100L,
+                userName = "テストユーザー",
+                price = 3200,
+                createdAt = currentTime,
+                updatedAt = currentTime
+            )
+            assertThat(insertedBook).isEqualTo(expectedBook)
         }
 
         /**
@@ -600,7 +647,7 @@ class BookMapperTest {
         @Test
         fun `save should throw DataIntegrityViolationException when publisherId does not exist`() {
             val book = Book(
-                id = 5L,
+                id = null,
                 title = "Python入門",
                 titleKana = "パイソン ニュウモン",
                 author = "佐藤花子",
@@ -628,7 +675,7 @@ class BookMapperTest {
         @Test
         fun `save should throw DataIntegrityViolationException when userId does not exist`() {
             val book = Book(
-                id = 5L,
+                id = null,
                 title = "Python入門",
                 titleKana = "パイソン ニュウモン",
                 author = "佐藤花子",

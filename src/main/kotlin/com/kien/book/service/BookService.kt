@@ -98,20 +98,39 @@ class BookService(
 
         // バリデーション
         bookCreate.id?.let { id ->
-            if (id <= 0) throw CustomException(MSG_INVALID_BOOK_ID)
+            if (id <= 0) {
+                throw CustomException(
+                    message = MSG_INVALID_BOOK_ID
+                )
+            }
         }
-        if (bookCreate.publisherId != null && bookCreate.publisherId <= 0) throw CustomException(MSG_INVALID_PUBLISHER_ID)
-        if (bookCreate.userId != null && bookCreate.userId <= 0) throw CustomException(MSG_INVALID_USER_ID)
-        if (bookCreate.price != null && bookCreate.price < 0) throw CustomException(MSG_INVALID_PRICE)
+        if (bookCreate.publisherId != null && bookCreate.publisherId <= 0) {
+            throw CustomException(
+                message = MSG_INVALID_PUBLISHER_ID
+            )
+        }
+        if (bookCreate.userId != null && bookCreate.userId <= 0) {
+            throw CustomException(
+                message = MSG_INVALID_USER_ID)
+        }
+        if (bookCreate.price != null && bookCreate.price < 0) {
+            throw CustomException(
+                message = MSG_INVALID_PRICE)
+        }
 
         // 作成時間と更新時間を設定
-        val book = bookCreate.toEntity()
-        book.createdAt = LocalDateTime.now()
-        book.updatedAt = LocalDateTime.now()
+        val currentTime = LocalDateTime.now()
+        val book = bookCreate.toEntity(
+            createdAt = currentTime,
+            updatedAt = currentTime
+        )
 
         val insertedCount = bookMapper.save(book)
-        if (insertedCount <= 0) throw CustomException(MSG_INSERT_ERROR)
-        val bookId = book.id ?: throw CustomException(MSG_NO_ID_GENERATED)
+        if (insertedCount <= 0) {
+            throw CustomException(
+                message = MSG_INSERT_ERROR)
+        }
+        val bookId = book.id ?: throw CustomException(message = MSG_NO_ID_GENERATED)
 
         return BookCreatedResponse(
             id = bookId,

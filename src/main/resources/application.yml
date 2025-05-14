@@ -26,3 +26,4 @@ messages:
     invalidPirce: "価格は0以上である必要があります"
     invalidPublisherId: "出版社IDは正数である必要があります"
     invalidUserId: "ユーザーIDは正数である必要があります"
+    typeMissmatch: "パラメータの型が間違っています"

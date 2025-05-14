@@ -35,42 +35,59 @@ class GlobalExceptionHandler {
     @Value("\${messages.errors.unexpectedError}")
     val MSG_UNEXPECTED_ERROR: String = ""
 
+    @Value("\${messages.errors.typeMissmatch}")
+    val MSG_TYPE_MISSMATCH: String = ""
+
+    val MSG_STR: String = "message"
+
     @ExceptionHandler(CustomException::class)
     fun customExceptionHandler(e: CustomException): ResponseEntity<String> {
         return ResponseEntity.unprocessableEntity().body(e.message)
     }
 
     @ExceptionHandler(MethodArgumentNotValidException::class)
-    fun handleValidationExceptions(e: MethodArgumentNotValidException): ResponseEntity<Map<String, String>> {
-        val errors = e.bindingResult.fieldErrors.associate { error ->
-            error.field to MSG_INVALID_VALUE
+    fun handleValidationExceptions(e: MethodArgumentNotValidException): ResponseEntity<List<Map<String, String>>> {
+        val errors = e.bindingResult.fieldErrors.map { error: FieldError ->
+            mapOf(
+                error.field to (error.rejectedValue?.toString() ?: ""),
+                MSG_STR to MSG_INVALID_VALUE
+            )
         }
         return ResponseEntity(errors, HttpStatus.BAD_REQUEST)
     }
 
     @ExceptionHandler(HandlerMethodValidationException::class)
-    fun handleHandlerMethodValidationException(e: HandlerMethodValidationException): ResponseEntity<Map<String, String>> {
-        val errors = e.allErrors.associate { error ->
-            val resolvable = error.arguments?.firstOrNull() as? DefaultMessageSourceResolvable
-            val parameterName = resolvable?.codes?.lastOrNull() ?: "unknown"
-            parameterName to MSG_INVALID_VALUE
-        }
+    fun handleHandlerMethodValidationException(e: HandlerMethodValidationException): ResponseEntity<List<Map<String, String>>> {
+        val errors = e.parameterValidationResults
+            .filter { it.resolvableErrors.isNotEmpty() }
+            .map { result ->
+                val param = result.methodParameter.parameterName ?: "unknown"
+                val rejectedValue = result.argument?.toString() ?: "null"
+
+                mapOf(
+                    param to rejectedValue,
+                    MSG_STR to MSG_INVALID_VALUE
+                )
+            }
+
         return ResponseEntity(errors, HttpStatus.BAD_REQUEST)
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException::class)
     fun handleMethodArgumentTypeMismatch(e: MethodArgumentTypeMismatchException): ResponseEntity<Any> {
-        val responseBody = object {
-            val error: String = MSG_INVALID_REQUEST
-        }
+        val responseBody = mapOf(
+            e.name to e.value,
+            MSG_STR to MSG_TYPE_MISSMATCH
+        )
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseBody)
     }
 
     @ExceptionHandler(NoResourceFoundException::class)
     fun handleNoResourceFound(e: NoResourceFoundException): ResponseEntity<Any> {
-        val responseBody = object {
-            val error: String = MSG_INVALID_REQUEST
-        }
+        val responseBody = mapOf(
+            e.httpMethod to "/" + e.resourcePath,
+            MSG_STR to MSG_INVALID_REQUEST
+        )
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseBody)
     }
 
@@ -98,7 +115,7 @@ class GlobalExceptionHandler {
                     val responseBody = object {
                         val error: String = MSG_NONEXISTENT_FK
                     }
-                    return ResponseEntity.status(HttpStatus.CONFLICT).body(responseBody)
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(responseBody)
                 }
             }
         }
