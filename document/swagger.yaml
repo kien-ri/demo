@@ -15,7 +15,7 @@ paths:
       tags:
         - book
       summary: 書籍情報登録
-      description: 新たに書籍の情報を登録する
+      description: "新たに書籍の情報を登録する。\n\nID指定して登録と、ID指定なしで登録が可能です。指定なしの場合、idをnullと設定してください。"
       operationId: registerBook
       requestBody:
         description: 書籍情報
@@ -24,15 +24,55 @@ paths:
             schema:
               $ref: '#/components/schemas/BookCreate'
       responses:
-        '204':
+        '200':
           description: OK
           content:
             application/json:
               examples:
                 success:
                   summary: 単一書籍登録成功例
-                  value: {}
-        default:
+                  value:
+                    id: 18
+                    title: Kotlin入門
+        '400':
+          description: パラメータ不正
+          content:
+            application/json:
+              examples:
+                invalidId:
+                  summary: idが不正
+                  value:
+                    id: "-1"
+                    message: 入力された値が無効です。
+                invalidPublisherId:
+                  summary: 出版社IDが不正
+                  value:
+                    publisherId: "-1"
+                    message: 入力された値が無効です。
+                invalidUserId:
+                  summary: ユーザーIDが不正
+                  value:
+                    userId: "-1"
+                    message: 入力された値が無効です。
+                invalidPrice:
+                  summary: 価格が不正
+                  value:
+                    price: "-1"
+                    message: 入力された値が無効です。
+        '409':
+          description: DBのエラー
+          content:
+            application/json:
+              examples:
+                duplicateKey:
+                  summary: 主キーが重複
+                  value:
+                    error: プライマリキーが重複しました。別の値にしてください
+                constraint:
+                  summary: 存在しない外部キーを指定
+                  value:
+                    error: 存在しない外部キーです。
+        '500':
           description: 予想外のエラー
           content:
             application/json:
@@ -499,15 +539,23 @@ components:
       type: object
       description: 書籍情報登録用のデータオブジェクト
       properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+          nullable: true
         title:
           type: string
           example: 星を継ぐもの
+          nullable: true
         titleKana:
           type: string
           example: ホシヲツグモノ
+          nullable: true
         author:
           type: string
           example: ジェイムズ・P・ホーガン
+          nullable: true
         publisherId:
           type: integer
           format: int64
@@ -522,13 +570,6 @@ components:
           type: integer
           minimum: 0
           example: 500
-      required:
-        - title
-        - titleKana
-        - author
-        - publisherId
-        - userId
-        - price
     BookUpdate:
       type: object
       properties:
@@ -565,10 +606,7 @@ components:
     Error:
       type: object
       properties:
-        code:
-          type: string
-          example: 500
-        message:
+        error:
           type: string
           example: 予想外のエラーが発生しました。 エラー内容：...
       required:
