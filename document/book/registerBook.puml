@@ -12,22 +12,22 @@ database ":DB" as DB
 activate User
 User -> UI ++ : 情報登録
 UI -> BookController ++ : POST /books
-BookController -> BookService ++ : Book
+BookController -> BookService ++ : BookCreate
 BookService -> BookMapper ++ : Book
 BookMapper -> DB ++ : INSERT...
 
 alt 新規登録失敗した場合
-    DB --> BookMapper : 影響件数0
-    BookMapper --> BookService : 影響件数0
-    BookService --> BookController : 登録失敗
+    DB --> BookMapper : error
+    BookMapper --> BookService : error
+    BookService --> BookController : error
     BookController --> UI : 登録失敗
     UI --> User : 登録失敗
 end
 
-DB --> BookMapper -- : 影響件数1
-BookMapper --> BookService -- : 影響件数1
-BookService --> BookController -- : 登録完了
-BookController --> UI -- : 登録成功
+DB --> BookMapper -- : 追加されたBook、件数
+BookMapper --> BookService -- : 追加されたBook、件数
+BookService --> BookController -- : 追加されたBook
+BookController --> UI -- : 追加されたBook
 UI --> User -- : 登録完了
 deactivate User
 

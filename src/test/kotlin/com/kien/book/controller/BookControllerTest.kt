@@ -18,9 +18,12 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
+import org.springframework.dao.DataIntegrityViolationException
+import org.springframework.dao.DuplicateKeyException
 import org.springframework.http.MediaType
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.*
+import java.sql.SQLIntegrityConstraintViolationException
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -85,84 +88,72 @@ class BookControllerTest {
 
         @Test
         fun `return 400 when id is negative`() {
-            val negativeId = -1
-            val expectedMsg = "入力された値が無効です。"
-            val expectedResponse = mapOf("id" to expectedMsg)
+            val expectedResponse = mapOf(
+                "id" to "-1",
+                "message" to "入力された値が無効です。"
+            )
 
-            val mvcResult = mockMvc.get("/books/$negativeId")
+            val mvcResult = mockMvc.get("/books/-1")
             mvcResult.andExpect {
                 status { isBadRequest() }
-                content { json(objectMapper.writeValueAsString(expectedResponse)) }
+                content { objectMapper.writeValueAsString(expectedResponse) }
             }
         }
 
         @Test
         fun `return 400 when id is zero`() {
-            val zeroId = 0
-            val expectedMsg = "入力された値が無効です。"
-            val expectedResponse = mapOf("id" to expectedMsg)
+            val expectedResponse = mapOf(
+                "id" to "0",
+                "message" to "入力された値が無効です。"
+            )
 
-            val mvcResult = mockMvc.get("/books/$zeroId")
+            val mvcResult = mockMvc.get("/books/0")
             mvcResult.andExpect {
                 status { isBadRequest() }
-                content { json(objectMapper.writeValueAsString(expectedResponse)) }
+                content { objectMapper.writeValueAsString(expectedResponse) }
             }
         }
 
         @Test
         fun `return 400 when id type is mismatched float`() {
-            val doubleId = 1.5
-            val expectedMsg = "無効なリクエストです。URLをチェックしてください。"
-            val expectedResponse = mapOf("error" to expectedMsg)
+            val expectedResponse = mapOf(
+                "id" to "1.5",
+                "message" to "パラメータの型が間違っています"
+            )
 
-            val mvcResult = mockMvc.get("/books/$doubleId")
+            val mvcResult = mockMvc.get("/books/1.5")
             mvcResult.andExpect {
                 status { isBadRequest() }
-                content { json(objectMapper.writeValueAsString(expectedResponse)) }
+                content { objectMapper.writeValueAsString(expectedResponse) }
             }
         }
 
         @Test
         fun `return 400 when id type is mismatched str`() {
-            var strId = "abc"
-            val expectedMsg = "無効なリクエストです。URLをチェックしてください。"
-            val expectedResponse = mapOf("error" to expectedMsg)
+            val expectedResponse = mapOf(
+                "id" to "abc",
+                "message" to "パラメータの型が間違っています"
+            )
 
-            val mvcResult = mockMvc.get("/books/$strId")
+            val mvcResult = mockMvc.get("/books/abc")
             mvcResult.andExpect {
                 status { isBadRequest() }
-                content { json(objectMapper.writeValueAsString(expectedResponse)) }
+                content { objectMapper.writeValueAsString(expectedResponse) }
             }
         }
 
         @Test
         fun `return 400 when no param`() {
-            val expectedMsg = "無効なリクエストです。URLをチェックしてください。"
-            val expectedResponse = mapOf("error" to expectedMsg)
+            val expectedResponse = mapOf(
+                "GET" to "/books",
+                "message" to "無効なリクエストです。URLをチェックしてください。"
+            )
 
-            val mvcResult = mockMvc.get("/books/")
+            val mvcResult = mockMvc.get("/books")
             mvcResult.andExpect {
                 status { isBadRequest() }
-                content { json(objectMapper.writeValueAsString(expectedResponse)) }
+                content { objectMapper.writeValueAsString(expectedResponse) }
             }
-        }
-    }
-
-    @Test
-    fun `registerBook should return 204`() {
-        val bookCreate = BookCreate(
-            title = "Kotlin入門",
-            titleKana = "コトリン ニュウモン",
-            author = "山田太郎",
-            publisherId = 1L,
-            userId = 100L
-        )
-
-        mockMvc.post("/books") {
-            contentType = MediaType.APPLICATION_JSON
-            content = objectMapper.writeValueAsString(bookCreate)
-        }.andExpect {
-            status { isNoContent() }
         }
     }
 
@@ -199,40 +190,386 @@ class BookControllerTest {
         }
     }
 
-    @Test
-    fun `registerBook should return 400 when param Invalid`() {
-        val invalidParam = BookCreate(
-            title = "",
-            titleKana = "",
-            author = "山田太郎",
-            publisherId = 1L,
-            userId = 100L
-        )
+    @Nested
+    inner class RegisterBookTest {
 
-        mockMvc.post("/books") {
-            contentType = MediaType.APPLICATION_JSON
-            content = objectMapper.writeValueAsString(invalidParam)
-        }.andExpect {
-            status { isBadRequest() }
+        /**
+         * 新規登録するデータの主キーidを指定せずに登録するテスト
+         */
+        @Test
+        fun `return 200(id,title) when register without id`() {
+            val bookCreate = BookCreate(
+                id = null,
+                title = "Kotlin入門",
+                titleKana = "コトリン ニュウモン",
+                author = "山田太郎",
+                publisherId = 1L,
+                price = 2500,
+                userId = 100L
+            )
+
+            val expectedResult = BookCreatedResponse(
+                id = 1L,
+                title = "Kotlin入門"
+            )
+            whenever(bookService.registerBook(bookCreate)).thenReturn(expectedResult)
+
+            val mvcResult = mockMvc.post("/books") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(bookCreate)
+            }
+            mvcResult.andExpect {
+                status { isOk() }
+                content { objectMapper.writeValueAsString(expectedResult) }
+            }
         }
-    }
 
-    @Test
-    fun `registerBook should return 500 when creation fails`() {
-        val bookCreate = BookCreate(
-            title = "Kotlin入門",
-            titleKana = "コトリン ニュウモン",
-            author = "山田太郎",
-            publisherId = 1L,
-            userId = 100L
-        )
-        whenever(bookService.registerBook(bookCreate)).thenThrow(RuntimeException())
+        /**
+         * 新規登録するデータの主キーidを指定して登録するテスト
+         */
+        @Test
+        fun `return 200(id,title) when register with id`() {
+            val bookCreate = BookCreate(
+                id = 222L,
+                title = "Kotlin入門",
+                titleKana = "コトリン ニュウモン",
+                author = "山田太郎",
+                publisherId = 1L,
+                price = 2500,
+                userId = 100L
+            )
 
-        mockMvc.post("/books") {
-            contentType = MediaType.APPLICATION_JSON
-            content = objectMapper.writeValueAsString(bookCreate)
-        }.andExpect {
-            status { isInternalServerError() }
+            val expectedResult = BookCreatedResponse(
+                id = 222L,
+                title = "Kotlin入門"
+            )
+            whenever(bookService.registerBook(bookCreate)).thenReturn(expectedResult)
+
+            val mvcResult = mockMvc.post("/books") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(bookCreate)
+            }
+            mvcResult.andExpect {
+                status { isOk() }
+                content { objectMapper.writeValueAsString(expectedResult) }
+            }
+        }
+
+        @Test
+        fun `return 400 when id is negative`() {
+            val bookCreate = BookCreate(
+                id = -1L,
+                title = "Kotlin入門",
+                titleKana = "コトリン ニュウモン",
+                author = "山田太郎",
+                publisherId = 1L,
+                price = 2500,
+                userId = 100L
+            )
+
+            val expectedResponseBody = arrayOf(
+                mapOf(
+                    "id" to "-1",
+                    "message" to "入力された値が無効です"
+                )
+            )
+            val m = objectMapper.writeValueAsString(expectedResponseBody)
+
+            val mvcResult = mockMvc.post("/books") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(bookCreate)
+            }
+            mvcResult.andExpect {
+                status { isBadRequest() }
+                content { objectMapper.writeValueAsString(expectedResponseBody) }
+            }
+        }
+
+        @Test
+        fun `return 400 when id is 0`() {
+            val bookCreate = BookCreate(
+                id = 0L,
+                title = "Kotlin入門",
+                titleKana = "コトリン ニュウモン",
+                author = "山田太郎",
+                publisherId = 1L,
+                price = 2500,
+                userId = 100L
+            )
+
+            val expectedResponseBody = arrayOf(
+                mapOf(
+                    "id" to "0",
+                    "message" to "入力された値が無効です"
+                )
+            )
+
+            val mvcResult = mockMvc.post("/books") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(bookCreate)
+            }
+            mvcResult.andExpect {
+                status { isBadRequest() }
+                content { objectMapper.writeValueAsString(expectedResponseBody) }
+            }
+        }
+
+        @Test
+        fun `return 400 when price is negative`() {
+            val bookCreate = BookCreate(
+                id = 1L,
+                title = "Kotlin入門",
+                titleKana = "コトリン ニュウモン",
+                author = "山田太郎",
+                publisherId = 1L,
+                price = -1,
+                userId = 100L
+            )
+
+            val expectedResponseBody = arrayOf(
+                mapOf(
+                    "price" to "-1",
+                    "message" to "入力された値が無効です"
+                )
+            )
+
+            val mvcResult = mockMvc.post("/books") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(bookCreate)
+            }
+            mvcResult.andExpect {
+                status { isBadRequest() }
+                content { objectMapper.writeValueAsString(expectedResponseBody) }
+            }
+        }
+
+        @Test
+        fun `return 400 when publisher id is negative`() {
+            val bookCreate = BookCreate(
+                id = 1L,
+                title = "Kotlin入門",
+                titleKana = "コトリン ニュウモン",
+                author = "山田太郎",
+                publisherId = -1L,
+                price = 2500,
+                userId = 100L
+            )
+
+            val expectedResponseBody = arrayOf(
+                mapOf(
+                    "publisherId" to "-1",
+                    "message" to "入力された値が無効です"
+                )
+            )
+
+            val mvcResult = mockMvc.post("/books") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(bookCreate)
+            }
+            mvcResult.andExpect {
+                status { isBadRequest() }
+                content { objectMapper.writeValueAsString(expectedResponseBody) }
+            }
+        }
+
+        @Test
+        fun `return 400 when publisher id is 0`() {
+            val bookCreate = BookCreate(
+                id = 1L,
+                title = "Kotlin入門",
+                titleKana = "コトリン ニュウモン",
+                author = "山田太郎",
+                publisherId = 0L,
+                price = 2500,
+                userId = 100L
+            )
+
+            val expectedResponseBody = arrayOf(
+                mapOf(
+                    "publisherId" to "0",
+                    "message" to "入力された値が無効です"
+                )
+            )
+
+            val mvcResult = mockMvc.post("/books") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(bookCreate)
+            }
+            mvcResult.andExpect {
+                status { isBadRequest() }
+                content { objectMapper.writeValueAsString(expectedResponseBody) }
+            }
+        }
+
+        @Test
+        fun `return 400 when user id is negative`() {
+            val bookCreate = BookCreate(
+                id = 1L,
+                title = "Kotlin入門",
+                titleKana = "コトリン ニュウモン",
+                author = "山田太郎",
+                publisherId = 1L,
+                price = 2500,
+                userId = -1L
+            )
+
+            val expectedResponseBody = arrayOf(
+                mapOf(
+                    "userId" to "-1",
+                    "message" to "入力された値が無効です"
+                )
+            )
+
+            val mvcResult = mockMvc.post("/books") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(bookCreate)
+            }
+            mvcResult.andExpect {
+                status { isBadRequest() }
+                content { objectMapper.writeValueAsString(expectedResponseBody) }
+            }
+        }
+
+        @Test
+        fun `return 400 when user id is 0`() {
+            val bookCreate = BookCreate(
+                id = 1L,
+                title = "Kotlin入門",
+                titleKana = "コトリン ニュウモン",
+                author = "山田太郎",
+                publisherId = 1L,
+                price = 2500,
+                userId = 0L
+            )
+
+            val expectedResponseBody = arrayOf(
+                mapOf(
+                    "userId" to "0",
+                    "message" to "入力された値が無効です"
+                )
+            )
+
+            val mvcResult = mockMvc.post("/books") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(bookCreate)
+            }
+            mvcResult.andExpect {
+                status { isBadRequest() }
+                content { objectMapper.writeValueAsString(expectedResponseBody) }
+            }
+        }
+
+        @Test
+        fun `return 409 when id duplicated`() {
+            val bookCreate = BookCreate(
+                id = 1L,
+                title = "Kotlin入門",
+                titleKana = "コトリン ニュウモン",
+                author = "山田太郎",
+                publisherId = 1L,
+                price = 2500,
+                userId = 100L
+            )
+
+            whenever(bookService.registerBook(bookCreate)).thenThrow(DuplicateKeyException(""))
+            val expectedResponseBody = mapOf(
+                "id" to 1L,
+                "message" to "プライマリキーが重複しました。別の値にしてください"
+            )
+
+            val mvcResult = mockMvc.post("/books") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(bookCreate)
+            }
+            mvcResult.andExpect {
+                status { isConflict() }
+                content { objectMapper.writeValueAsString(expectedResponseBody) }
+            }
+        }
+
+        @Test
+        fun `return 404 when publisher id non exist`() {
+            val bookCreate = BookCreate(
+                id = 1L,
+                title = "Kotlin入門",
+                titleKana = "コトリン ニュウモン",
+                author = "山田太郎",
+                publisherId = 11111111L,
+                price = 2500,
+                userId = 100L
+            )
+
+            val sqlException = SQLIntegrityConstraintViolationException("Foreign key constraint violation", "FOREIGN_KEY", 1452, null)
+            val dataIntegrityViolation = DataIntegrityViolationException("Foreign key violation", sqlException)
+            whenever(bookService.registerBook(bookCreate)).thenThrow(dataIntegrityViolation)
+            val expectedResponseBody = mapOf(
+                "publisherId" to 11111111L,
+                "message" to "存在しない外部キーです。"
+            )
+
+            val mvcResult = mockMvc.post("/books") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(bookCreate)
+            }
+            mvcResult.andExpect {
+                status { isNotFound() }
+                content { objectMapper.writeValueAsString(expectedResponseBody) }
+            }
+        }
+
+        @Test
+        fun `return 404 when user id non exist`() {
+            val bookCreate = BookCreate(
+                id = 1L,
+                title = "Kotlin入門",
+                titleKana = "コトリン ニュウモン",
+                author = "山田太郎",
+                publisherId = 1L,
+                price = 2500,
+                userId = 10000000L
+            )
+
+            val sqlException = SQLIntegrityConstraintViolationException("Foreign key constraint violation", "FOREIGN_KEY", 1452, null)
+            val dataIntegrityViolation = DataIntegrityViolationException("Foreign key violation", sqlException)
+            whenever(bookService.registerBook(bookCreate)).thenThrow(dataIntegrityViolation)
+            val expectedResponseBody = mapOf(
+                "userId" to 10000000L,
+                "message" to "存在しない外部キーです。"
+            )
+
+            val mvcResult = mockMvc.post("/books") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(bookCreate)
+            }
+            mvcResult.andExpect {
+                status { isNotFound() }
+                content { objectMapper.writeValueAsString(expectedResponseBody) }
+            }
+        }
+
+        @Test
+        fun `registerBook should return 500 when creation fails`() {
+            val bookCreate = BookCreate(
+                id = null,
+                title = "Kotlin入門",
+                titleKana = "コトリン ニュウモン",
+                author = "山田太郎",
+                publisherId = 1L,
+                price = 2500,
+                userId = 100L
+            )
+            whenever(bookService.registerBook(bookCreate)).thenThrow(RuntimeException("エラー詳細"))
+            val expectedResponseBody = mapOf(
+                "error" to "予想外のエラーが発生しました。エラー内容：エラー詳細"
+            )
+
+            val mvcResult = mockMvc.post("/books") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(bookCreate)
+            }
+            mvcResult.andExpect {
+                status { isInternalServerError() }
+            }
         }
     }
 

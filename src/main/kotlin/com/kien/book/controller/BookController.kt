@@ -41,9 +41,9 @@ class BookController(private val bookService: BookService) {
     }
 
     @PostMapping
-    fun registerBook(@Valid @RequestBody bookCreate: BookCreate): ResponseEntity<Void> {
-        bookService.registerBook(bookCreate)
-        return ResponseEntity.noContent().build()
+    fun registerBook(@Valid @RequestBody bookCreate: BookCreate): ResponseEntity<BookCreatedResponse> {
+        val createdResponse = bookService.registerBook(bookCreate)
+        return ResponseEntity.ok(createdResponse)
     }
 
     @PostMapping("/batch")
