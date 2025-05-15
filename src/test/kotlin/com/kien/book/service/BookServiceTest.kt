@@ -1,11 +1,8 @@
 package com.kien.book.service
 
-import com.kien.book.common.CustomException
+import com.kien.book.common.*
 import com.kien.book.model.Book
-import com.kien.book.model.dto.book.BookCondition
-import com.kien.book.model.dto.book.BookCreate
-import com.kien.book.model.dto.book.BookView
-import com.kien.book.common.Page
+import com.kien.book.model.dto.book.*
 import com.kien.book.repository.BookMapper
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -17,10 +14,14 @@ import org.mockito.kotlin.whenever
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.any
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.test.context.bean.override.mockito.MockitoBean
+import java.sql.SQLIntegrityConstraintViolationException
 import java.time.LocalDateTime
+import kotlin.test.assertFailsWith
 
 @SpringBootTest
 class BookServiceTest {
@@ -272,17 +273,302 @@ class BookServiceTest {
     @Nested
     inner class UpdateBookTest {
         @Test
-        fun `should call update on BookMapper`() {
-            val book = Book(
+        fun `return id and title when update succeeds`() {
+            val bookUpdate = BookUpdate(
                 id = 1L,
-                title = "Kotlin入門",
-                titleKana = "コトリン ニュウモン",
-                author = "山田太郎",
+                title = "Kotlin応用ガイド",
+                titleKana = "コトリン オウヨウ ガイド",
+                author = "佐藤次郎",
                 publisherId = 1L,
-                userId = 100L
+                userId = 100L,
+                price = 4200
             )
-            bookService.updateBook(book)
-            verify(bookMapper).update(book)
+
+            val expectedResult = BookUpdatedResponse(
+                id = 1L,
+                title = "Kotlin応用ガイド"
+            )
+
+            whenever(bookMapper.update(any())).thenReturn(1)
+            val bookUpdatedResponse = bookService.updateBook(bookUpdate)
+
+            assertThat(bookUpdatedResponse).isEqualTo(expectedResult)
+        }
+
+        @Test
+        fun `throw exception when id is negative`() {
+            val bookUpdate = BookUpdate(
+                id = -1L,
+                title = "Kotlin応用ガイド",
+                titleKana = "コトリン オウヨウ ガイド",
+                author = "佐藤次郎",
+                publisherId = 1L,
+                userId = 100L,
+                price = 4200
+            )
+
+            val expectedError = InvalidParamCustomException(
+                message = "入力された値が無効です。",
+                field = "id",
+                value = -1L
+            )
+
+            val realError = assertFailsWith<InvalidParamCustomException> {
+                bookService.updateBook(bookUpdate)
+            }
+
+            assertThat(realError.message).isEqualTo(expectedError.message)
+            assertThat(realError.field).isEqualTo(expectedError.field)
+            assertThat(realError.value).isEqualTo(expectedError.value)
+        }
+
+        @Test
+        fun `throw exception when id is 0`() {
+            val bookUpdate = BookUpdate(
+                id = 0L,
+                title = "Kotlin応用ガイド",
+                titleKana = "コトリン オウヨウ ガイド",
+                author = "佐藤次郎",
+                publisherId = 1L,
+                userId = 100L,
+                price = 4200
+            )
+
+            val expectedError = InvalidParamCustomException(
+                message = "入力された値が無効です。",
+                field = "id",
+                value = 0L
+            )
+
+            val realError = assertFailsWith<InvalidParamCustomException> {
+                bookService.updateBook(bookUpdate)
+            }
+
+            assertThat(realError.message).isEqualTo(expectedError.message)
+            assertThat(realError.field).isEqualTo(expectedError.field)
+            assertThat(realError.value).isEqualTo(expectedError.value)
+        }
+
+        @Test
+        fun `throw exception when publisherId is negative`() {
+            val bookUpdate = BookUpdate(
+                id = 1L,
+                title = "Kotlin応用ガイド",
+                titleKana = "コトリン オウヨウ ガイド",
+                author = "佐藤次郎",
+                publisherId = -1L,
+                userId = 100L,
+                price = 4200
+            )
+
+            val expectedError = InvalidParamCustomException(
+                message = "入力された値が無効です。",
+                field = "publisherId",
+                value = -1L
+            )
+
+            val realError = assertFailsWith<InvalidParamCustomException> {
+                bookService.updateBook(bookUpdate)
+            }
+
+            assertThat(realError.message).isEqualTo(expectedError.message)
+            assertThat(realError.field).isEqualTo(expectedError.field)
+            assertThat(realError.value).isEqualTo(expectedError.value)
+        }
+
+        @Test
+        fun `throw exception when publisherId is 0`() {
+            val bookUpdate = BookUpdate(
+                id = 1L,
+                title = "Kotlin応用ガイド",
+                titleKana = "コトリン オウヨウ ガイド",
+                author = "佐藤次郎",
+                publisherId = 0L,
+                userId = 100L,
+                price = 4200
+            )
+
+            val expectedError = InvalidParamCustomException(
+                message = "入力された値が無効です。",
+                field = "publisherId",
+                value = 0L
+            )
+
+            val realError = assertFailsWith<InvalidParamCustomException> {
+                bookService.updateBook(bookUpdate)
+            }
+
+            assertThat(realError.message).isEqualTo(expectedError.message)
+            assertThat(realError.field).isEqualTo(expectedError.field)
+            assertThat(realError.value).isEqualTo(expectedError.value)
+        }
+
+        @Test
+        fun `throw exception when userId is negative`() {
+            val bookUpdate = BookUpdate(
+                id = 1L,
+                title = "Kotlin応用ガイド",
+                titleKana = "コトリン オウヨウ ガイド",
+                author = "佐藤次郎",
+                publisherId = 1L,
+                userId = -1L,
+                price = 4200
+            )
+
+            val expectedError = InvalidParamCustomException(
+                message = "入力された値が無効です。",
+                field = "userId",
+                value = -1L
+            )
+
+            val realError = assertFailsWith<InvalidParamCustomException> {
+                bookService.updateBook(bookUpdate)
+            }
+
+            assertThat(realError.message).isEqualTo(expectedError.message)
+            assertThat(realError.field).isEqualTo(expectedError.field)
+            assertThat(realError.value).isEqualTo(expectedError.value)
+        }
+
+        @Test
+        fun `throw exception when userId is zero`() {
+            val bookUpdate = BookUpdate(
+                id = 1L,
+                title = "Kotlin応用ガイド",
+                titleKana = "コトリン オウヨウ ガイド",
+                author = "佐藤次郎",
+                publisherId = 1L,
+                userId = 0L,
+                price = 4200
+            )
+
+            val expectedError = InvalidParamCustomException(
+                message = "入力された値が無効です。",
+                field = "userId",
+                value = 0L
+            )
+
+            val realError = assertFailsWith<InvalidParamCustomException> {
+                bookService.updateBook(bookUpdate)
+            }
+
+            assertThat(realError.message).isEqualTo(expectedError.message)
+            assertThat(realError.field).isEqualTo(expectedError.field)
+            assertThat(realError.value).isEqualTo(expectedError.value)
+        }
+
+        @Test
+        fun `throw exception when price is negative`() {
+            val bookUpdate = BookUpdate(
+                id = 1L,
+                title = "Kotlin応用ガイド",
+                titleKana = "コトリン オウヨウ ガイド",
+                author = "佐藤次郎",
+                publisherId = 1L,
+                userId = 100L,
+                price = -1
+            )
+
+            val expectedError = InvalidParamCustomException(
+                message = "入力された値が無効です。",
+                field = "price",
+                value = -1
+            )
+
+            val realError = assertFailsWith<InvalidParamCustomException> {
+                bookService.updateBook(bookUpdate)
+            }
+
+            assertThat(realError.message).isEqualTo(expectedError.message)
+            assertThat(realError.field).isEqualTo(expectedError.field)
+            assertThat(realError.value).isEqualTo(expectedError.value)
+        }
+
+        @Test
+        fun `throw exception when publisherId does not exist`() {
+            val bookUpdate = BookUpdate(
+                id = 1L,
+                title = "Kotlin応用ガイド",
+                titleKana = "コトリン オウヨウ ガイド",
+                author = "佐藤次郎",
+                publisherId = 999L,
+                userId = 100L,
+                price = 4200
+            )
+
+            val expectedError = NonExistentForeignKeyCustomException(
+                message = "存在しない外部キーです。",
+                field = "publisherId",
+                value = 999L
+            )
+
+            val sqlException = SQLIntegrityConstraintViolationException("FOREIGN KEY (`publisher_id`) violation", "FOREIGN_KEY", 1452, null)
+            whenever(bookMapper.update(any())).thenThrow(DataIntegrityViolationException("FOREIGN KEY (`publisher_id`) violation", sqlException))
+
+            val realError = assertFailsWith<NonExistentForeignKeyCustomException> {
+                bookService.updateBook(bookUpdate)
+            }
+            assertThat(realError.message).isEqualTo(expectedError.message)
+            assertThat(realError.field).isEqualTo(expectedError.field)
+            assertThat(realError.value).isEqualTo(expectedError.value)
+        }
+
+        @Test
+
+        fun `throw exception when userId does not exist`() {
+            val bookUpdate = BookUpdate(
+                id = 1L,
+                title = "Kotlin応用ガイド",
+                titleKana = "コトリン オウヨウ ガイド",
+                author = "佐藤次郎",
+                publisherId = 1L,
+                userId = 999L,
+                price = 4200
+            )
+
+            val expectedError = NonExistentForeignKeyCustomException(
+                message = "存在しない外部キーです。",
+                field = "userId",
+                value = 999L
+            )
+
+            val sqlException = SQLIntegrityConstraintViolationException("FOREIGN KEY (`user_id`) violation", "FOREIGN_KEY", 1452, null)
+            whenever(bookMapper.update(any())).thenThrow(DataIntegrityViolationException("FOREIGN KEY (`user_id`) violation", sqlException))
+
+            val realError = assertFailsWith<NonExistentForeignKeyCustomException> {
+                bookService.updateBook(bookUpdate)
+            }
+            assertThat(realError.message).isEqualTo(expectedError.message)
+            assertThat(realError.field).isEqualTo(expectedError.field)
+            assertThat(realError.value).isEqualTo(expectedError.value)
+        }
+
+        @Test
+        fun `throw exception when book does not exist`() {
+            val bookUpdate = BookUpdate(
+                id = 999L,
+                title = "Kotlin応用ガイド",
+                titleKana = "コトリン オウヨウ ガイド",
+                author = "佐藤次郎",
+                publisherId = 1L,
+                userId = 100L,
+                price = 4200
+            )
+
+            val expectedError = NotFoundCustomException(
+                message = "指定IDの書籍情報が存在しません",
+                field = "id",
+                value = 999L
+            )
+
+            whenever(bookMapper.update(any())).thenReturn(0)
+
+            val realError = assertFailsWith<NotFoundCustomException> {
+                bookService.updateBook(bookUpdate)
+            }
+            assertThat(realError.message).isEqualTo(expectedError.message)
+            assertThat(realError.field).isEqualTo(expectedError.field)
+            assertThat(realError.value).isEqualTo(expectedError.value)
         }
     }
 

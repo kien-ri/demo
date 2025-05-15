@@ -1,5 +1,6 @@
 package com.kien.book.repository
 
+import com.kien.book.model.Book
 import com.kien.book.model.dto.book.BookView
 import org.junit.jupiter.api.Test
 import org.mybatis.spring.boot.test.autoconfigure.MybatisTest
@@ -9,11 +10,15 @@ import org.springframework.test.context.jdbc.Sql
 import org.springframework.test.context.jdbc.Sql.ExecutionPhase
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
+import org.springframework.dao.DataIntegrityViolationException
+import java.sql.SQLIntegrityConstraintViolationException
 import java.time.LocalDateTime
+import kotlin.test.assertFailsWith
 
 @MybatisTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
-@Sql(scripts = ["/schema.sql"], executionPhase = ExecutionPhase.BEFORE_TEST_CLASS)
 class BookMapperTest {
 
     @Autowired
@@ -533,39 +538,142 @@ class BookMapperTest {
     }
 
     @Nested
+    @Sql(scripts = ["/schema.sql"], executionPhase = ExecutionPhase.BEFORE_TEST_CLASS)
+    @Sql(
+        scripts = [
+            "/repository/data/books/update/publisher.sql",
+            "/repository/data/books/update/user.sql",
+            "/repository/data/books/update/books.sql"
+        ],
+        executionPhase = ExecutionPhase.BEFORE_TEST_CLASS
+    )
     inner class UpdateTest {
         @Test
         fun `update should update book and return affected rows`() {
+
+            val current = LocalDateTime.of(2025, 5, 15, 16, 10, 30)
             val book = Book(
                 id = 1L,
-                title = "最新版Kotlin",
-                titleKana = "サイシンバン コトリン",
-                author = "田中四",
-                publisherId = 2L,
-                userId = 101L,
+                title = "Kotlin応用ガイド",
+                titleKana = "コトリン オウヨウ ガイド",
+                author = "佐藤次郎",
+                publisherId = 1L,
+                userId = 100L,
+                price = 4200,
+                updatedAt = current
+            )
+
+            val expectedResult = BookView(
+                id = 1L,
+                title = "Kotlin応用ガイド",
+                titleKana = "コトリン オウヨウ ガイド",
+                author = "佐藤次郎",
+                publisherId = 1L,
+                publisherName = "技術出版社",
+                userId = 100L,
+                userName = "テストユーザー",
+                price = 4200,
+                isDeleted = false,
+                createdAt = LocalDateTime.of(2023, 1, 1, 10, 0, 0),
+                updatedAt = current
             )
 
             val pre = bookMapper.getById(1L)
             assertThat(pre?.title).isEqualTo("Kotlin入門")
-            assertThat(pre?.titleKana).isEqualTo("コトリン ニュウモン")
-            assertThat(pre?.author).isEqualTo("山田太郎")
-            assertThat(pre?.publisherId).isEqualTo(1L)
-            assertThat(pre?.userId).isEqualTo(100L)
 
-            val startTime = LocalDateTime.now()
             val affectedRows = bookMapper.update(book)
-            val endTime = LocalDateTime.now()
-
             assertThat(affectedRows).isEqualTo(1)
+
             val updatedBook = bookMapper.getById(1L)
-            assertThat(updatedBook).isNotNull()
-            assertThat(updatedBook?.title).isEqualTo("最新版Kotlin")
-            assertThat(updatedBook?.titleKana).isEqualTo("サイシンバン コトリン")
-            assertThat(updatedBook?.author).isEqualTo("田中四")
-            assertThat(updatedBook?.publisherId).isEqualTo(2L)
-            assertThat(updatedBook?.userId).isEqualTo(101L)
-            assertThat(updatedBook?.updatedAt).isAfterOrEqualTo(startTime)
-            assertThat(updatedBook?.updatedAt).isBeforeOrEqualTo(endTime)
+            assertThat(updatedBook).isEqualTo(expectedResult)
+        }
+
+        @Test
+        fun `return 0 when book does not exist`() {
+            val current = LocalDateTime.of(2025, 5, 15, 16, 10, 30)
+            val book = Book(
+                id = 999L,
+                title = "Kotlin応用ガイド",
+                titleKana = "コトリン オウヨウ ガイド",
+                author = "佐藤次郎",
+                publisherId = 1L,
+                userId = 100L,
+                price = 4200,
+                updatedAt = current
+            )
+
+            val nothing = bookMapper.getById(999L)
+            assertThat(nothing).isNull()
+
+            val affectedRows = bookMapper.update(book)
+            assertThat(affectedRows).isEqualTo(0)
+        }
+
+        @Test
+        fun `return 0 when book is logically deleted`() {
+            val current = LocalDateTime.of(2025, 5, 15, 16, 10, 30)
+            val book = Book(
+                id = 2L,
+                title = "Kotlin応用ガイド",
+                titleKana = "コトリン オウヨウ ガイド",
+                author = "佐藤次郎",
+                publisherId = 1L,
+                userId = 100L,
+                price = 4200,
+                updatedAt = current
+            )
+
+            val nothing = bookMapper.getById(2L)
+            assertThat(nothing).isNull()
+
+            val affectedRows = bookMapper.update(book)
+            assertThat(affectedRows).isEqualTo(0)
+        }
+
+        @Test
+        fun `throw exception when publisherId does not exist`() {
+            val current = LocalDateTime.of(2025, 5, 15, 16, 10, 30)
+            val book = Book(
+                id = 1L,
+                title = "Kotlin応用ガイド",
+                titleKana = "コトリン オウヨウ ガイド",
+                author = "佐藤次郎",
+                publisherId = 999L,
+                userId = 100L,
+                price = 4200,
+                updatedAt = current
+            )
+
+            val e = assertFailsWith<DataIntegrityViolationException> {
+                bookMapper.update(book)
+            }
+            val rootCause = e.rootCause
+            assertThat(rootCause is SQLIntegrityConstraintViolationException)
+            val errorCode = (rootCause as SQLIntegrityConstraintViolationException).errorCode
+            assertThat(errorCode).isEqualTo(1452)
+        }
+
+        @Test
+        fun `throw exception when userId does not exist`() {
+            val current = LocalDateTime.of(2025, 5, 15, 16, 10, 30)
+            val book = Book(
+                id = 1L,
+                title = "Kotlin応用ガイド",
+                titleKana = "コトリン オウヨウ ガイド",
+                author = "佐藤次郎",
+                publisherId = 1L,
+                userId = 999L,
+                price = 4200,
+                updatedAt = current
+            )
+
+            val e = assertFailsWith<DataIntegrityViolationException> {
+                bookMapper.update(book)
+            }
+            val rootCause = e.rootCause
+            assertThat(rootCause is SQLIntegrityConstraintViolationException)
+            val errorCode = (rootCause as SQLIntegrityConstraintViolationException).errorCode
+            assertThat(errorCode).isEqualTo(1452)
         }
 
         @Test
