@@ -40,6 +40,42 @@ class GlobalExceptionHandler {
 
     val MSG_STR: String = "message"
 
+    @ExceptionHandler(DuplicateKeyCustomException::class)
+    fun duplicateKeyCustomExceptionHandler(e: DuplicateKeyCustomException): ResponseEntity<Any> {
+        val responseBody = mapOf(
+            e.field to e.value,
+            MSG_STR to e.message
+        )
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(responseBody)
+    }
+
+    @ExceptionHandler(NonExistentForeignKeyCustomException::class)
+    fun nonExistentForeignKeyCustomExceptionHandler(e: NonExistentForeignKeyCustomException): ResponseEntity<Any> {
+        val responseBody = mapOf(
+            e.field to e.value,
+            MSG_STR to e.message
+        )
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(responseBody)
+    }
+
+    @ExceptionHandler(NotFoundCustomException::class)
+    fun notFoundCustomExceptionHandler(e: NotFoundCustomException): ResponseEntity<Any> {
+        val responseBody = mapOf(
+            e.field to e.value,
+            MSG_STR to e.message
+        )
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(responseBody)
+    }
+
+    @ExceptionHandler(InvalidParamCustomException::class)
+    fun invalidParamExceptionHandler(e: InvalidParamCustomException): ResponseEntity<Any> {
+        val responseBody = mapOf(
+            e.field to e.value,
+            MSG_STR to e.message
+        )
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseBody)
+    }
+
     @ExceptionHandler(CustomException::class)
     fun customExceptionHandler(e: CustomException): ResponseEntity<String> {
         return ResponseEntity.unprocessableEntity().body(e.message)

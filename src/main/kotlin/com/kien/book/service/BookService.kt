@@ -1,6 +1,8 @@
 package com.kien.book.service
 
 import com.kien.book.common.CustomException
+import com.kien.book.common.DuplicateKeyCustomException
+import com.kien.book.common.NonExistentForeignKeyCustomException
 import com.kien.book.model.dto.book.BookCondition
 import com.kien.book.common.Page
 import com.kien.book.model.Book
@@ -10,10 +12,14 @@ import com.kien.book.model.dto.book.BookView
 import com.kien.book.repository.BookMapper
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.cglib.core.Local
+import org.springframework.dao.DataIntegrityViolationException
+import org.springframework.dao.DuplicateKeyException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.sql.SQLIntegrityConstraintViolationException
 import java.time.LocalDateTime
 import kotlin.math.ceil
+import kotlin.reflect.full.memberProperties
 
 @Service
 class BookService(
@@ -41,6 +47,12 @@ class BookService(
 
     @Value("\${messages.errors.invalidUserId}")
     val MSG_INVALID_USER_ID: String = ""
+
+    @Value("\${messages.errors.nonExistentFK}")
+    val MSG_NONEXISTENT_FK: String = ""
+
+    @Value("\${messages.errors.duplicateKey}")
+    val MSG_DUPLICATE_KEY: String = ""
 
     fun getBookById(id: Long): BookView? {
         require(id >= 1) { throw CustomException(MSG_INVALID_VALUE) }
@@ -125,10 +137,33 @@ class BookService(
             updatedAt = currentTime
         )
 
-        val insertedCount = bookMapper.save(book)
+        var insertedCount: Int = -1
+        try {
+            insertedCount = bookMapper.save(book)
+        } catch (e: DuplicateKeyException) {
+            throw DuplicateKeyCustomException(
+                message = MSG_DUPLICATE_KEY,
+                field = Book::id.name,
+                value = bookCreate.id
+            )
+        } catch (e: DataIntegrityViolationException) {
+            if (isForeignKeyViolation(e)) {
+                val errorMsg = e.message ?: ""
+                val propertyName = extractForeignKeyColumn(errorMsg)?.toCamelCase() ?: ""
+                val property = BookCreate::class.memberProperties.find { it.name == propertyName }
+                val propertyValue = property?.get(bookCreate)
+                throw NonExistentForeignKeyCustomException(
+                    message = MSG_NONEXISTENT_FK,
+                    field = propertyName,
+                    value = propertyValue
+                )
+            }
+        }
+
         if (insertedCount <= 0) {
             throw CustomException(
-                message = MSG_INSERT_ERROR)
+                message = MSG_INSERT_ERROR
+            )
         }
         val bookId = book.id ?: throw CustomException(message = MSG_NO_ID_GENERATED)
 
@@ -167,5 +202,22 @@ class BookService(
             mapperClass = BookMapper::class.java,
             operation = BookMapper::update
         )
+    }
+
+    private fun isForeignKeyViolation(e: DataIntegrityViolationException): Boolean {
+        val rootCause = e.rootCause
+        return rootCause is SQLIntegrityConstraintViolationException && rootCause.errorCode == 1452
+    }
+
+    private fun extractForeignKeyColumn(errorMessage: String): String? {
+        val regex = Regex("FOREIGN KEY \\(`(\\w+)`\\)")
+        val matchResult = regex.find(errorMessage)
+        return matchResult?.groupValues?.get(1)
+    }
+
+    private fun String.toCamelCase(): String {
+        return this.split("_").mapIndexed { index, word ->
+            if (index == 0) word else word.replaceFirstChar { it.uppercase() }
+        }.joinToString("")
     }
 }

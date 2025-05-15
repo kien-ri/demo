@@ -463,7 +463,6 @@ class BookMapperTest {
         ],
         executionPhase = ExecutionPhase.BEFORE_TEST_CLASS
     )
-    @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
     inner class SaveTest {
 
         @Autowired
@@ -473,8 +472,6 @@ class BookMapperTest {
          * 新規登録するデータの主キーidを指定せずに登録するテスト
          */
         @Test
-        @Order(1)
-        @Rollback(false)
         fun `save should insert book without id`() {
             //現在の最大idが4で登録されていることを検証
             val currentMaxId = booksTestMapper.getMaxId()
@@ -520,8 +517,6 @@ class BookMapperTest {
          * 新規登録するデータの主キーidを指定して登録するテスト
          */
         @Test
-        @Order(2)
-        @Rollback(false)
         fun `save should insert book with specified id`() {
             // 事前にid=10のデータが存在しないことを検証
             val temp = bookMapper.getById(10L)
@@ -566,17 +561,16 @@ class BookMapperTest {
         /**
          * idのincrement機能をテストする
          *
-         * @Order(3)で実行する順番を3番目とする。その前に、
-         * 1番目のテストでID指定なしのINSERTテストし、id = 5のデータをINSERTする
-         * 2番目のテストでID指定でid = 10 のデータをINSERTする
-         * ここではそれらに引き続き正しくid = 11のプライマリーキーが生成されることを検証
+         * 1. 最初にID指定なしのINSERTテストし、id = 5のデータをINSERTする
+         * 2. 次にID指定でid = 10 のデータをINSERTする
+         * 3. 最後にもう一度ID指定なしで登録し、正しくid = 11のプライマリーキーが生成されることを検証
          */
         @Test
-        @Order(3)
         fun `save should respect auto increment after manual id insertion`() {
-            //現在の最大idが10で登録されていることを検証
+            // ----------------------------------- 1 -----------------------------------------
+            //現在の最大idが4で登録されていることを検証
             val currentMaxId = booksTestMapper.getMaxId()
-            assertThat(currentMaxId).isEqualTo(10L)
+            assertThat(currentMaxId).isEqualTo(4L)
 
             val currentTime = LocalDateTime.of(2025, 5, 4, 13, 20, 10)
 
@@ -595,11 +589,11 @@ class BookMapperTest {
             // 挿入された行数が1であること
             assertThat(affectedRows).isEqualTo(1)
             // mybatisのuseGeneratedKey機能が正しく挿入されたデータのidを賦与
-            assertThat(book.id).isEqualTo(11L)
+            assertThat(book.id).isEqualTo(5L)
 
-            val insertedBook = bookMapper.getById(11L)
+            val insertedBook = bookMapper.getById(5L)
             val expectedBook = BookView(
-                id = 11L,
+                id = 5L,
                 title = "Java実践ガイド",
                 titleKana = "ジャバ ジッセン ガイド",
                 author = "田中太郎",
@@ -612,6 +606,70 @@ class BookMapperTest {
                 updatedAt = currentTime
             )
             assertThat(insertedBook).isEqualTo(expectedBook)
+
+            // ----------------------------------- 2 -----------------------------------------
+            val book2 = Book(
+                id = 10L,
+                title = "Kotlin実践ガイド",
+                titleKana = "コトリン ジッセン ガイド",
+                author = "山田花子",
+                publisherId = 1L,
+                userId = 100L,
+                price = 3500,
+                createdAt = currentTime,
+                updatedAt = currentTime
+            )
+            val affectedRows2 = bookMapper.save(book2)
+            assertThat(affectedRows2).isEqualTo(1)
+            assertThat(book2.id).isEqualTo(10L)
+
+            val insertedBook2 = bookMapper.getById(10L)
+            val expectedBook2 = BookView(
+                id = 10L,
+                title = "Kotlin実践ガイド",
+                titleKana = "コトリン ジッセン ガイド",
+                author = "山田花子",
+                publisherId = 1L,
+                publisherName = "技術出版社",
+                userId = 100L,
+                userName = "テストユーザー",
+                price = 3500,
+                createdAt = currentTime,
+                updatedAt = currentTime
+            )
+            assertThat(insertedBook2).isEqualTo(expectedBook2)
+
+            // ----------------------------------- 3 -----------------------------------------
+            val book3 = Book(
+                id = null,
+                title = "Spring Bootガイド",
+                titleKana = "スプリング ブート ガイド",
+                author = "鈴木一郎",
+                publisherId = 1L,
+                userId = 100L,
+                price = 3800,
+                createdAt = currentTime,
+                updatedAt = currentTime
+            )
+            val affectedRows3 = bookMapper.save(book3)
+            assertThat(affectedRows3).isEqualTo(1)
+            assertThat(book3.id).isEqualTo(11L)
+
+            val insertedBook3 = bookMapper.getById(11L)
+            val expectedBook3 = BookView(
+                id = 11L,
+                title = "Spring Bootガイド",
+                titleKana = "スプリング ブート ガイド",
+                author = "鈴木一郎",
+                publisherId = 1L,
+                publisherName = "技術出版社",
+                userId = 100L,
+                userName = "テストユーザー",
+                price = 3800,
+                createdAt = currentTime,
+                updatedAt = currentTime
+            )
+            assertThat(insertedBook3).isEqualTo(expectedBook3)
         }
 
         /**

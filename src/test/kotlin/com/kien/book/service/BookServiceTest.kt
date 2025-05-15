@@ -1,6 +1,8 @@
 package com.kien.book.service
 
 import com.kien.book.common.CustomException
+import com.kien.book.common.DuplicateKeyCustomException
+import com.kien.book.common.NonExistentForeignKeyCustomException
 import com.kien.book.model.Book
 import com.kien.book.model.dto.book.BookCreate
 import com.kien.book.model.dto.book.BookView
@@ -239,11 +241,21 @@ class BookServiceTest {
         @Test
         fun `should throw DuplicateKeyException when id is duplicated`() {
             val bookCreateWithId = bookCreate.copy(id = 1L)
-            whenever(bookMapper.save(any())).thenThrow(DuplicateKeyException("Duplicate key"))
 
-            assertFailsWith<DuplicateKeyException> {
+            val expectedError = DuplicateKeyCustomException(
+                message = "プライマリキーが重複しました。別の値にしてください",
+                field = "id",
+                value = 1L
+            )
+
+            whenever(bookMapper.save(any())).thenThrow(expectedError)
+
+            val realError = assertFailsWith<DuplicateKeyCustomException> {
                 bookService.registerBook(bookCreateWithId)
             }
+            assertThat(realError.message).isEqualTo(expectedError.message)
+            assertThat(realError.field).isEqualTo(expectedError.field)
+            assertThat(realError.value).isEqualTo(expectedError.value)
         }
 
         /**
@@ -254,17 +266,19 @@ class BookServiceTest {
         @Test
         fun `should throw DataIntegrityViolationException when publisherId does not exist`() {
             val bookCreateWithInvalidPublisherId = bookCreate.copy(publisherId = 11111111L)
-            val sqlException = SQLIntegrityConstraintViolationException("Foreign key constraint violation", "FOREIGN_KEY", 1452, null)
+            val expectedError = NonExistentForeignKeyCustomException(
+                message = "存在しない外部キーです。",
+                field = "publisherId",
+                value = 11111111L
+            )
+            whenever(bookMapper.save(any())).thenThrow(expectedError)
 
-            whenever(bookMapper.save(any())).thenThrow(DataIntegrityViolationException("Foreign key violation", sqlException))
-
-            val e = assertFailsWith<DataIntegrityViolationException> {
+            val realError = assertFailsWith<NonExistentForeignKeyCustomException> {
                 bookService.registerBook(bookCreateWithInvalidPublisherId)
             }
-            val rootCause = e.rootCause
-            assertThat(rootCause is SQLIntegrityConstraintViolationException)
-            val errorCode = (rootCause as SQLIntegrityConstraintViolationException).errorCode
-            assertThat(errorCode).isEqualTo(1452)
+            assertThat(realError.message).isEqualTo(expectedError.message)
+            assertThat(realError.field).isEqualTo(expectedError.field)
+            assertThat(realError.value).isEqualTo(expectedError.value)
         }
 
         /**
@@ -275,16 +289,19 @@ class BookServiceTest {
         @Test
         fun `should throw DataIntegrityViolationException when userId does not exist`() {
             val bookCreateWithInvalidUserId = bookCreate.copy(userId = 10000000L)
-            val sqlException = SQLIntegrityConstraintViolationException("Foreign key constraint violation", "FOREIGN_KEY", 1452, null)
-            whenever(bookMapper.save(any())).thenThrow(DataIntegrityViolationException("Foreign key violation", sqlException))
+            val expectedError = NonExistentForeignKeyCustomException(
+                message = "存在しない外部キーです。",
+                field = "userId",
+                value = 10000000L
+            )
+            whenever(bookMapper.save(any())).thenThrow(expectedError)
 
-            val e = assertFailsWith<DataIntegrityViolationException> {
+            val realError = assertFailsWith<NonExistentForeignKeyCustomException> {
                 bookService.registerBook(bookCreateWithInvalidUserId)
             }
-            val rootCause = e.rootCause
-            assertThat(rootCause is SQLIntegrityConstraintViolationException)
-            val errorCode = (rootCause as SQLIntegrityConstraintViolationException).errorCode
-            assertThat(errorCode).isEqualTo(1452)
+            assertThat(realError.message).isEqualTo(expectedError.message)
+            assertThat(realError.field).isEqualTo(expectedError.field)
+            assertThat(realError.value).isEqualTo(expectedError.value)
         }
 
         /**

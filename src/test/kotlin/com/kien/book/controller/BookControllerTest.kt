@@ -473,7 +473,8 @@ class BookControllerTest {
 
             whenever(bookService.registerBook(bookCreate)).thenThrow(DuplicateKeyException(""))
             val expectedResponseBody = mapOf(
-                "error" to "プライマリキーが重複しました。別の値にしてください"
+                "id" to 1L,
+                "message" to "プライマリキーが重複しました。別の値にしてください"
             )
 
             val mvcResult = mockMvc.post("/books") {
@@ -502,7 +503,8 @@ class BookControllerTest {
             val dataIntegrityViolation = DataIntegrityViolationException("Foreign key violation", sqlException)
             whenever(bookService.registerBook(bookCreate)).thenThrow(dataIntegrityViolation)
             val expectedResponseBody = mapOf(
-                "error" to "存在しない外部キーです。"
+                "publisherId" to 11111111L,
+                "message" to "存在しない外部キーです。"
             )
 
             val mvcResult = mockMvc.post("/books") {
@@ -531,7 +533,8 @@ class BookControllerTest {
             val dataIntegrityViolation = DataIntegrityViolationException("Foreign key violation", sqlException)
             whenever(bookService.registerBook(bookCreate)).thenThrow(dataIntegrityViolation)
             val expectedResponseBody = mapOf(
-                "error" to "存在しない外部キーです。"
+                "userId" to 10000000L,
+                "message" to "存在しない外部キーです。"
             )
 
             val mvcResult = mockMvc.post("/books") {
