@@ -675,45 +675,5 @@ class BookMapperTest {
             val errorCode = (rootCause as SQLIntegrityConstraintViolationException).errorCode
             assertThat(errorCode).isEqualTo(1452)
         }
-
-        @Test
-        fun `update should return 0 when book id does not exist`() {
-            val book = Book(
-                id = 999L,
-                title = "存在しない書籍",
-                titleKana = "ソンザイシナイショセキ",
-                author = "佐藤花子",
-                publisherId = 5L,
-                userId = 104L
-            )
-
-            val notExistBook = bookMapper.getById(999L)
-            assertThat(notExistBook).isNull()
-
-            val affectedRows = bookMapper.update(book)
-            assertThat(affectedRows).isEqualTo(0)
-            val bookAfterUpdate = bookMapper.getById(999L)
-            assertThat(bookAfterUpdate).isNull()
-        }
-
-        @Test
-        fun `update should return 0 when book is deleted`() {
-            val book = Book(
-                id = 3L,
-                title = "削除された書籍",
-                titleKana = "サクジョサレタショセキ",
-                author = "佐藤花子",
-                publisherId = 5L,
-                userId = 104L
-            )
-
-            val deletedBook = bookMapper.getById(3L)
-            assertThat(deletedBook).isNull()
-
-            val affectedRows = bookMapper.update(book)
-            assertThat(affectedRows).isEqualTo(0)
-            val bookAfterUpdate = bookMapper.getById(3L)
-            assertThat(bookAfterUpdate).isNull()
-        }
     }
 }

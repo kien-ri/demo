@@ -577,10 +577,11 @@ class BookControllerTest {
                 "message" to "指定IDの書籍情報が存在しません"
             )
 
-            mockMvc.put("/books") {
+            val mvcResult = mockMvc.put("/books") {
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsString(bookUpdate)
-            }.andExpect {
+            }
+            mvcResult.andExpect {
                 status { isNotFound() }
                 content { json(objectMapper.writeValueAsString(expectedResponse)) }
             }
@@ -603,10 +604,11 @@ class BookControllerTest {
                 "error" to "予想外のエラーが発生しました。エラー内容：予想外のエラー"
             )
 
-            mockMvc.put("/books") {
+            val mvcResult = mockMvc.put("/books") {
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsString(bookUpdate)
-            }.andExpect {
+            }
+            mvcResult.andExpect {
                 status { isInternalServerError() }
                 content { json(objectMapper.writeValueAsString(expectedResponse)) }
             }
