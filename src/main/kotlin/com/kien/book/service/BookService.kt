@@ -147,6 +147,7 @@ class BookService(
                     value = propertyValue
                 )
             }
+            throw e
         }
 
         if (updatedCount <= 0) {

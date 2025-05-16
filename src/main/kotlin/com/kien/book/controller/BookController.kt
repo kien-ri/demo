@@ -66,7 +66,6 @@ class BookController(private val bookService: BookService) {
 
     @PutMapping
     fun updateBook(@RequestBody @Valid bookUpdate: BookUpdate): ResponseEntity<BookUpdatedResponse> {
-//    fun updateBook(@RequestBody bookUpdate: BookUpdate): ResponseEntity<BookUpdatedResponse> {
         val bookUpdatedResponse = bookService.updateBook(bookUpdate)
         return ResponseEntity.ok(bookUpdatedResponse)
     }

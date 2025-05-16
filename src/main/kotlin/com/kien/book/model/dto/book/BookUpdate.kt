@@ -6,13 +6,23 @@ import jakarta.validation.constraints.NotBlank
 import java.time.LocalDateTime
 
 data class BookUpdate(
-    @field:Min(1) val id: Long,
+    @field:Min(1)
+    val id: Long,
+
     val title: String?,
+
     val titleKana: String?,
+
     val author: String?,
-    @field:Min(1) val publisherId: Long?,
-    @field:Min(1) val userId: Long?,
-    @field:Min(0) val price: Int?
+
+    @field:Min(1)
+    val publisherId: Long?,
+
+    @field:Min(1)
+    val userId: Long?,
+
+    @field:Min(0)
+    val price: Int?
 ) {
     fun toEntity(
         updatedAt: LocalDateTime? = null
