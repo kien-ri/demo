@@ -64,11 +64,10 @@ class BookController(private val bookService: BookService) {
         return ResponseEntity.noContent().build()
     }
 
-    @PutMapping("/{id}")
-    fun updateBook(@PathVariable @Positive id: Long, @RequestBody @Valid bookUpdate: BookUpdate): ResponseEntity<Void> {
-        val book = bookUpdate.toEntity()
-        bookService.updateBook(book)
-        return ResponseEntity.noContent().build()
+    @PutMapping
+    fun updateBook(@RequestBody @Valid bookUpdate: BookUpdate): ResponseEntity<BookUpdatedResponse> {
+        val bookUpdatedResponse = bookService.updateBook(bookUpdate)
+        return ResponseEntity.ok(bookUpdatedResponse)
     }
 
     @PutMapping("/batch")

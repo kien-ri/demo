@@ -179,7 +179,8 @@
             author = #{author},
             publisher_id = #{publisherId},
             user_id = #{userId},
-            price = #{price}
+            price = #{price},
+            updated_at = #{updatedAt}
         WHERE
             id = #{id}
         AND is_deleted = false
