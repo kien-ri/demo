@@ -158,6 +158,7 @@ class BookService(
                     value = propertyValue
                 )
             }
+            throw e
         }
 
         if (insertedCount <= 0) {

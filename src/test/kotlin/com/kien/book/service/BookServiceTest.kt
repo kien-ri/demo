@@ -271,7 +271,17 @@ class BookServiceTest {
                 field = "publisherId",
                 value = 11111111L
             )
-            whenever(bookMapper.save(any())).thenThrow(expectedError)
+            val sqlException = SQLIntegrityConstraintViolationException(
+                "FOREIGN KEY (`publisher_id`) violation",
+                "FOREIGN_KEY",
+                1452,
+                null
+            )
+            val springException = DataIntegrityViolationException(
+                "FOREIGN KEY (`publisher_id`) violation",
+                sqlException
+            )
+            whenever(bookMapper.save(any())).thenThrow(springException)
 
             val realError = assertFailsWith<NonExistentForeignKeyCustomException> {
                 bookService.registerBook(bookCreateWithInvalidPublisherId)
@@ -294,7 +304,17 @@ class BookServiceTest {
                 field = "userId",
                 value = 10000000L
             )
-            whenever(bookMapper.save(any())).thenThrow(expectedError)
+            val sqlException = SQLIntegrityConstraintViolationException(
+                "FOREIGN KEY (`user_id`) violation",
+                "FOREIGN_KEY",
+                1452,
+                null
+            )
+            val springException = DataIntegrityViolationException(
+                "FOREIGN KEY (`user_id`) violation",
+                sqlException
+            )
+            whenever(bookMapper.save(any())).thenThrow(springException)
 
             val realError = assertFailsWith<NonExistentForeignKeyCustomException> {
                 bookService.registerBook(bookCreateWithInvalidUserId)
@@ -302,6 +322,21 @@ class BookServiceTest {
             assertThat(realError.message).isEqualTo(expectedError.message)
             assertThat(realError.field).isEqualTo(expectedError.field)
             assertThat(realError.value).isEqualTo(expectedError.value)
+        }
+
+        /**
+         * 外部キーが存在しない以外の場合のDataIntegrityViolationExceptionは、
+         * 予想外エラーとしてみられ、そのままthrowされる。
+         */
+        @Test
+        fun `should throw exception when vendor code is not 1452`() {
+            val sqlException = SQLIntegrityConstraintViolationException("模擬予想外SQLIntegrityConstraintViolationException", "予想外", 1111, null)
+            val expectedException = DataIntegrityViolationException("模擬予想外DataIntegrityViolationException", sqlException)
+            whenever(bookMapper.save(any())).thenThrow(expectedException)
+
+            assertFailsWith<DataIntegrityViolationException> {
+                bookService.registerBook(bookCreate)
+            }
         }
 
         /**
