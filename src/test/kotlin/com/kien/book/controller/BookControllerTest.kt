@@ -1,29 +1,30 @@
 package com.kien.book.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.kien.book.common.Page
-import com.kien.book.model.dto.book.*
+import com.kien.book.common.DuplicateKeyCustomException
+import com.kien.book.common.NonExistentForeignKeyCustomException
+import com.kien.book.model.dto.book.BookCreate
+import com.kien.book.model.dto.book.BookCreatedResponse
+import com.kien.book.model.dto.book.BookView
 import com.kien.book.service.BookService
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.whenever
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
-import org.springframework.context.annotation.Bean
-import org.springframework.test.context.junit.jupiter.SpringExtension
-import java.time.LocalDateTime
+import org.mockito.Mockito
 import org.mockito.Mockito.mock
-import org.springframework.beans.factory.annotation.Value
+import org.mockito.kotlin.*
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
-import org.springframework.dao.DataIntegrityViolationException
-import org.springframework.dao.DuplicateKeyException
+import org.springframework.context.annotation.Bean
 import org.springframework.http.MediaType
 import org.springframework.test.context.bean.override.mockito.MockitoBean
-import org.springframework.test.web.servlet.*
-import java.sql.SQLIntegrityConstraintViolationException
+import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.get
+import org.springframework.test.web.servlet.post
+import java.time.LocalDateTime
+
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -37,12 +38,6 @@ class BookControllerTest {
 
     @MockitoBean
     private lateinit var bookService: BookService
-
-    @TestConfiguration
-    class TestConfig {
-        @Bean
-        fun bookService(): BookService = mock(BookService::class.java)
-    }
 
     @Nested
     inner class GetBookByIdTest {
@@ -222,6 +217,8 @@ class BookControllerTest {
                 status { isOk() }
                 content { objectMapper.writeValueAsString(expectedResult) }
             }
+
+            verify(bookService, times(1)).registerBook(any())
         }
 
         /**
@@ -253,6 +250,8 @@ class BookControllerTest {
                 status { isOk() }
                 content { objectMapper.writeValueAsString(expectedResult) }
             }
+
+            verify(bookService, times(1)).registerBook(any())
         }
 
         @Test
@@ -283,6 +282,8 @@ class BookControllerTest {
                 status { isBadRequest() }
                 content { objectMapper.writeValueAsString(expectedResponseBody) }
             }
+
+            verify(bookService, never()).registerBook(any())
         }
 
         @Test
@@ -312,6 +313,8 @@ class BookControllerTest {
                 status { isBadRequest() }
                 content { objectMapper.writeValueAsString(expectedResponseBody) }
             }
+
+            verify(bookService, never()).registerBook(any())
         }
 
         @Test
@@ -341,6 +344,8 @@ class BookControllerTest {
                 status { isBadRequest() }
                 content { objectMapper.writeValueAsString(expectedResponseBody) }
             }
+
+            verify(bookService, never()).registerBook(any())
         }
 
         @Test
@@ -370,6 +375,8 @@ class BookControllerTest {
                 status { isBadRequest() }
                 content { objectMapper.writeValueAsString(expectedResponseBody) }
             }
+
+            verify(bookService, never()).registerBook(any())
         }
 
         @Test
@@ -399,6 +406,8 @@ class BookControllerTest {
                 status { isBadRequest() }
                 content { objectMapper.writeValueAsString(expectedResponseBody) }
             }
+
+            verify(bookService, never()).registerBook(any())
         }
 
         @Test
@@ -428,6 +437,8 @@ class BookControllerTest {
                 status { isBadRequest() }
                 content { objectMapper.writeValueAsString(expectedResponseBody) }
             }
+
+            verify(bookService, never()).registerBook(any())
         }
 
         @Test
@@ -457,6 +468,8 @@ class BookControllerTest {
                 status { isBadRequest() }
                 content { objectMapper.writeValueAsString(expectedResponseBody) }
             }
+
+            verify(bookService, never()).registerBook(any())
         }
 
         @Test
@@ -471,7 +484,12 @@ class BookControllerTest {
                 userId = 100L
             )
 
-            whenever(bookService.registerBook(bookCreate)).thenThrow(DuplicateKeyException(""))
+            val expectedError = DuplicateKeyCustomException(
+                message = "プライマリキーが重複しました。別の値にしてください",
+                field = "id",
+                value = 1L
+            )
+            whenever(bookService.registerBook(bookCreate)).thenThrow(expectedError)
             val expectedResponseBody = mapOf(
                 "id" to 1L,
                 "message" to "プライマリキーが重複しました。別の値にしてください"
@@ -485,6 +503,8 @@ class BookControllerTest {
                 status { isConflict() }
                 content { objectMapper.writeValueAsString(expectedResponseBody) }
             }
+
+            verify(bookService, times(1)).registerBook(any())
         }
 
         @Test
@@ -499,9 +519,12 @@ class BookControllerTest {
                 userId = 100L
             )
 
-            val sqlException = SQLIntegrityConstraintViolationException("Foreign key constraint violation", "FOREIGN_KEY", 1452, null)
-            val dataIntegrityViolation = DataIntegrityViolationException("Foreign key violation", sqlException)
-            whenever(bookService.registerBook(bookCreate)).thenThrow(dataIntegrityViolation)
+            val expectedError = NonExistentForeignKeyCustomException(
+                message = "存在しない外部キーです。",
+                field = "publisherId",
+                value = 11111111L
+            )
+            whenever(bookService.registerBook(bookCreate)).thenThrow(expectedError)
             val expectedResponseBody = mapOf(
                 "publisherId" to 11111111L,
                 "message" to "存在しない外部キーです。"
@@ -513,8 +536,10 @@ class BookControllerTest {
             }
             mvcResult.andExpect {
                 status { isNotFound() }
-                content { objectMapper.writeValueAsString(expectedResponseBody) }
+                content { json(objectMapper.writeValueAsString(expectedResponseBody)) }
             }
+
+            verify(bookService, times(1)).registerBook(any())
         }
 
         @Test
@@ -529,9 +554,12 @@ class BookControllerTest {
                 userId = 10000000L
             )
 
-            val sqlException = SQLIntegrityConstraintViolationException("Foreign key constraint violation", "FOREIGN_KEY", 1452, null)
-            val dataIntegrityViolation = DataIntegrityViolationException("Foreign key violation", sqlException)
-            whenever(bookService.registerBook(bookCreate)).thenThrow(dataIntegrityViolation)
+            val expectedError = NonExistentForeignKeyCustomException(
+                message = "存在しない外部キーです。",
+                field = "userId",
+                value = 10000000L
+            )
+            whenever(bookService.registerBook(bookCreate)).thenThrow(expectedError)
             val expectedResponseBody = mapOf(
                 "userId" to 10000000L,
                 "message" to "存在しない外部キーです。"
@@ -543,8 +571,10 @@ class BookControllerTest {
             }
             mvcResult.andExpect {
                 status { isNotFound() }
-                content { objectMapper.writeValueAsString(expectedResponseBody) }
+                content { json(objectMapper.writeValueAsString(expectedResponseBody)) }
             }
+
+            verify(bookService, times(1)).registerBook(any())
         }
 
         @Test
@@ -570,6 +600,8 @@ class BookControllerTest {
             mvcResult.andExpect {
                 status { isInternalServerError() }
             }
+
+            verify(bookService, times(1)).registerBook(any())
         }
     }
 

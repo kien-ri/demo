@@ -9,13 +9,11 @@ import com.kien.book.model.dto.book.BookView
 import com.kien.book.model.dto.book.BookCreatedResponse
 import com.kien.book.repository.BookMapper
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.whenever
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.assertThrows
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.dao.DataIntegrityViolationException
@@ -146,6 +144,8 @@ class BookServiceTest {
             val result = bookService.registerBook(bookCreate)
 
             assertEquals(expectedResult, result)
+
+            verify(bookMapper, times(1)).save(any())
         }
 
         /**
@@ -166,6 +166,8 @@ class BookServiceTest {
             val result = bookService.registerBook(bookCreateWithId)
 
             assertEquals(expectedResult, result)
+
+            verify(bookMapper, times(1)).save(any())
         }
 
         @Test
@@ -176,6 +178,8 @@ class BookServiceTest {
                 bookService.registerBook(bookCreateWithNegativeId)
             }
             assertEquals("書籍IDは正数である必要があります", e.message)
+
+            verify(bookMapper, never()).save(any())
         }
 
         @Test
@@ -186,6 +190,8 @@ class BookServiceTest {
                 bookService.registerBook(bookCreateWithZeroId)
             }
             assertEquals("書籍IDは正数である必要があります", e.message)
+
+            verify(bookMapper, never()).save(any())
         }
 
         @Test
@@ -196,6 +202,8 @@ class BookServiceTest {
                 bookService.registerBook(bookCreateWithNegativePrice)
             }
             assertEquals("価格は0以上である必要があります", e.message)
+
+            verify(bookMapper, never()).save(any())
         }
 
         @Test
@@ -206,6 +214,8 @@ class BookServiceTest {
                 bookService.registerBook(bookCreateWithNegativePublisherId)
             }
             assertEquals("出版社IDは正数である必要があります", e.message)
+
+            verify(bookMapper, never()).save(any())
         }
 
         @Test
@@ -216,6 +226,8 @@ class BookServiceTest {
                 bookService.registerBook(bookCreateWithZeroPublisherId)
             }
             assertEquals("出版社IDは正数である必要があります", exception.message)
+
+            verify(bookMapper, never()).save(any())
         }
 
         @Test
@@ -226,6 +238,8 @@ class BookServiceTest {
                 bookService.registerBook(bookCreateWithNegativeUserId)
             }
             assertEquals("ユーザーIDは正数である必要があります", exception.message)
+
+            verify(bookMapper, never()).save(any())
         }
 
         @Test
@@ -236,6 +250,8 @@ class BookServiceTest {
                 bookService.registerBook(bookCreateWithZeroUserId)
             }
             assertEquals("ユーザーIDは正数である必要があります", exception.message)
+
+            verify(bookMapper, never()).save(any())
         }
 
         @Test
@@ -248,7 +264,8 @@ class BookServiceTest {
                 value = 1L
             )
 
-            whenever(bookMapper.save(any())).thenThrow(expectedError)
+            val springError = DuplicateKeyException("模擬主キー重複エラー")
+            whenever(bookMapper.save(any())).thenThrow(springError)
 
             val realError = assertFailsWith<DuplicateKeyCustomException> {
                 bookService.registerBook(bookCreateWithId)
@@ -256,6 +273,8 @@ class BookServiceTest {
             assertThat(realError.message).isEqualTo(expectedError.message)
             assertThat(realError.field).isEqualTo(expectedError.field)
             assertThat(realError.value).isEqualTo(expectedError.value)
+
+            verify(bookMapper, times(1)).save(any())
         }
 
         /**
@@ -289,6 +308,8 @@ class BookServiceTest {
             assertThat(realError.message).isEqualTo(expectedError.message)
             assertThat(realError.field).isEqualTo(expectedError.field)
             assertThat(realError.value).isEqualTo(expectedError.value)
+
+            verify(bookMapper, times(1)).save(any())
         }
 
         /**
@@ -322,6 +343,8 @@ class BookServiceTest {
             assertThat(realError.message).isEqualTo(expectedError.message)
             assertThat(realError.field).isEqualTo(expectedError.field)
             assertThat(realError.value).isEqualTo(expectedError.value)
+
+            verify(bookMapper, times(1)).save(any())
         }
 
         /**
@@ -337,6 +360,8 @@ class BookServiceTest {
             assertFailsWith<DataIntegrityViolationException> {
                 bookService.registerBook(bookCreate)
             }
+
+            verify(bookMapper, times(1)).save(any())
         }
 
         /**
@@ -351,6 +376,8 @@ class BookServiceTest {
                 bookService.registerBook(bookCreate)
             }
             assertEquals("書籍情報が正しく登録されませんでした。", e.message)
+
+            verify(bookMapper, times(1)).save(any())
         }
 
         /**
@@ -365,6 +392,8 @@ class BookServiceTest {
                 bookService.registerBook(bookCreate)
             }
             assertEquals("書籍情報保存に失敗しました：IDが生成されませんでした", e.message)
+
+            verify(bookMapper, times(1)).save(any())
         }
 
         @Test
@@ -374,6 +403,8 @@ class BookServiceTest {
             assertFailsWith<RuntimeException> {
                 bookService.registerBook(bookCreate)
             }
+
+            verify(bookMapper, times(1)).save(any())
         }
     }
 

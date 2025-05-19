@@ -3,22 +3,20 @@ package com.kien.book.repository
 import com.kien.book.mapper.BooksTestMapper
 import com.kien.book.model.Book
 import com.kien.book.model.dto.book.BookView
-import org.junit.jupiter.api.Test
 import org.mybatis.spring.boot.test.autoconfigure.MybatisTest
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.jdbc.Sql
 import org.springframework.test.context.jdbc.Sql.ExecutionPhase
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.MethodOrderer
-import org.junit.jupiter.api.Nested
-import org.junit.jupiter.api.Order
-import org.junit.jupiter.api.TestMethodOrder
+import org.junit.jupiter.api.*
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.test.annotation.Rollback
+import org.springframework.transaction.TransactionStatus
+import org.springframework.transaction.annotation.Transactional
 import java.sql.SQLIntegrityConstraintViolationException
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
@@ -467,6 +465,11 @@ class BookMapperTest {
 
         @Autowired
         private lateinit var booksTestMapper: BooksTestMapper
+
+        @BeforeEach
+        fun `resetAutoIncrement`() {
+            booksTestMapper.resetAutoIncrement()
+        }
 
         /**
          * 新規登録するデータの主キーidを指定せずに登録するテスト
