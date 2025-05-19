@@ -36,7 +36,8 @@ class BookService(
     fun getBookById(id: Long): BookView? {
         ValidationUtils.validatePositiveId(
             id = id,
-            fieldName = Book::id.name
+            fieldName = Book::id.name,
+            errorMsg = MSG_INVALID_VALUE
         )
         return bookMapper.getById(id)
     }
@@ -104,15 +105,18 @@ class BookService(
     fun updateBook(bookUpdate: BookUpdate): BookUpdatedResponse {
         ValidationUtils.validatePositiveId(
             id = bookUpdate.id,
-            fieldName = Book::id.name
+            fieldName = Book::id.name,
+            errorMsg = MSG_INVALID_VALUE
         )
         ValidationUtils.validatePositiveId(
             id = bookUpdate.publisherId,
-            fieldName = Book::publisherId.name
+            fieldName = Book::publisherId.name,
+            errorMsg = MSG_INVALID_VALUE
         )
         ValidationUtils.validatePositiveId(
             id = bookUpdate.userId,
-            fieldName = Book::userId.name
+            fieldName = Book::userId.name,
+            errorMsg = MSG_INVALID_VALUE
         )
         if (bookUpdate.price != null && bookUpdate.price < 0) {
             throw InvalidParamCustomException(
