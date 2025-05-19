@@ -484,6 +484,11 @@ class BookServiceTest {
             assertThat(realError.value).isEqualTo(expectedError.value)
         }
 
+        /**
+         * 以下の動作を検証する：
+         * 指定した外部キーが存在しない場合はDataIntegrityViolationExceptionが投げられ、
+         * その中にSQLIntegrityConstraintViolationExceptionとエラーコード1452が含まれる
+         */
         @Test
         fun `throw exception when publisherId does not exist`() {
             val bookUpdate = BookUpdate(
@@ -502,8 +507,17 @@ class BookServiceTest {
                 value = 999L
             )
 
-            val sqlException = SQLIntegrityConstraintViolationException("FOREIGN KEY (`publisher_id`) violation", "FOREIGN_KEY", 1452, null)
-            whenever(bookMapper.update(any())).thenThrow(DataIntegrityViolationException("FOREIGN KEY (`publisher_id`) violation", sqlException))
+            val sqlException = SQLIntegrityConstraintViolationException(
+                "FOREIGN KEY (`publisher_id`) violation",
+                "FOREIGN_KEY",
+                1452,
+                null
+            )
+            val springException = DataIntegrityViolationException(
+                "FOREIGN KEY (`publisher_id`) violation",
+                sqlException
+            )
+            whenever(bookMapper.update(any())).thenThrow(springException)
 
             val realError = assertFailsWith<NonExistentForeignKeyCustomException> {
                 bookService.updateBook(bookUpdate)
@@ -513,8 +527,12 @@ class BookServiceTest {
             assertThat(realError.value).isEqualTo(expectedError.value)
         }
 
+        /**
+         * 以下の動作を検証する：
+         * 指定した外部キーが存在しない場合はDataIntegrityViolationExceptionが投げられ、
+         * その中にSQLIntegrityConstraintViolationExceptionとエラーコード1452が含まれる
+         */
         @Test
-
         fun `throw exception when userId does not exist`() {
             val bookUpdate = BookUpdate(
                 id = 1L,
@@ -532,8 +550,17 @@ class BookServiceTest {
                 value = 999L
             )
 
-            val sqlException = SQLIntegrityConstraintViolationException("FOREIGN KEY (`user_id`) violation", "FOREIGN_KEY", 1452, null)
-            whenever(bookMapper.update(any())).thenThrow(DataIntegrityViolationException("FOREIGN KEY (`user_id`) violation", sqlException))
+            val sqlException = SQLIntegrityConstraintViolationException(
+                "FOREIGN KEY (`user_id`) violation",
+                "FOREIGN_KEY",
+                1452,
+                null
+            )
+            val springException = DataIntegrityViolationException(
+                "FOREIGN KEY (`user_id`) violation",
+                sqlException
+            )
+            whenever(bookMapper.update(any())).thenThrow(springException)
 
             val realError = assertFailsWith<NonExistentForeignKeyCustomException> {
                 bookService.updateBook(bookUpdate)
@@ -541,6 +568,31 @@ class BookServiceTest {
             assertThat(realError.message).isEqualTo(expectedError.message)
             assertThat(realError.field).isEqualTo(expectedError.field)
             assertThat(realError.value).isEqualTo(expectedError.value)
+        }
+
+        /**
+         * 外部キーが存在しない以外の場合のDataIntegrityViolationExceptionは、
+         * 予想外エラーとしてみられ、そのままthrowされる。
+         */
+        @Test
+        fun `should throw exception when vendor code is not 1452`() {
+            val bookUpdate = BookUpdate(
+                id = 1L,
+                title = "Kotlin応用ガイド",
+                titleKana = "コトリン オウヨウ ガイド",
+                author = "佐藤次郎",
+                publisherId = 1L,
+                userId = 100L,
+                price = 4200
+            )
+
+            val sqlException = SQLIntegrityConstraintViolationException("模擬予想外SQLIntegrityConstraintViolationException", "予想外", 1111, null)
+            val springException = DataIntegrityViolationException("模擬予想外DataIntegrityViolationException", sqlException)
+            whenever(bookMapper.update(any())).thenThrow(springException)
+
+            assertFailsWith<DataIntegrityViolationException> {
+                bookService.updateBook(bookUpdate)
+            }
         }
 
         @Test
@@ -569,6 +621,24 @@ class BookServiceTest {
             assertThat(realError.message).isEqualTo(expectedError.message)
             assertThat(realError.field).isEqualTo(expectedError.field)
             assertThat(realError.value).isEqualTo(expectedError.value)
+        }
+
+        @Test
+        fun `should throw exception when unexpected error occurs`() {
+            val bookUpdate = BookUpdate(
+                id = 1L,
+                title = "Kotlin応用ガイド",
+                titleKana = "コトリン オウヨウ ガイド",
+                author = "佐藤次郎",
+                publisherId = 1L,
+                userId = 100L,
+                price = 4200
+            )
+            whenever(bookMapper.update(any())).thenThrow(RuntimeException("模擬予想外エラー"))
+
+            assertFailsWith<RuntimeException> {
+                bookService.updateBook(bookUpdate)
+            }
         }
     }
 
