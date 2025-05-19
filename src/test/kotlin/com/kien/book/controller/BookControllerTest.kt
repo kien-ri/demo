@@ -11,13 +11,13 @@ import com.kien.book.service.BookService
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.context.annotation.Bean
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import java.time.LocalDateTime
 import org.mockito.Mockito.mock
+import org.mockito.kotlin.*
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
@@ -40,12 +40,6 @@ class BookControllerTest {
 
     @MockitoBean
     private lateinit var bookService: BookService
-
-    @TestConfiguration
-    class TestConfig {
-        @Bean
-        fun bookService(): BookService = mock(BookService::class.java)
-    }
 
     @Nested
     inner class GetBookByIdTest {
@@ -289,6 +283,8 @@ class BookControllerTest {
                 status { isOk() }
                 content { json(objectMapper.writeValueAsString(expectedResult)) }
             }
+
+            verify(bookService, times(1)).updateBook(any())
         }
 
         @Test
@@ -317,6 +313,8 @@ class BookControllerTest {
                 status { isBadRequest() }
                 content { json(objectMapper.writeValueAsString(expectedResponse)) }
             }
+
+            verify(bookService, never()).updateBook(any())
         }
 
         @Test
@@ -345,6 +343,8 @@ class BookControllerTest {
                 status { isBadRequest() }
                 content { json(objectMapper.writeValueAsString(expectedResponse)) }
             }
+
+            verify(bookService, never()).updateBook(any())
         }
 
         @Test
@@ -373,6 +373,8 @@ class BookControllerTest {
                 status { isBadRequest() }
                 content { json(objectMapper.writeValueAsString(expectedResponse)) }
             }
+
+            verify(bookService, never()).updateBook(any())
         }
 
         @Test
@@ -401,6 +403,8 @@ class BookControllerTest {
                 status { isBadRequest() }
                 content { json(objectMapper.writeValueAsString(expectedResponse)) }
             }
+
+            verify(bookService, never()).updateBook(any())
         }
 
         @Test
@@ -429,6 +433,8 @@ class BookControllerTest {
                 status { isBadRequest() }
                 content { json(objectMapper.writeValueAsString(expectedResponse)) }
             }
+
+            verify(bookService, never()).updateBook(any())
         }
 
         @Test
@@ -457,6 +463,8 @@ class BookControllerTest {
                 status { isBadRequest() }
                 content { json(objectMapper.writeValueAsString(expectedResponse)) }
             }
+
+            verify(bookService, never()).updateBook(any())
         }
 
         @Test
@@ -485,6 +493,8 @@ class BookControllerTest {
                 status { isBadRequest() }
                 content { json(objectMapper.writeValueAsString(expectedResponse)) }
             }
+
+            verify(bookService, never()).updateBook(any())
         }
 
         @Test
@@ -518,6 +528,8 @@ class BookControllerTest {
                 status { isNotFound() }
                 content { json(objectMapper.writeValueAsString(expectedResponse)) }
             }
+
+            verify(bookService, times(1)).updateBook(any())
         }
 
         @Test
@@ -551,6 +563,8 @@ class BookControllerTest {
                 status { isNotFound() }
                 content { json(objectMapper.writeValueAsString(expectedResponse)) }
             }
+
+            verify(bookService, times(1)).updateBook(any())
         }
 
         @Test
@@ -585,6 +599,8 @@ class BookControllerTest {
                 status { isNotFound() }
                 content { json(objectMapper.writeValueAsString(expectedResponse)) }
             }
+
+            verify(bookService, times(1)).updateBook(any())
         }
 
         @Test
@@ -612,6 +628,8 @@ class BookControllerTest {
                 status { isInternalServerError() }
                 content { json(objectMapper.writeValueAsString(expectedResponse)) }
             }
+
+            verify(bookService, times(1)).updateBook(any())
         }
     }
 

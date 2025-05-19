@@ -9,12 +9,10 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.assertThrows
-import org.mockito.kotlin.any
+import org.mockito.kotlin.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.dao.DataIntegrityViolationException
@@ -293,6 +291,8 @@ class BookServiceTest {
             val bookUpdatedResponse = bookService.updateBook(bookUpdate)
 
             assertThat(bookUpdatedResponse).isEqualTo(expectedResult)
+
+            verify(bookMapper, times(1)).update(any())
         }
 
         @Test
@@ -320,6 +320,8 @@ class BookServiceTest {
             assertThat(realError.message).isEqualTo(expectedError.message)
             assertThat(realError.field).isEqualTo(expectedError.field)
             assertThat(realError.value).isEqualTo(expectedError.value)
+
+            verify(bookMapper, never()).update(any())
         }
 
         @Test
@@ -347,6 +349,8 @@ class BookServiceTest {
             assertThat(realError.message).isEqualTo(expectedError.message)
             assertThat(realError.field).isEqualTo(expectedError.field)
             assertThat(realError.value).isEqualTo(expectedError.value)
+
+            verify(bookMapper, never()).update(any())
         }
 
         @Test
@@ -374,6 +378,8 @@ class BookServiceTest {
             assertThat(realError.message).isEqualTo(expectedError.message)
             assertThat(realError.field).isEqualTo(expectedError.field)
             assertThat(realError.value).isEqualTo(expectedError.value)
+
+            verify(bookMapper, never()).update(any())
         }
 
         @Test
@@ -401,6 +407,8 @@ class BookServiceTest {
             assertThat(realError.message).isEqualTo(expectedError.message)
             assertThat(realError.field).isEqualTo(expectedError.field)
             assertThat(realError.value).isEqualTo(expectedError.value)
+
+            verify(bookMapper, never()).update(any())
         }
 
         @Test
@@ -428,6 +436,8 @@ class BookServiceTest {
             assertThat(realError.message).isEqualTo(expectedError.message)
             assertThat(realError.field).isEqualTo(expectedError.field)
             assertThat(realError.value).isEqualTo(expectedError.value)
+
+            verify(bookMapper, never()).update(any())
         }
 
         @Test
@@ -455,6 +465,8 @@ class BookServiceTest {
             assertThat(realError.message).isEqualTo(expectedError.message)
             assertThat(realError.field).isEqualTo(expectedError.field)
             assertThat(realError.value).isEqualTo(expectedError.value)
+
+            verify(bookMapper, never()).update(any())
         }
 
         @Test
@@ -482,6 +494,8 @@ class BookServiceTest {
             assertThat(realError.message).isEqualTo(expectedError.message)
             assertThat(realError.field).isEqualTo(expectedError.field)
             assertThat(realError.value).isEqualTo(expectedError.value)
+
+            verify(bookMapper, never()).update(any())
         }
 
         /**
@@ -525,6 +539,8 @@ class BookServiceTest {
             assertThat(realError.message).isEqualTo(expectedError.message)
             assertThat(realError.field).isEqualTo(expectedError.field)
             assertThat(realError.value).isEqualTo(expectedError.value)
+
+            verify(bookMapper, times(1)).update(any())
         }
 
         /**
@@ -568,6 +584,8 @@ class BookServiceTest {
             assertThat(realError.message).isEqualTo(expectedError.message)
             assertThat(realError.field).isEqualTo(expectedError.field)
             assertThat(realError.value).isEqualTo(expectedError.value)
+
+            verify(bookMapper, times(1)).update(any())
         }
 
         /**
@@ -593,6 +611,8 @@ class BookServiceTest {
             assertFailsWith<DataIntegrityViolationException> {
                 bookService.updateBook(bookUpdate)
             }
+
+            verify(bookMapper, times(1)).update(any())
         }
 
         @Test
@@ -621,6 +641,8 @@ class BookServiceTest {
             assertThat(realError.message).isEqualTo(expectedError.message)
             assertThat(realError.field).isEqualTo(expectedError.field)
             assertThat(realError.value).isEqualTo(expectedError.value)
+
+            verify(bookMapper, times(1)).update(any())
         }
 
         @Test
@@ -639,6 +661,8 @@ class BookServiceTest {
             assertFailsWith<RuntimeException> {
                 bookService.updateBook(bookUpdate)
             }
+
+            verify(bookMapper, times(1)).update(any())
         }
     }
 
