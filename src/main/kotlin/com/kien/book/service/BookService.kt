@@ -1,19 +1,17 @@
 package com.kien.book.service
 
-import com.kien.book.common.CustomException
-import com.kien.book.common.DuplicateKeyCustomException
-import com.kien.book.common.NonExistentForeignKeyCustomException
+import com.kien.book.common.*
 import com.kien.book.model.dto.book.BookCondition
 import com.kien.book.common.Page
+import com.kien.book.common.util.DBExceptionUtils
+import com.kien.book.common.util.ValidationUtils
 import com.kien.book.model.Book
-import com.kien.book.model.dto.book.BookCreate
-import com.kien.book.model.dto.book.BookCreatedResponse
-import com.kien.book.model.dto.book.BookView
+import com.kien.book.model.dto.book.*
 import com.kien.book.repository.BookMapper
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.cglib.core.Local
-import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.dao.DuplicateKeyException
+import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.sql.SQLIntegrityConstraintViolationException
@@ -29,6 +27,9 @@ class BookService(
 
     @Value("\${messages.errors.invalidValue}")
     val MSG_INVALID_VALUE: String = ""
+
+    @Value("\${messages.errors.nonExistentBook}")
+    val MSG_NON_EXISTENT_BOOK: String = ""
 
     @Value("\${messages.errors.insertError}")
     val MSG_INSERT_ERROR: String = ""
@@ -55,7 +56,11 @@ class BookService(
     val MSG_DUPLICATE_KEY: String = ""
 
     fun getBookById(id: Long): BookView? {
-        require(id >= 1) { throw CustomException(MSG_INVALID_VALUE) }
+        ValidationUtils.validatePositiveId(
+            id = id,
+            fieldName = Book::id.name,
+            errorMsg = MSG_INVALID_VALUE
+        )
         return bookMapper.getById(id)
     }
 
@@ -193,8 +198,69 @@ class BookService(
     }
 
     @Transactional
-    fun updateBook(book: Book) {
-        bookMapper.update(book)
+    fun updateBook(bookUpdate: BookUpdate): BookUpdatedResponse {
+        // 書籍情報IDのチェック
+        ValidationUtils.validatePositiveId(
+            id = bookUpdate.id,
+            fieldName = Book::id.name,
+            errorMsg = MSG_INVALID_VALUE
+        )
+        // 出版社IDのチェック
+        ValidationUtils.validatePositiveId(
+            id = bookUpdate.publisherId,
+            fieldName = Book::publisherId.name,
+            errorMsg = MSG_INVALID_VALUE
+        )
+        // 登録者(ユーザ)IDのチェック
+        ValidationUtils.validatePositiveId(
+            id = bookUpdate.userId,
+            fieldName = Book::userId.name,
+            errorMsg = MSG_INVALID_VALUE
+        )
+        // 金額のチェック
+        if (bookUpdate.price != null && bookUpdate.price < 0) {
+            throw InvalidParamCustomException(
+                message = MSG_INVALID_VALUE,
+                field = Book::price.name,
+                value = bookUpdate.price
+            )
+        }
+
+        val bookId = bookUpdate.id
+        val book = bookUpdate.toEntity(
+            updatedAt = LocalDateTime.now()
+        )
+
+        var updatedCount: Int = -1
+        try {
+            updatedCount = bookMapper.update(book)
+        } catch (e: DataIntegrityViolationException) {
+            if (DBExceptionUtils.isForeignKeyViolation(e)) {
+                val errorMsg = e.message ?: ""
+                val propertyName = DBExceptionUtils.extractForeignKeyColumn(errorMsg)?.toCamelCase() ?: ""
+                val property = BookUpdate::class.memberProperties.find { it.name == propertyName }
+                val propertyValue = property?.get(bookUpdate)
+                throw NonExistentForeignKeyCustomException(
+                    message = MSG_NONEXISTENT_FK,
+                    field = propertyName,
+                    value = propertyValue
+                )
+            }
+            throw e
+        }
+
+        if (updatedCount <= 0) {
+            throw NotFoundCustomException(
+                message = MSG_NON_EXISTENT_BOOK,
+                field = Book::id.name,
+                value = bookId
+            )
+        }
+
+        return BookUpdatedResponse(
+            id = bookId,
+            title = book.title
+        )
     }
 
     fun updateBooks(books: List<Book>) {

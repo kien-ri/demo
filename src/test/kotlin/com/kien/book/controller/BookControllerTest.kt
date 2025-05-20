@@ -1,29 +1,42 @@
 package com.kien.book.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.kien.book.common.DuplicateKeyCustomException
+import com.kien.book.common.CustomException
 import com.kien.book.common.NonExistentForeignKeyCustomException
+import com.kien.book.common.NotFoundCustomException
+import com.kien.book.common.Page
+import com.kien.book.model.Book
+import com.kien.book.model.dto.book.*
+import com.kien.book.common.DuplicateKeyCustomException
 import com.kien.book.model.dto.book.BookCreate
-import com.kien.book.model.dto.book.BookCreatedResponse
 import com.kien.book.model.dto.book.BookView
 import com.kien.book.service.BookService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.Mockito
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.*
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
+import org.springframework.context.annotation.Bean
+import org.springframework.test.context.junit.jupiter.SpringExtension
+import java.time.LocalDateTime
+import org.mockito.Mockito.mock
+import org.mockito.kotlin.*
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
-import org.springframework.context.annotation.Bean
+import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.http.MediaType
 import org.springframework.test.context.bean.override.mockito.MockitoBean
+import org.springframework.test.web.servlet.*
+import java.sql.SQLIntegrityConstraintViolationException
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
-import java.time.LocalDateTime
 
 
 @SpringBootTest
@@ -624,23 +637,381 @@ class BookControllerTest {
         }
     }
 
-    @Test
-    fun `updateBook should return 204 when update succeeds`() {
-        val bookId = 1L
-        val bookUpdate = BookUpdate(
-            id = bookId,
-            title = "Kotlin入門 Old Edition",
-            titleKana = "コトリン ニュウモン",
-            author = "山田太郎",
-            publisherId = 1L,
-            userId = 100L
-        )
+    @Nested
+    inner class UpdateBookTest {
+        @Test
+        fun `return 200(id, title) when update succeeds`() {
+            val bookUpdate = BookUpdate(
+                id = 1L,
+                title = "Kotlin応用ガイド",
+                titleKana = "コトリン オウヨウ ガイド",
+                author = "佐藤次郎",
+                publisherId = 1L,
+                userId = 100L,
+                price = 4200
+            )
 
-        mockMvc.put("/books/$bookId") {
-            contentType = MediaType.APPLICATION_JSON
-            content = objectMapper.writeValueAsString(bookUpdate)
-        }.andExpect {
-            status { isNoContent() }
+            val expectedResult = BookUpdatedResponse(
+                id = 1L,
+                title = "Kotlin応用ガイド"
+            )
+            whenever(bookService.updateBook(bookUpdate)).thenReturn(expectedResult)
+
+            val mvcResult = mockMvc.put("/books") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(bookUpdate)
+            }
+            mvcResult.andExpect {
+                status { isOk() }
+                content { json(objectMapper.writeValueAsString(expectedResult)) }
+            }
+
+            verify(bookService, times(1)).updateBook(any())
+        }
+
+        @Test
+        fun `return 400 when id is negative`() {
+            val bookUpdate = BookUpdate(
+                id = -1L,
+                title = "Kotlin応用ガイド",
+                titleKana = "コトリン オウヨウ ガイド",
+                author = "佐藤次郎",
+                publisherId = 1L,
+                userId = 100L,
+                price = 4200
+            )
+
+            val responseMap = mapOf(
+                "id" to "-1",
+                "message" to "入力された値が無効です。"
+            )
+            val expectedResponse = arrayOf(responseMap)
+
+            val mvcResult = mockMvc.put("/books") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(bookUpdate)
+            }
+            mvcResult.andExpect {
+                status { isBadRequest() }
+                content { json(objectMapper.writeValueAsString(expectedResponse)) }
+            }
+
+            verify(bookService, never()).updateBook(any())
+        }
+
+        @Test
+        fun `return 400 when id is 0`() {
+            val bookUpdate = BookUpdate(
+                id = 0L,
+                title = "Kotlin応用ガイド",
+                titleKana = "コトリン オウヨウ ガイド",
+                author = "佐藤次郎",
+                publisherId = 1L,
+                userId = 100L,
+                price = 4200
+            )
+
+            val responseMap = mapOf(
+                "id" to "0",
+                "message" to "入力された値が無効です。"
+            )
+            val expectedResponse = arrayOf(responseMap)
+
+            val mvcResult = mockMvc.put("/books") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(bookUpdate)
+            }
+            mvcResult.andExpect {
+                status { isBadRequest() }
+                content { json(objectMapper.writeValueAsString(expectedResponse)) }
+            }
+
+            verify(bookService, never()).updateBook(any())
+        }
+
+        @Test
+        fun `return 400 when publisherId is negative`() {
+            val bookUpdate = BookUpdate(
+                id = 1L,
+                title = "Kotlin応用ガイド",
+                titleKana = "コトリン オウヨウ ガイド",
+                author = "佐藤次郎",
+                publisherId = -1L,
+                userId = 100L,
+                price = 4200
+            )
+
+            val responseMap = mapOf(
+                "publisherId" to "-1",
+                "message" to "入力された値が無効です。"
+            )
+            val expectedResponse = arrayOf(responseMap)
+
+            val mvcResult = mockMvc.put("/books") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(bookUpdate)
+            }
+            mvcResult.andExpect {
+                status { isBadRequest() }
+                content { json(objectMapper.writeValueAsString(expectedResponse)) }
+            }
+
+            verify(bookService, never()).updateBook(any())
+        }
+
+        @Test
+        fun `return 400 when publisherId is 0`() {
+            val bookUpdate = BookUpdate(
+                id = 1L,
+                title = "Kotlin応用ガイド",
+                titleKana = "コトリン オウヨウ ガイド",
+                author = "佐藤次郎",
+                publisherId = 0L,
+                userId = 100L,
+                price = 4200
+            )
+
+            val responseMap = mapOf(
+                "publisherId" to "0",
+                "message" to "入力された値が無効です。"
+            )
+            val expectedResponse = arrayOf(responseMap)
+
+            val mvcResult = mockMvc.put("/books") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(bookUpdate)
+            }
+            mvcResult.andExpect {
+                status { isBadRequest() }
+                content { json(objectMapper.writeValueAsString(expectedResponse)) }
+            }
+
+            verify(bookService, never()).updateBook(any())
+        }
+
+        @Test
+        fun `return 400 when userId is negative`() {
+            val bookUpdate = BookUpdate(
+                id = 1L,
+                title = "Kotlin応用ガイド",
+                titleKana = "コトリン オウヨウ ガイド",
+                author = "佐藤次郎",
+                publisherId = 1L,
+                userId = -1L,
+                price = 4200
+            )
+
+            val responseMap = mapOf(
+                "userId" to "-1",
+                "message" to "入力された値が無効です。"
+            )
+            val expectedResponse = arrayOf(responseMap)
+
+            val mvcResult = mockMvc.put("/books") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(bookUpdate)
+            }
+            mvcResult.andExpect {
+                status { isBadRequest() }
+                content { json(objectMapper.writeValueAsString(expectedResponse)) }
+            }
+
+            verify(bookService, never()).updateBook(any())
+        }
+
+        @Test
+        fun `return 400 when userId is 0`() {
+            val bookUpdate = BookUpdate(
+                id = 1L,
+                title = "Kotlin応用ガイド",
+                titleKana = "コトリン オウヨウ ガイド",
+                author = "佐藤次郎",
+                publisherId = 1L,
+                userId = 0L,
+                price = 4200
+            )
+
+            val responseMap = mapOf(
+                "userId" to "0",
+                "message" to "入力された値が無効です。"
+            )
+            val expectedResponse = arrayOf(responseMap)
+
+            val mvcResult = mockMvc.put("/books") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(bookUpdate)
+            }
+            mvcResult.andExpect {
+                status { isBadRequest() }
+                content { json(objectMapper.writeValueAsString(expectedResponse)) }
+            }
+
+            verify(bookService, never()).updateBook(any())
+        }
+
+        @Test
+        fun `return 400 when price is negative`() {
+            val bookUpdate = BookUpdate(
+                id = 1L,
+                title = "Kotlin応用ガイド",
+                titleKana = "コトリン オウヨウ ガイド",
+                author = "佐藤次郎",
+                publisherId = 1L,
+                userId = 100L,
+                price = -1
+            )
+
+            val responseMap = mapOf(
+                "price" to "-1",
+                "message" to "入力された値が無効です。"
+            )
+            val expectedResponse = arrayOf(responseMap)
+
+            val mvcResult = mockMvc.put("/books") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(bookUpdate)
+            }
+            mvcResult.andExpect {
+                status { isBadRequest() }
+                content { json(objectMapper.writeValueAsString(expectedResponse)) }
+            }
+
+            verify(bookService, never()).updateBook(any())
+        }
+
+        @Test
+        fun `return 404 when publisherId does not exist`() {
+            val bookUpdate = BookUpdate(
+                id = 1L,
+                title = "Kotlin応用ガイド",
+                titleKana = "コトリン オウヨウ ガイド",
+                author = "佐藤次郎",
+                publisherId = 999L,
+                userId = 100L,
+                price = 4200
+            )
+
+            val expectedError = NonExistentForeignKeyCustomException(
+                message = "存在しない外部キーです。",
+                field = "publisher_id",
+                value = 999L
+            )
+            whenever(bookService.updateBook(bookUpdate)).thenThrow(expectedError)
+            val expectedResponse = mapOf(
+                "publisher_id" to 999,
+                "message" to "存在しない外部キーです。"
+            )
+
+            val mvcResult = mockMvc.put("/books") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(bookUpdate)
+            }
+            mvcResult.andExpect {
+                status { isNotFound() }
+                content { json(objectMapper.writeValueAsString(expectedResponse)) }
+            }
+
+            verify(bookService, times(1)).updateBook(any())
+        }
+
+        @Test
+        fun `return 404 when userId does not exist`() {
+            val bookUpdate = BookUpdate(
+                id = 1L,
+                title = "Kotlin応用ガイド",
+                titleKana = "コトリン オウヨウ ガイド",
+                author = "佐藤次郎",
+                publisherId = 1L,
+                userId = 999L,
+                price = 4200
+            )
+
+            val expectedError = NonExistentForeignKeyCustomException(
+                message = "存在しない外部キーです。",
+                field = "user_id",
+                value = 999L
+            )
+            whenever(bookService.updateBook(bookUpdate)).thenThrow(expectedError)
+            val expectedResponse = mapOf(
+                "user_id" to 999,
+                "message" to "存在しない外部キーです。"
+            )
+
+            val mvcResult = mockMvc.put("/books") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(bookUpdate)
+            }
+            mvcResult.andExpect {
+                status { isNotFound() }
+                content { json(objectMapper.writeValueAsString(expectedResponse)) }
+            }
+
+            verify(bookService, times(1)).updateBook(any())
+        }
+
+        @Test
+        fun `return 404 when book does not exist`() {
+            val bookUpdate = BookUpdate(
+                id = 999L,
+                title = "Kotlin応用ガイド",
+                titleKana = "コトリン オウヨウ ガイド",
+                author = "佐藤次郎",
+                publisherId = 1L,
+                userId = 100L,
+                price = 4200
+            )
+
+            val expectedError = NotFoundCustomException(
+                message = "指定IDの書籍情報が存在しません",
+                field = "id",
+                value = 999L
+            )
+            whenever(bookService.updateBook(bookUpdate)).thenThrow(expectedError)
+
+            val expectedResponse = mapOf(
+                "id" to 999,
+                "message" to "指定IDの書籍情報が存在しません"
+            )
+
+            val mvcResult = mockMvc.put("/books") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(bookUpdate)
+            }
+            mvcResult.andExpect {
+                status { isNotFound() }
+                content { json(objectMapper.writeValueAsString(expectedResponse)) }
+            }
+
+            verify(bookService, times(1)).updateBook(any())
+        }
+
+        @Test
+        fun `return 500 when unexpected error`() {
+            val bookUpdate = BookUpdate(
+                id = 1L,
+                title = "Kotlin応用ガイド",
+                titleKana = "コトリン オウヨウ ガイド",
+                author = "佐藤次郎",
+                publisherId = 1L,
+                userId = 100L,
+                price = 4200
+            )
+
+            whenever(bookService.updateBook(bookUpdate)).thenThrow(RuntimeException("予想外のエラー"))
+            val expectedResponse = mapOf(
+                "error" to "予想外のエラーが発生しました。エラー内容：予想外のエラー"
+            )
+
+            val mvcResult = mockMvc.put("/books") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(bookUpdate)
+            }
+            mvcResult.andExpect {
+                status { isInternalServerError() }
+                content { json(objectMapper.writeValueAsString(expectedResponse)) }
+            }
+
+            verify(bookService, times(1)).updateBook(any())
         }
     }
 

@@ -199,6 +199,84 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - book
+      summary: 書籍情報更新
+      description: 指定IDの書籍情報を更新する
+      operationId: updateBook
+      parameters:
+        - name: id
+          in: path
+          description: 書籍ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          example: 1
+      requestBody:
+        description: 書籍情報
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookUpdate'
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json: {}
+        '400':
+          description: パラメータ不正
+          content:
+            application/json:
+              examples:
+                invalidId:
+                  summary: ID不正
+                  value:
+                    id: "-1"
+                    message: "入力された値が無効です。"
+                invalidPId:
+                  summary: 出版社ID不正
+                  value:
+                    publisherId: "-1"
+                    message: "入力された値が無効です。"
+                invalidUId:
+                  summary: 登録者ID不正
+                  value:
+                    userId: "-1"
+                    message: "入力された値が無効です。"
+                invalidPrice:
+                  summary: 書籍価格不正
+                  value:
+                    price: "-1"
+                    message: "入力された値が無効です。"
+        '404':
+          description: 書籍情報不存在
+          content:
+            application/json:
+              examples:
+                nonExistBook:
+                  summary: 存在しない書籍情報
+                  value:
+                    id: "999"
+                    message: "指定IDの書籍情報が存在しません"
+                nonExistPId:
+                  summary: 存在しない出版社
+                  value:
+                    publisherId: "999"
+                    message: "存在しない外部キーです。"
+                nonExistUId:
+                  summary: 存在しない登録者
+                  value:
+                    userId: "999"
+                    message: "存在しない外部キーです。"
+        '500':
+          description: 予想外のエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /book/{id}:
     get:
       tags:
@@ -272,39 +350,6 @@ paths:
       responses:
         '204':
           description: OK
-          content:
-            application/json: {}
-        default:
-          description: 予想外のエラー
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-    put:
-      tags:
-        - book
-      summary: 書籍情報更新
-      description: 指定IDの書籍情報を更新する
-      operationId: updateBook
-      parameters:
-        - name: id
-          in: path
-          description: 書籍ID
-          required: true
-          schema:
-            type: integer
-            format: int64
-            minimum: 1
-          example: 1
-      requestBody:
-        description: 書籍情報
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/BookUpdate'
-      responses:
-        '204':
-          description: NO CONTENT
           content:
             application/json: {}
         default:
