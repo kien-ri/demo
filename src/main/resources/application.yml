@@ -24,3 +24,7 @@ messages:
     noIdGenerated: "書籍情報保存に失敗しました：IDが生成されませんでした"
     nonExistentBook: "指定IDの書籍情報が存在しません"
     typeMissmatch: "パラメータの型が間違っています"
+    invalidBookId: "書籍IDは正数である必要があります"
+    invalidPirce: "価格は0以上である必要があります"
+    invalidPublisherId: "出版社IDは正数である必要があります"
+    invalidUserId: "ユーザーIDは正数である必要があります"

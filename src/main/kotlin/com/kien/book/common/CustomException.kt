@@ -21,3 +21,9 @@ class NonExistentForeignKeyCustomException(
     val field: String,
     val value: Any?,
 ): CustomException(message)
+
+class DuplicateKeyCustomException(
+    message: String,
+    val field: String,
+    val value: Any?
+): CustomException(message)

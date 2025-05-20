@@ -3,6 +3,7 @@ package com.kien.book.common
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.dao.DuplicateKeyException
+import org.springframework.context.support.DefaultMessageSourceResolvable
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.FieldError
@@ -38,6 +39,15 @@ class GlobalExceptionHandler {
     val MSG_TYPE_MISSMATCH: String = ""
 
     val MSG_STR: String = "message"
+
+    @ExceptionHandler(DuplicateKeyCustomException::class)
+    fun duplicateKeyCustomExceptionHandler(e: DuplicateKeyCustomException): ResponseEntity<Any> {
+        val responseBody = mapOf(
+            e.field to e.value,
+            MSG_STR to e.message
+        )
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(responseBody)
+    }
 
     @ExceptionHandler(NonExistentForeignKeyCustomException::class)
     fun nonExistentForeignKeyCustomExceptionHandler(e: NonExistentForeignKeyCustomException): ResponseEntity<Any> {
@@ -115,37 +125,6 @@ class GlobalExceptionHandler {
             MSG_STR to MSG_INVALID_REQUEST
         )
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseBody)
-    }
-
-    /**
-     * MySQL 主キー重複エラー
-     */
-    @ExceptionHandler(DuplicateKeyException::class)
-    fun handleDuplicateKey(e: DuplicateKeyException): ResponseEntity<Any> {
-        val responseBody = object {
-            val error: String = MSG_DUPLICATE_KEY
-        }
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(responseBody)
-    }
-
-    /**
-     * MySQL 外部キー制約エラー(存在しない外部キーを指定した場合)
-     */
-    @ExceptionHandler(DataIntegrityViolationException::class)
-    fun handleSQLIntegrityConstrainViolation(e: DataIntegrityViolationException): ResponseEntity<Any> {
-        val rootCause = e.rootCause
-        if (rootCause is SQLIntegrityConstraintViolationException) {
-            val vendorCode = rootCause.errorCode
-            when (vendorCode) {
-                1452 -> {
-                    val responseBody = object {
-                        val error: String = MSG_NONEXISTENT_FK
-                    }
-                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(responseBody)
-                }
-            }
-        }
-        throw e
     }
 
     @ExceptionHandler(RuntimeException::class)

@@ -1,24 +1,43 @@
 package com.kien.book.model.dto.book
 
+import com.kien.book.model.Book
 import jakarta.validation.constraints.Min
-import jakarta.validation.constraints.NotBlank
+import java.time.LocalDateTime
 
+// 書籍情報新規登録するのに必要な情報をまとめたDTOクラス
 data class BookCreate(
-    @field:NotBlank
-    val title: String,
 
-    @field:NotBlank
-    val titleKana: String,
+    // id指定して登録する場合はidを入力し、指定しない場合はnull
+    @field:Min(1)
+    val id: Long?,
 
-    @field:NotBlank
-    val author: String,
+    val title: String?,
 
-    @field:Min(value = 1)
-    val publisherId: Long,
+    val titleKana: String?,
 
-    @field:Min(value = 1)
-    val userId: Long,
+    val author: String?,
+
+    @field:Min(1)
+    val publisherId: Long?,
+
+    @field:Min(1)
+    val userId: Long?,
 
     @field:Min(0)
-    val price: Int
-)
+    val price: Int?
+) {
+    fun toEntity(
+        createdAt: LocalDateTime? = null,
+        updatedAt: LocalDateTime? = null
+    ) = Book(
+        id = id,
+        title = title,
+        titleKana = titleKana,
+        author = author,
+        publisherId = publisherId,
+        userId = userId,
+        price = price,
+        createdAt = createdAt,
+        updatedAt = updatedAt
+    )
+}
