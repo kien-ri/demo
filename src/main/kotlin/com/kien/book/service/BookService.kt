@@ -25,9 +25,6 @@ class BookService(
     private val batchService: BatchService,
 ) {
 
-    @Value("\${messages.errors.unexpectedError}")
-    val MSG_UNEXPECTED_ERROR: String = ""
-
     @Value("\${messages.errors.invalidValue}")
     val MSG_INVALID_VALUE: String = ""
 
@@ -202,21 +199,25 @@ class BookService(
 
     @Transactional
     fun updateBook(bookUpdate: BookUpdate): BookUpdatedResponse {
+        // 書籍情報IDのチェック
         ValidationUtils.validatePositiveId(
             id = bookUpdate.id,
             fieldName = Book::id.name,
             errorMsg = MSG_INVALID_VALUE
         )
+        // 出版社IDのチェック
         ValidationUtils.validatePositiveId(
             id = bookUpdate.publisherId,
             fieldName = Book::publisherId.name,
             errorMsg = MSG_INVALID_VALUE
         )
+        // 登録者(ユーザ)IDのチェック
         ValidationUtils.validatePositiveId(
             id = bookUpdate.userId,
             fieldName = Book::userId.name,
             errorMsg = MSG_INVALID_VALUE
         )
+        // 金額のチェック
         if (bookUpdate.price != null && bookUpdate.price < 0) {
             throw InvalidParamCustomException(
                 message = MSG_INVALID_VALUE,
