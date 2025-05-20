@@ -13,6 +13,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.assertThrows
+import org.mockito.ArgumentMatchers.anyList
 import org.mockito.kotlin.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -28,9 +29,6 @@ class BookServiceTest {
 
     @MockitoBean
     private lateinit var bookMapper: BookMapper
-
-    @MockitoBean
-    private lateinit var batchService: BatchService
 
     @Autowired
     private lateinit var bookService: BookService
@@ -92,27 +90,6 @@ class BookServiceTest {
             val expectedMsg = "入力された値が無効です。"
             assertThat(e.message).isEqualTo(expectedMsg)
         }
-    }
-
-
-    @Test
-    fun `getBooksByCondition should return bookPage`() {
-        val condition = BookCondition(
-            title = "Kotlin",
-            titleKana = "コトリン",
-            author = "山田",
-            pageSize = 10,
-            currentPage = 1
-        )
-        val bookView = BookView(
-            id = 1L,
-            title = "Kotlin入門",
-            titleKana = "コトリン ニュウモン",
-            author = "山田太郎",
-            publisherId = 1L,
-            price = 2500,
-            userId = 100L
-        )
     }
 
     @Nested
@@ -408,44 +385,350 @@ class BookServiceTest {
         }
     }
 
-    @Test
-    fun `registerBooks should call batchService with save operation`() {
-        val bookCreates = listOf(
-            BookCreate(
-                title = "Kotlin入門",
-                titleKana = "コトリン ニュウモン",
-                author = "山田太郎",
-                publisherId = 1L,
-                userId = 100L
-            ),
-            BookCreate(
-                title = "Spring Boot入門",
-                titleKana = "スプリング ブート ニュウモン",
-                author = "佐藤花子",
-                publisherId = 2L,
-                userId = 101L
+    @Nested
+    inner class RegisterBooksTest{
+        val bookCreate1 = BookCreate(
+            id = null,
+            title = "はじめてのKotlinプログラミング",
+            titleKana = "ハジメテノ コトリン プログラミング",
+            author = "山田太郎",
+            publisherId = 1L,
+            price = 2500,
+            userId = 100L
+        )
+        val bookCreate2 = BookCreate(
+            id = null,
+            title = "Kotlinで学ぶ関数型プログラミング",
+            titleKana = "コトリンデ マナブ カンスウガタ プログラミング",
+            author = "鈴木花子",
+            publisherId = 1L,
+            price = 3000,
+            userId = 100L
+        )
+        val bookCreate3 = BookCreate(
+            id = null,
+            title = "実践Kotlinアプリ開発",
+            titleKana = "ジッセン コトリン アプリ カイハツ",
+            author = "佐藤次郎",
+            publisherId = 1L,
+            price = 2800,
+            userId = 100L
+        )
+
+        @Test
+        fun `return AllSuceess when register succeeds without id`() {
+            val bookCreates = listOf(
+                bookCreate1,
+                bookCreate2,
+                bookCreate3
             )
-        )
-        bookService.registerBooks(bookCreates)
-        verify(batchService).batchProcess(
-            dataList = bookCreates,
-            mapperClass = BookMapper::class.java,
-            operation = BookMapper::save
-        )
-    }
 
-    @Test
-    fun `deleteBookLogically should call delete on BookMapper`() {
-        val bookId = 1L
-        bookService.deleteBookLogically(bookId)
-        verify(bookMapper).deleteLogically(bookId)
-    }
+            // mybatisの生成されたidをbook objに賦与する機能をmockする
+            val captor = argumentCaptor<List<Book>>()
+            whenever(bookMapper.batchSave(captor.capture())).thenAnswer {
+                val books = captor.firstValue
+                books.forEachIndexed { index, book ->
+                    book.id = (index + 1).toLong()
+                }
+                books.size
+            }
 
-    @Test
-    fun `deleteBooksLogically should call deleteBatch on BookMapper`() {
-        val ids = listOf(1L, 2L)
-        bookService.deleteBooksLogically(ids)
-        verify(bookMapper).deleteBatchLogically(ids)
+            val expectedResult = BookBatchProcessResult.AllSuccess(
+                items = listOf(
+                    SuccessfulItem(index = 0, id = 1, title = "はじめてのKotlinプログラミング"),
+                    SuccessfulItem(index = 1, id = 2, title = "Kotlinで学ぶ関数型プログラミング"),
+                    SuccessfulItem(index = 2, id = 3, title = "実践Kotlinアプリ開発")
+                )
+            )
+
+            val result = bookService.registerBooks(bookCreates)
+            assertEquals(expectedResult, result)
+            verify(bookMapper, times(1)).batchSave(any())
+        }
+
+        @Test
+        fun `return AllSuccess when register succeeds with specified ids`() {
+            val bookCreates = listOf(
+                bookCreate1.copy(id = 100L),
+                bookCreate2.copy(id = 101L),
+                bookCreate3.copy(id = 102L)
+            )
+
+            // mybatisの生成されたidをbook objに賦与する機能をmockする
+            val captor = argumentCaptor<List<Book>>()
+            whenever(bookMapper.batchSave(captor.capture())).thenAnswer {
+                val books = captor.firstValue
+                books.forEachIndexed { index, book ->
+                    book.id = (index + 100).toLong()
+                }
+                books.size
+            }
+
+            val expectedResult = BookBatchProcessResult.AllSuccess(
+                items = listOf(
+                    SuccessfulItem(index = 0, id = 100, title = "はじめてのKotlinプログラミング"),
+                    SuccessfulItem(index = 1, id = 101, title = "Kotlinで学ぶ関数型プログラミング"),
+                    SuccessfulItem(index = 2, id = 102, title = "実践Kotlinアプリ開発")
+                )
+            )
+
+            val result = bookService.registerBooks(bookCreates)
+            assertEquals(expectedResult, result)
+            verify(bookMapper, times(1)).batchSave(anyList())
+        }
+
+        @Test
+        fun `return Partial when some books have invalid id`() {
+            val bookCreates = listOf(
+                bookCreate1.copy(id = -1L),
+                bookCreate2.copy(id = 1L),
+                bookCreate3.copy(id = 0L)
+            )
+
+            // mybatisの生成されたidをbook objに賦与する機能をmockする
+            val captor = argumentCaptor<List<Book>>()
+            whenever(bookMapper.batchSave(captor.capture())).thenAnswer {
+                val books = captor.firstValue
+                books.forEachIndexed { index, book ->
+                    book.id = 1L
+                }
+                books.size
+            }
+
+            val expectedResult = BookBatchProcessResult.Partial(
+                successfulItems = listOf(
+                    SuccessfulItem(index = 1, id = 1, title = "Kotlinで学ぶ関数型プログラミング")
+                ),
+                failedItems = listOf(
+                    FailedItem(index = 0),
+                    FailedItem(index = 2)
+                )
+            )
+
+            val result = bookService.registerBooks(bookCreates)
+            assertEquals(expectedResult, result)
+            verify(bookMapper, times(1)).batchSave(anyList())
+        }
+
+        @Test
+        fun `return Partial when some books have invalid publisherId`() {
+            val bookCreates = listOf(
+                bookCreate1.copy(publisherId = -1L),
+                bookCreate2.copy(publisherId = 1L),
+                bookCreate3.copy(publisherId = 0L)
+            )
+
+            // mybatisの生成されたidをbook objに賦与する機能をmockする
+            val captor = argumentCaptor<List<Book>>()
+            whenever(bookMapper.batchSave(captor.capture())).thenAnswer {
+                val books = captor.firstValue
+                books.forEachIndexed { index, book ->
+                    book.id = 1L
+                }
+                books.size
+            }
+
+            val expectedResult = BookBatchProcessResult.Partial(
+                successfulItems = listOf(
+                    SuccessfulItem(index = 1, id = 1, title = "Kotlinで学ぶ関数型プログラミング")
+                ),
+                failedItems = listOf(
+                    FailedItem(index = 0),
+                    FailedItem(index = 2)
+                )
+            )
+
+            val result = bookService.registerBooks(bookCreates)
+            assertEquals(expectedResult, result)
+            verify(bookMapper, times(1)).batchSave(anyList())
+        }
+
+        @Test
+        fun `return Partial when some books have invalid userId`() {
+            val bookCreates = listOf(
+                bookCreate1.copy(userId = -1L),
+                bookCreate2.copy(userId = 1L),
+                bookCreate3.copy(userId = 0L)
+            )
+
+            // mybatisの生成されたidをbook objに賦与する機能をmockする
+            val captor = argumentCaptor<List<Book>>()
+            whenever(bookMapper.batchSave(captor.capture())).thenAnswer {
+                val books = captor.firstValue
+                books.forEachIndexed { index, book ->
+                    book.id = 1L
+                }
+                books.size
+            }
+
+            val expectedResult = BookBatchProcessResult.Partial(
+                successfulItems = listOf(
+                    SuccessfulItem(index = 1, id = 1, title = "Kotlinで学ぶ関数型プログラミング")
+                ),
+                failedItems = listOf(
+                    FailedItem(index = 0),
+                    FailedItem(index = 2)
+                )
+            )
+
+            val result = bookService.registerBooks(bookCreates)
+            assertEquals(expectedResult, result)
+            verify(bookMapper, times(1)).batchSave(anyList())
+        }
+
+        @Test
+        fun `return Partial when some books have invalid price`() {
+            val bookCreates = listOf(
+                bookCreate1.copy(price = -1),
+                bookCreate2.copy(price = 1000),
+                bookCreate3.copy(price = 0)
+            )
+
+            // mybatisの生成されたidをbook objに賦与する機能をmockする
+            val captor = argumentCaptor<List<Book>>()
+            whenever(bookMapper.batchSave(captor.capture())).thenAnswer {
+                val books = captor.firstValue
+                books.forEachIndexed { index, book ->
+                    book.id = (index + 1).toLong()
+                }
+                books.size
+            }
+
+            val expectedResult = BookBatchProcessResult.Partial(
+                successfulItems = listOf(
+                    SuccessfulItem(index = 1, id = 1, title = "Kotlinで学ぶ関数型プログラミング"),
+                    SuccessfulItem(index = 2, id = 2, title = "実践Kotlinアプリ開発")
+                ),
+                failedItems = listOf(
+                    FailedItem(index = 0),
+                )
+            )
+
+            val result = bookService.registerBooks(bookCreates)
+            assertEquals(expectedResult, result)
+            verify(bookMapper, times(1)).batchSave(anyList())
+        }
+
+        @Test
+        fun `return AllFailed when register failed`() {
+            val bookCreates = listOf(
+                bookCreate1,
+                bookCreate2,
+                bookCreate3
+            )
+
+            // 何かの原因でINSERTできた行数が0の状況をmock
+            whenever(bookMapper.batchSave(anyList())).thenReturn(0)
+
+            val expectedResult = BookBatchProcessResult.AllFailure(
+                items = listOf(
+                    FailedItem(index = 0),
+                    FailedItem(index = 1),
+                    FailedItem(index = 2)
+                )
+            )
+
+            val result = bookService.registerBooks(bookCreates)
+            assertEquals(expectedResult, result)
+            verify(bookMapper, times(1)).batchSave(anyList())
+        }
+
+        @Test
+        fun `return AllFailure when DuplicateKeyException is thrown`() {
+            val bookCreates = listOf(
+                bookCreate1,
+                bookCreate2,
+                bookCreate3
+            )
+
+            whenever(bookMapper.batchSave(anyList())).thenThrow(DuplicateKeyException("Duplicate key"))
+
+            val expectedResult = BookBatchProcessResult.AllFailure(
+                items = listOf(
+                    FailedItem(index = 0),
+                    FailedItem(index = 1),
+                    FailedItem(index = 2)
+                )
+            )
+
+            val result = bookService.registerBooks(bookCreates)
+            assertEquals(expectedResult, result)
+            verify(bookMapper, times(1)).batchSave(anyList())
+        }
+
+        @Test
+        fun `return AllFailure when DataIntegrityViolationException is thrown`() {
+            val bookCreates = listOf(
+                bookCreate1,
+                bookCreate2,
+                bookCreate3
+            )
+
+            whenever(bookMapper.batchSave(anyList())).thenThrow(DataIntegrityViolationException("Data integrity violation"))
+
+            val expectedResult = BookBatchProcessResult.AllFailure(
+                items = listOf(
+                    FailedItem(index = 0),
+                    FailedItem(index = 1),
+                    FailedItem(index = 2)
+                )
+            )
+
+            val result = bookService.registerBooks(bookCreates)
+            assertEquals(expectedResult, result)
+            verify(bookMapper, times(1)).batchSave(anyList())
+        }
+
+        @Test
+        fun `return AllFailure when other exception is thrown`() {
+            val bookCreates = listOf(
+                bookCreate1,
+                bookCreate2,
+                bookCreate3
+            )
+
+            whenever(bookMapper.batchSave(anyList())).thenThrow(RuntimeException("Unexpected error"))
+
+            val expectedResult = BookBatchProcessResult.AllFailure(
+                items = listOf(
+                    FailedItem(index = 0),
+                    FailedItem(index = 1),
+                    FailedItem(index = 2)
+                )
+            )
+
+            val result = bookService.registerBooks(bookCreates)
+            assertEquals(expectedResult, result)
+            verify(bookMapper, times(1)).batchSave(anyList())
+        }
+
+        @Test
+        fun `return AllFailure when MyBatis does not assign generated IDs`() {
+            val bookCreates = listOf(
+                bookCreate1,
+                bookCreate2,
+                bookCreate3
+            )
+
+            // 自動生成のIDが正しく付与されなかった場合をmock
+            whenever(bookMapper.batchSave(anyList())).thenAnswer { invocation ->
+                val books = invocation.getArgument<List<Book>>(0)
+                // book.idを設定しない
+                books.size
+            }
+
+            val expectedResult = BookBatchProcessResult.AllFailure(
+                items = listOf(
+                    FailedItem(index = 0),
+                    FailedItem(index = 1),
+                    FailedItem(index = 2)
+                )
+            )
+
+            val result = bookService.registerBooks(bookCreates)
+            assertEquals(expectedResult, result)
+            verify(bookMapper, times(1)).batchSave(anyList())
+        }
     }
 
     @Nested
@@ -844,33 +1127,5 @@ class BookServiceTest {
 
             verify(bookMapper, times(1)).update(any())
         }
-    }
-
-    @Test
-    fun `updateBooks should call batchService with update operation`() {
-        val books = listOf(
-            Book(
-                id = 1L,
-                title = "Kotlin入門",
-                titleKana = "コトリン ニュウモン",
-                author = "山田太郎",
-                publisherId = 1L,
-                userId = 100L
-            ),
-            Book(
-                id = 2L,
-                title = "Spring Boot入門",
-                titleKana = "スプリング ブート ニュウモン",
-                author = "佐藤花子",
-                publisherId = 2L,
-                userId = 101L
-            )
-        )
-        bookService.updateBooks(books)
-        verify(batchService).batchProcess(
-            dataList = books,
-            mapperClass = BookMapper::class.java,
-            operation = BookMapper::update
-        )
     }
 }

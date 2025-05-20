@@ -52,7 +52,7 @@ class BookController(private val bookService: BookService) {
         val result = bookService.registerBooks(bookCreates)
         return when (result) {
             is BookBatchProcessResult.AllSuccess -> ResponseEntity.ok(result)
-            is BookBatchProcessResult.AllFailure -> ResponseEntity.status(HttpStatus.BAD_REQUEST).body(result)
+            is BookBatchProcessResult.AllFailure -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(result)
             is BookBatchProcessResult.Partial -> ResponseEntity.status(HttpStatus.MULTI_STATUS).body(result)
         }
     }

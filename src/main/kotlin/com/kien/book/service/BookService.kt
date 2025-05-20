@@ -196,7 +196,7 @@ class BookService(
                         successfulItems.add(
                             SuccessfulItem(
                                 index = index,
-                                id = book.id ?: throw CustomException(""),
+                                id = book.id ?: throw Exception(),
                                 title = book.title
                             )
                         )
@@ -215,7 +215,7 @@ class BookService(
                 successfulItems.clear()
                 failedItems.clear()
                 failedItems.addAll(bookCreates.indices.map { FailedItem(index = it) })
-            } catch (e: CustomException) {
+            } catch (e: Exception) {
                 successfulItems.clear()
                 failedItems.clear()
                 failedItems.addAll(bookCreates.indices.map { FailedItem(index = it) })
