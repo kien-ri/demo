@@ -17,6 +17,8 @@ interface BookMapper {
 
     fun save(book: Book): Int
 
+    fun batchSave(books: List<Book>): Int
+
     fun deleteLogically(id: Long): Int
 
     fun deleteBatchLogically(ids: List<Long>): Int

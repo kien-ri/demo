@@ -143,6 +143,41 @@
             updated_at = #{updatedAt}
     </insert>
 
+    <insert id="batchSave" parameterType="java.util.List" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO `books` (
+            id,
+            title,
+            title_kana,
+            author,
+            publisher_id,
+            user_id,
+            price,
+            created_at,
+            updated_at
+        )
+        VALUES
+        <foreach collection="list" item="book" separator=",">
+            (
+                <choose>
+                    <when test="book.id != null">
+                        #{book.id},
+                    </when>
+                    <otherwise>
+                        NULL,
+                    </otherwise>
+                </choose>
+                #{book.title},
+                #{book.titleKana},
+                #{book.author},
+                #{book.publisherId},
+                #{book.userId},
+                #{book.price},
+                #{book.createdAt},
+                #{book.updatedAt}
+            )
+        </foreach>
+    </insert>
+
     <update id="deleteLogically" parameterType="long">
         UPDATE
             `books`

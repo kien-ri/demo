@@ -4,14 +4,15 @@ import com.kien.book.common.*
 import com.kien.book.model.dto.book.BookCondition
 import com.kien.book.common.Page
 import com.kien.book.common.util.DBExceptionUtils
+import com.kien.book.common.util.StringUtils.toCamelCase
 import com.kien.book.common.util.ValidationUtils
 import com.kien.book.model.Book
 import com.kien.book.model.dto.book.*
 import com.kien.book.repository.BookMapper
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.cglib.core.Local
-import org.springframework.dao.DuplicateKeyException
 import org.springframework.dao.DataIntegrityViolationException
+import org.springframework.dao.DuplicateKeyException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.sql.SQLIntegrityConstraintViolationException
@@ -112,35 +113,14 @@ class BookService(
      */
     @Transactional
     fun registerBook(bookCreate: BookCreate): BookCreatedResponse {
-
-        // バリデーション
-        bookCreate.id?.let { id ->
-            if (id <= 0) {
-                throw CustomException(
-                    message = MSG_INVALID_BOOK_ID
-                )
-            }
-        }
-        if (bookCreate.publisherId != null && bookCreate.publisherId <= 0) {
-            throw CustomException(
-                message = MSG_INVALID_PUBLISHER_ID
-            )
-        }
-        if (bookCreate.userId != null && bookCreate.userId <= 0) {
-            throw CustomException(
-                message = MSG_INVALID_USER_ID)
-        }
-        if (bookCreate.price != null && bookCreate.price < 0) {
-            throw CustomException(
-                message = MSG_INVALID_PRICE)
-        }
-
         // 作成時間と更新時間を設定
         val currentTime = LocalDateTime.now()
         val book = bookCreate.toEntity(
             createdAt = currentTime,
             updatedAt = currentTime
         )
+
+        validateBookParam(book)
 
         var insertedCount: Int = -1
         try {
@@ -152,9 +132,9 @@ class BookService(
                 value = bookCreate.id
             )
         } catch (e: DataIntegrityViolationException) {
-            if (isForeignKeyViolation(e)) {
+            if (DBExceptionUtils.isForeignKeyViolation(e)) {
                 val errorMsg = e.message ?: ""
-                val propertyName = extractForeignKeyColumn(errorMsg)?.toCamelCase() ?: ""
+                val propertyName = DBExceptionUtils.extractForeignKeyColumn(errorMsg)?.toCamelCase() ?: ""
                 val property = BookCreate::class.memberProperties.find { it.name == propertyName }
                 val propertyValue = property?.get(bookCreate)
                 throw NonExistentForeignKeyCustomException(
@@ -179,14 +159,79 @@ class BookService(
         )
     }
 
-    fun registerBooks(bookCreates: List<BookCreate>) {
-        val books = bookCreates.map { it.toEntity() }
+    fun registerBooks(bookCreates: List<BookCreate>): BookBatchProcessResult {
+        val currentTime = LocalDateTime.now()
+        val books = bookCreates.map {
+            it.toEntity(
+                createdAt = currentTime,
+                updatedAt = currentTime
+            )
+        }
 
-        batchService.batchProcess(
-            dataList = books,
-            mapperClass = BookMapper::class.java,
-            operation = BookMapper::save
-        )
+        val successfulItems = mutableListOf<SuccessfulItem>()
+        val failedItems = mutableListOf<FailedItem>()
+        // パラメータのバリデーションに通過した書籍情報を保存用
+        val validBooksWithIndex = mutableListOf<Pair<Int, Book>>()
+
+        books.forEachIndexed { index, book ->
+            try {
+                validateBookParam(book)
+                validBooksWithIndex.add(
+                    Pair(index, book)
+                )
+            } catch (e: CustomException) {
+                failedItems.add(
+                    FailedItem(index = index)
+                )
+            }
+        }
+
+        // パラメータのバリデーションに通過した書籍情報のみをINSERTする
+        if (validBooksWithIndex.isNotEmpty()) {
+            val validBooks = validBooksWithIndex.map { it.second }
+            try {
+                val insertedCount = bookMapper.batchSave(validBooks)
+                if (insertedCount == validBooks.size) {
+                    validBooksWithIndex.forEach { (index, book) ->
+                        successfulItems.add(
+                            SuccessfulItem(
+                                index = index,
+                                id = book.id ?: throw CustomException(""),
+                                title = book.title
+                            )
+                        )
+                    }
+                } else {
+                    // DBで問題が生じたら全て失敗したことにする
+                    successfulItems.clear()
+                    failedItems.clear()
+                    failedItems.addAll(bookCreates.indices.map { FailedItem(index = it) })
+                }
+            } catch (e: DuplicateKeyException) {
+                successfulItems.clear()
+                failedItems.clear()
+                failedItems.addAll(bookCreates.indices.map { FailedItem(index = it) })
+            } catch (e: DataIntegrityViolationException) {
+                successfulItems.clear()
+                failedItems.clear()
+                failedItems.addAll(bookCreates.indices.map { FailedItem(index = it) })
+            } catch (e: CustomException) {
+                successfulItems.clear()
+                failedItems.clear()
+                failedItems.addAll(bookCreates.indices.map { FailedItem(index = it) })
+            }
+        }
+
+        return when {
+            failedItems.isEmpty() -> BookBatchProcessResult.AllSuccess(items = successfulItems)
+            successfulItems.isEmpty() -> BookBatchProcessResult.AllFailure(items = failedItems)
+            else -> {
+                BookBatchProcessResult.Partial(
+                    successfulItems = successfulItems,
+                    failedItems = failedItems
+                )
+            }
+        }
     }
 
     fun deleteBookLogically(id: Long) {
@@ -199,37 +244,12 @@ class BookService(
 
     @Transactional
     fun updateBook(bookUpdate: BookUpdate): BookUpdatedResponse {
-        // 書籍情報IDのチェック
-        ValidationUtils.validatePositiveId(
-            id = bookUpdate.id,
-            fieldName = Book::id.name,
-            errorMsg = MSG_INVALID_VALUE
-        )
-        // 出版社IDのチェック
-        ValidationUtils.validatePositiveId(
-            id = bookUpdate.publisherId,
-            fieldName = Book::publisherId.name,
-            errorMsg = MSG_INVALID_VALUE
-        )
-        // 登録者(ユーザ)IDのチェック
-        ValidationUtils.validatePositiveId(
-            id = bookUpdate.userId,
-            fieldName = Book::userId.name,
-            errorMsg = MSG_INVALID_VALUE
-        )
-        // 金額のチェック
-        if (bookUpdate.price != null && bookUpdate.price < 0) {
-            throw InvalidParamCustomException(
-                message = MSG_INVALID_VALUE,
-                field = Book::price.name,
-                value = bookUpdate.price
-            )
-        }
-
         val bookId = bookUpdate.id
         val book = bookUpdate.toEntity(
             updatedAt = LocalDateTime.now()
         )
+
+        validateBookParam(book)
 
         var updatedCount: Int = -1
         try {
@@ -271,20 +291,32 @@ class BookService(
         )
     }
 
-    private fun isForeignKeyViolation(e: DataIntegrityViolationException): Boolean {
-        val rootCause = e.rootCause
-        return rootCause is SQLIntegrityConstraintViolationException && rootCause.errorCode == 1452
-    }
-
-    private fun extractForeignKeyColumn(errorMessage: String): String? {
-        val regex = Regex("FOREIGN KEY \\(`(\\w+)`\\)")
-        val matchResult = regex.find(errorMessage)
-        return matchResult?.groupValues?.get(1)
-    }
-
-    private fun String.toCamelCase(): String {
-        return this.split("_").mapIndexed { index, word ->
-            if (index == 0) word else word.replaceFirstChar { it.uppercase() }
-        }.joinToString("")
+    private fun validateBookParam(book: Book) {
+        // 書籍情報IDのチェック
+        ValidationUtils.validatePositiveId(
+            id = book.id,
+            fieldName = Book::id.name,
+            errorMsg = MSG_INVALID_VALUE
+        )
+        // 出版社IDのチェック
+        ValidationUtils.validatePositiveId(
+            id = book.publisherId,
+            fieldName = Book::publisherId.name,
+            errorMsg = MSG_INVALID_VALUE
+        )
+        // 登録者(ユーザ)IDのチェック
+        ValidationUtils.validatePositiveId(
+            id = book.userId,
+            fieldName = Book::userId.name,
+            errorMsg = MSG_INVALID_VALUE
+        )
+        // 金額のチェック
+        if (book.price?.let { it < 0 } == true) {
+            throw InvalidParamCustomException(
+                message = MSG_INVALID_VALUE,
+                field = Book::price.name,
+                value = book.price
+            )
+        }
     }
 }
