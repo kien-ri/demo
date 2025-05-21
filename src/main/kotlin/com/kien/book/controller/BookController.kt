@@ -50,7 +50,12 @@ class BookController(private val bookService: BookService) {
     @PostMapping("/batch")
     fun registerBooks(@RequestBody bookCreates: List<BookCreate>): ResponseEntity<BookBatchProcessedResult> {
         val result = bookService.registerBooks(bookCreates)
-        return ResponseEntity.ok(result)
+        val httpStatus = result.httpStatus
+        return when (httpStatus) {
+            HttpStatus.OK -> ResponseEntity.ok(result)
+            HttpStatus.BAD_REQUEST -> ResponseEntity.badRequest().body(result)
+            else -> ResponseEntity.status(HttpStatus.MULTI_STATUS).body(result)
+        }
     }
 
     @DeleteMapping("/{id}")
