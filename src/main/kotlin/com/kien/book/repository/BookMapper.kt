@@ -19,6 +19,14 @@ interface BookMapper {
 
     fun save(book: Book): Int
 
+    /**
+     * 一括登録
+     *
+     * MybatisのuseGeneratedKeysをtrueにすると、
+     * ID指定でINSERTする場合の動作がおかしくなるため、
+     * falseにしている
+     * DBのIDが必要な場合は再度クエリで取得するように
+     */
     fun batchSave(books: List<Book>): Int
 
     fun deleteLogically(id: Long): Int
