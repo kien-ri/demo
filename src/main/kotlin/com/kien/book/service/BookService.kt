@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.cglib.core.Local
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.dao.DuplicateKeyException
+import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.sql.SQLIntegrityConstraintViolationException
@@ -112,7 +113,7 @@ class BookService(
      *  また、ID を明示的に指定した場合、指定した ID が使用され、自動生成は行われません。
      */
     @Transactional
-    fun registerBook(bookCreate: BookCreate): BookCreatedResponse {
+    fun registerBook(bookCreate: BookCreate): BookBasicInfo {
         // 作成時間と更新時間を設定
         val currentTime = LocalDateTime.now()
         val book = bookCreate.toEntity(
@@ -153,85 +154,91 @@ class BookService(
         }
         val bookId = book.id ?: throw CustomException(message = MSG_NO_ID_GENERATED)
 
-        return BookCreatedResponse(
+        return BookBasicInfo(
             id = bookId,
             title = book.title
         )
     }
 
-    fun registerBooks(bookCreates: List<BookCreate>): BookBatchProcessResult {
+    /**
+     * 書籍の一括登録処理を行う。
+     *
+     * このメソッドは、与えられた書籍作成DTOのリストから書籍エンティティを生成し、
+     * バリデーションを実行した後、有効な書籍のみをデータベースに一括登録する。
+     * 登録結果は、成功した書籍と失敗した書籍の情報と共に返される。
+     *
+     * ただし、SQLエラーが発生した場合は、エラーをそのままthrowし、グローバルハンドラに処理させる。
+     */
+    @Transactional
+    fun registerBooks(bookCreates: List<BookCreate>): BookBatchProcessedResult {
+        // 1. DTOからEntityへ変換
         val currentTime = LocalDateTime.now()
         val books = bookCreates.map {
+            // ここでUUIDが生成される
             it.toEntity(
                 createdAt = currentTime,
                 updatedAt = currentTime
             )
         }
 
-        val successfulItems = mutableListOf<SuccessfulItem>()
-        val failedItems = mutableListOf<FailedItem>()
-        // パラメータのバリデーションに通過した書籍情報を保存用
-        val validBooksWithIndex = mutableListOf<Pair<Int, Book>>()
+        val successfulItems = mutableListOf<ProcessedBook>()
+        val failedItems = mutableListOf<ProcessedBook>()
+        val validBooks = mutableListOf<Book>()
 
-        books.forEachIndexed { index, book ->
+        // 2. パラメータのバリデーション
+        books.forEach { book ->
             try {
                 validateBookParam(book)
-                validBooksWithIndex.add(
-                    Pair(index, book)
-                )
+                validBooks.add(book)
             } catch (e: CustomException) {
                 failedItems.add(
-                    FailedItem(index = index)
+                    ProcessedBook(
+                        id = null,  // 登録していないので、当然DBのIDがない
+                        title = book.title,
+                        error = e
+                    )
                 )
             }
         }
 
-        // パラメータのバリデーションに通過した書籍情報のみをINSERTする
-        if (validBooksWithIndex.isNotEmpty()) {
-            val validBooks = validBooksWithIndex.map { it.second }
+        // 3. パラメータのバリデーションに通過した書籍情報のみをINSERTする
+        if (validBooks.isNotEmpty()) {
             try {
                 val insertedCount = bookMapper.batchSave(validBooks)
                 if (insertedCount == validBooks.size) {
-                    validBooksWithIndex.forEach { (index, book) ->
+                    // 3.1 INSERTできたらidとtitleをクエリで取得し、成功配列に入れる
+                    val uuidList = validBooks.map { it.uuid }.toList()
+                    val bookBasicInfos = bookMapper.getBasicInfoByUuids(uuidList)
+                    bookBasicInfos.forEach { info ->
                         successfulItems.add(
-                            SuccessfulItem(
-                                index = index,
-                                id = book.id ?: throw Exception(),
-                                title = book.title
+                            ProcessedBook(
+                                id = info.id,
+                                title = info.title,
+                                error = null
                             )
                         )
                     }
                 } else {
-                    // DBで問題が生じたら全て失敗したことにする
-                    successfulItems.clear()
-                    failedItems.clear()
-                    failedItems.addAll(bookCreates.indices.map { FailedItem(index = it) })
+                    throw throw CustomException(message = MSG_NO_ID_GENERATED)
                 }
-            } catch (e: DuplicateKeyException) {
-                successfulItems.clear()
-                failedItems.clear()
-                failedItems.addAll(bookCreates.indices.map { FailedItem(index = it) })
-            } catch (e: DataIntegrityViolationException) {
-                successfulItems.clear()
-                failedItems.clear()
-                failedItems.addAll(bookCreates.indices.map { FailedItem(index = it) })
-            } catch (e: Exception) {
-                successfulItems.clear()
-                failedItems.clear()
-                failedItems.addAll(bookCreates.indices.map { FailedItem(index = it) })
+            } catch (e: RuntimeException) {
+                throw e
             }
         }
 
-        return when {
-            failedItems.isEmpty() -> BookBatchProcessResult.AllSuccess(items = successfulItems)
-            successfulItems.isEmpty() -> BookBatchProcessResult.AllFailure(items = failedItems)
-            else -> {
-                BookBatchProcessResult.Partial(
-                    successfulItems = successfulItems,
-                    failedItems = failedItems
-                )
-            }
+        // 4. http status 設定
+        val httpStatus = when {
+            successfulItems.isEmpty() -> HttpStatus.BAD_REQUEST // 全失敗
+            failedItems.isEmpty() -> HttpStatus.OK              // 全成功
+            else -> HttpStatus.MULTI_STATUS                     // 一部成功
         }
+
+        // 5. DTO構成
+        return BookBatchProcessedResult(
+            httpStatus = httpStatus,
+            successfulItems = successfulItems,
+            failedItems = failedItems
+        )
     }
 
     fun deleteBookLogically(id: Long) {

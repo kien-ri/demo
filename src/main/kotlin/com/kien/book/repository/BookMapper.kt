@@ -1,13 +1,15 @@
 package com.kien.book.repository
 
 import com.kien.book.model.Book
+import com.kien.book.model.dto.book.BookBasicInfo
 import com.kien.book.model.dto.book.BookCondition
-import com.kien.book.model.dto.book.BookCreate
 import com.kien.book.model.dto.book.BookView
 import org.apache.ibatis.annotations.Mapper
 
 @Mapper
 interface BookMapper {
+
+    fun getBasicInfoByUuids(uuids: List<String>): List<BookBasicInfo>
 
     fun getById(id: Long): BookView?
 

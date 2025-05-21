@@ -1,39 +1,23 @@
 package com.kien.book.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.kien.book.common.CustomException
 import com.kien.book.common.NonExistentForeignKeyCustomException
 import com.kien.book.common.NotFoundCustomException
-import com.kien.book.common.Page
-import com.kien.book.model.Book
 import com.kien.book.model.dto.book.*
 import com.kien.book.common.DuplicateKeyCustomException
 import com.kien.book.model.dto.book.BookCreate
 import com.kien.book.model.dto.book.BookView
 import com.kien.book.service.BookService
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.Mockito
-import org.mockito.Mockito.mock
 import org.mockito.kotlin.*
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
-import org.springframework.context.annotation.Bean
-import org.springframework.test.context.junit.jupiter.SpringExtension
 import java.time.LocalDateTime
-import org.mockito.Mockito.mock
-import org.mockito.kotlin.*
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.context.TestConfiguration
-import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.http.MediaType
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.*
-import java.sql.SQLIntegrityConstraintViolationException
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
@@ -183,7 +167,7 @@ class BookControllerTest {
                 userId = 100L
             )
 
-            val expectedResult = BookCreatedResponse(
+            val expectedResult = BookBasicInfo(
                 id = 1L,
                 title = "Kotlin入門"
             )
@@ -216,7 +200,7 @@ class BookControllerTest {
                 userId = 100L
             )
 
-            val expectedResult = BookCreatedResponse(
+            val expectedResult = BookBasicInfo(
                 id = 222L,
                 title = "Kotlin入門"
             )

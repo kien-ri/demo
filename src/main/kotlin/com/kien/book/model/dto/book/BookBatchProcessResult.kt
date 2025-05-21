@@ -1,28 +1,21 @@
 package com.kien.book.model.dto.book
 
-sealed class BookBatchProcessResult {
-    data class AllSuccess(
-        val items: List<SuccessfulItem>
-    ) : BookBatchProcessResult()
+import org.springframework.http.HttpStatus
 
-    data class AllFailure(
-        val items: List<FailedItem>
-    ) : BookBatchProcessResult()
-
-    data class Partial(
-        val successfulItems: List<SuccessfulItem>,
-        val failedItems: List<FailedItem>
-    ) : BookBatchProcessResult()
-}
-
-data class SuccessfulItem(
-    val index: Int,
-    val id: Long,
-    val title: String?
+/**
+ * 一括登録APIの戻り値
+ */
+data class BookBatchProcessedResult(
+    val httpStatus: HttpStatus,
+    // 成功に登録された書籍
+    val successfulItems: List<ProcessedBook>,
+    // 登録に失敗した書籍
+    val failedItems: List<ProcessedBook>
 )
 
-data class FailedItem(
-    val index: Int,
-    // TODO: 一件ずつでないとエラーキャッチが難しい
-    //val error: Exception
+// 書籍の基礎情報
+data class ProcessedBook(
+    val id: Long?,
+    val title: String?,
+    val error: Exception?
 )

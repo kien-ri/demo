@@ -3,6 +3,7 @@ package com.kien.book.model.dto.book
 import com.kien.book.model.Book
 import jakarta.validation.constraints.Min
 import java.time.LocalDateTime
+import java.util.UUID
 
 // 書籍情報新規登録するのに必要な情報をまとめたDTOクラス
 data class BookCreate(
@@ -26,11 +27,15 @@ data class BookCreate(
     @field:Min(0)
     val price: Int?
 ) {
+    /**
+     * UUIDが生成される
+     */
     fun toEntity(
         createdAt: LocalDateTime? = null,
         updatedAt: LocalDateTime? = null
     ) = Book(
         id = id,
+        uuid = UUID.randomUUID().toString(),
         title = title,
         titleKana = titleKana,
         author = author,

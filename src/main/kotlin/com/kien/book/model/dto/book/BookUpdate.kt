@@ -5,6 +5,10 @@ import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotBlank
 import java.time.LocalDateTime
 
+/**
+ * DTO
+ * 書籍情報更新に必要なパラメータのまとめ
+ */
 data class BookUpdate(
     @field:Min(1)
     val id: Long,
@@ -28,6 +32,7 @@ data class BookUpdate(
         updatedAt: LocalDateTime? = null
     ) = Book(
         id,
+        uuid = "",  // update時はUUIDの更新をしない
         title,
         titleKana,
         author,
