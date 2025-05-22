@@ -461,14 +461,9 @@ class BookMapperTest {
         ],
         executionPhase = ExecutionPhase.BEFORE_TEST_CLASS
     )
-    inner class BatchSaveTest {
+    inner class batchSaveWithoutIdTest {
         @Autowired
         private lateinit var booksTestMapper: BooksTestMapper
-
-        @BeforeEach
-        fun `resetAutoIncrement`() {
-            booksTestMapper.resetAutoIncrement()
-        }
 
         val currentTime = LocalDateTime.of(2025, 5, 4, 13, 20, 10)
 
@@ -520,12 +515,11 @@ class BookMapperTest {
                 book3
             )
 
-            // 批量插入
-            val affectedRows = bookMapper.batchSave(books)
+            val affectedRows = bookMapper.batchSaveWithoutId(books)
             // 挿入された行数が3であることを確認
             assertThat(affectedRows).isEqualTo(3)
 
-            // MyBatisのuseGeneratedKey機能が正しく挿入されたデータのIDを割り当てていることを確認
+            // auto increment のIDを検証
             assertThat(books[0].id).isEqualTo(5L)
             assertThat(books[1].id).isEqualTo(6L)
             assertThat(books[2].id).isEqualTo(7L)
@@ -583,7 +577,86 @@ class BookMapperTest {
         }
 
         @Test
-        fun `batchSave should insert books with id`() {
+        fun `throw exception when publisherId non exists`() {
+            val books = listOf(
+                book1.copy(publisherId = 999L),
+                book2.copy(),
+                book3.copy(),
+            )
+
+            assertFailsWith<DataIntegrityViolationException> {
+                bookMapper.batchSaveWithoutId(books)
+            }
+        }
+
+        @Test
+        fun `throw exception when userId non exists`() {
+            val books = listOf(
+                book1.copy(userId = 999L),
+                book2.copy(),
+                book3.copy(),
+            )
+
+            assertFailsWith<DataIntegrityViolationException> {
+                bookMapper.batchSaveWithoutId(books)
+            }
+        }
+    }
+
+    @Nested
+    @Sql(scripts = ["/schema.sql"], executionPhase = ExecutionPhase.BEFORE_TEST_CLASS)
+    @Sql(
+        scripts = [
+            "/repository/data/books/save/publisher.sql",
+            "/repository/data/books/save/user.sql",
+            "/repository/data/books/save/books.sql"
+        ],
+        executionPhase = ExecutionPhase.BEFORE_TEST_CLASS
+    )
+    inner class BatchSaveWithSpecifiedIdTest {
+        @Autowired
+        private lateinit var booksTestMapper: BooksTestMapper
+
+        val currentTime = LocalDateTime.of(2025, 5, 4, 13, 20, 10)
+
+        val book1 = Book(
+            id = null,
+            title = "Python入門",
+            titleKana = "パイソン ニュウモン",
+            author = "佐藤花子",
+            publisherId = 1L,
+            userId = 100L,
+            price = 2500,
+            createdAt = currentTime,
+            updatedAt = currentTime
+        )
+
+        val book2 = Book(
+            id = null,
+            title = "Java入門（第2版）",
+            titleKana = "ジャバ ニュウモン ダイニハン",
+            author = "鈴木一郎",
+            publisherId = 1L,
+            userId = 100L,
+            price = 3000,
+            createdAt = currentTime,
+            updatedAt = currentTime
+        )
+
+        val book3 = Book(
+            id = null,
+            title = "Kotlin入門（第2版）",
+            titleKana = "コトリン ニュウモン ダイニハン",
+            author = "田中太郎",
+            publisherId = 1L,
+            userId = 100L,
+            price = 2800,
+            createdAt = currentTime,
+            updatedAt = currentTime
+        )
+
+        @Test
+        fun `insert books with id`() {
             // 現在の最大IDが4であることを確認
             val currentMaxId = booksTestMapper.getMaxId()
             assertThat(currentMaxId).isEqualTo(4L)
@@ -594,14 +667,9 @@ class BookMapperTest {
                 book3.copy(id = 15L)
             )
 
-            val affectedRows = bookMapper.batchSave(books)
+            val affectedRows = bookMapper.batchSaveWithSpecifiedId(books)
             // 挿入された行数が3であることを確認
             assertThat(affectedRows).isEqualTo(3)
-
-            // MyBatisのuseGeneratedKey機能が正しく挿入されたデータのIDを割り当てていることを確認
-            assertThat(books[0].id).isEqualTo(10L)
-            assertThat(books[1].id).isEqualTo(11L)
-            assertThat(books[2].id).isEqualTo(15L)
 
             // 挿入されたデータを取得して確認
             val insertedBooks = listOf(
@@ -653,6 +721,49 @@ class BookMapperTest {
             )
 
             assertThat(insertedBooks).containsExactlyInAnyOrder(*expectedBooks.toTypedArray())
+        }
+
+        @Test
+        fun `throw exception when id is duplicated`() {
+            // 現在の最大IDが4であることを確認
+            val currentMaxId = booksTestMapper.getMaxId()
+            assertThat(currentMaxId).isEqualTo(4L)
+
+            val books = listOf(
+                book1.copy(id = 1L),
+                book2.copy(id = 2L),
+                book3.copy(id = 3L),
+            )
+
+            assertFailsWith<DuplicateKeyException> {
+                bookMapper.batchSaveWithSpecifiedId(books)
+            }
+        }
+
+        @Test
+        fun `throw exception when publisherId non exists`() {
+            val books = listOf(
+                book1.copy(id = 100L, publisherId = 999L),
+                book2.copy(id = 101L),
+                book3.copy(id = 102L),
+            )
+
+            assertFailsWith<DataIntegrityViolationException> {
+                bookMapper.batchSaveWithSpecifiedId(books)
+            }
+        }
+
+        @Test
+        fun `throw exception when userId non exists`() {
+            val books = listOf(
+                book1.copy(id = 100L, userId = 999L),
+                book2.copy(id = 101L),
+                book3.copy(id = 102L),
+            )
+
+            assertFailsWith<DataIntegrityViolationException> {
+                bookMapper.batchSaveWithSpecifiedId(books)
+            }
         }
     }
 
