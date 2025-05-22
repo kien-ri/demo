@@ -4,7 +4,6 @@ import java.time.LocalDateTime
 
 data class Book(
     var id: Long? = null,
-    val uuid: String,
     var title: String?,
     var titleKana: String?,
     var author: String?,

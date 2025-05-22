@@ -9,8 +9,6 @@ import org.apache.ibatis.annotations.Mapper
 @Mapper
 interface BookMapper {
 
-    fun getBasicInfoByUuids(uuids: List<String>): List<BookBasicInfo>
-
     fun getById(id: Long): BookView?
 
     fun getCountByCondition(bookCondition: BookCondition): Int
@@ -19,15 +17,9 @@ interface BookMapper {
 
     fun save(book: Book): Int
 
-    /**
-     * 一括登録
-     *
-     * MybatisのuseGeneratedKeysをtrueにすると、
-     * ID指定でINSERTする場合の動作がおかしくなるため、
-     * falseにしている
-     * DBのIDが必要な場合は再度クエリで取得するように
-     */
-    fun batchSave(books: List<Book>): Int
+    fun batchSaveWithSpecifiedId(books: List<Book>): Int
+
+    fun batchSaveWithoutId(books: List<Book>): Int
 
     fun deleteLogically(id: Long): Int
 

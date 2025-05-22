@@ -193,7 +193,8 @@ class BookService(
             } catch (e: CustomException) {
                 failedItems.add(
                     ProcessedBook(
-                        id = null,  // 登録していないので、当然DBのIDがない
+                        // 指定がある場合は指定したIDを返し、ない場合はnull
+                        id = book.id,
                         title = book.title,
                         error = e
                     )
@@ -203,23 +204,32 @@ class BookService(
 
         // 3. パラメータのバリデーションに通過した書籍情報のみをINSERTする
         if (validBooks.isNotEmpty()) {
+            val (withId, withoutId) = validBooks.partition { it.id != null }
             try {
-                val insertedCount = bookMapper.batchSave(validBooks)
-                if (insertedCount == validBooks.size) {
-                    // 3.1 INSERTできたらidとtitleをクエリで取得し、成功配列に入れる
-                    val uuidList = validBooks.map { it.uuid }.toList()
-                    val bookBasicInfos = bookMapper.getBasicInfoByUuids(uuidList)
-                    bookBasicInfos.forEach { info ->
+                var withIdCount = 0
+                var noIdCount = 0
+                if (withId.isNotEmpty()) {
+                    withIdCount = bookMapper.batchSaveWithSpecifiedId(withId)
+                }
+
+                if (withoutId.isNotEmpty()) {
+                    // ID指定なしのINSERTではMybatisによってインクリメントのIDがobjに付与される
+                    noIdCount = bookMapper.batchSaveWithoutId(withoutId)
+                }
+                if (withIdCount == withId.size && noIdCount == withoutId.size) {
+                    // 3.1 INSERTできたら成功配列に入れる
+                    (withId + withoutId).forEach { book ->
                         successfulItems.add(
                             ProcessedBook(
-                                id = info.id,
-                                title = info.title,
+                                id = book.id,
+                                title = book.title,
                                 error = null
                             )
                         )
                     }
                 } else {
-                    throw throw CustomException(message = MSG_NO_ID_GENERATED)
+                    // 3.2 INSERT時点でエラー起きた場合はグローバルハンドラにthrow
+                    throw throw CustomException(message = MSG_INSERT_ERROR)
                 }
             } catch (e: RuntimeException) {
                 throw e
@@ -228,9 +238,12 @@ class BookService(
 
         // 4. http status 設定
         val httpStatus = when {
-            successfulItems.isEmpty() -> HttpStatus.BAD_REQUEST // 全失敗
-            failedItems.isEmpty() -> HttpStatus.OK              // 全成功
-            else -> HttpStatus.MULTI_STATUS                     // 一部成功
+            // 全失敗
+            successfulItems.isEmpty() -> HttpStatus.BAD_REQUEST
+            // 全成功
+            failedItems.isEmpty() -> HttpStatus.OK
+            // 一部成功
+            else -> HttpStatus.MULTI_STATUS
         }
 
         // 5. DTO構成

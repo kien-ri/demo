@@ -23,7 +23,6 @@ CREATE TABLE `user` (
 
 CREATE TABLE books (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    uuid CHAR(36),
     title VARCHAR(255),
     title_kana VARCHAR(255),
     author VARCHAR(255),

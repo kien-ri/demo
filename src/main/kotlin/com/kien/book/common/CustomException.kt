@@ -16,8 +16,8 @@ class NotFoundCustomException(
 ): CustomException(message)
 
 @JsonIncludeProperties("message", "field", "value")
-class InvalidParamCustomException(
-    message: String,
+data class InvalidParamCustomException(
+    override val message: String,
     val field: String,
     val value: Any?,
 ): CustomException(message)

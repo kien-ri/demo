@@ -32,7 +32,6 @@ data class BookUpdate(
         updatedAt: LocalDateTime? = null
     ) = Book(
         id,
-        uuid = "",  // update時はUUIDの更新をしない
         title,
         titleKana,
         author,

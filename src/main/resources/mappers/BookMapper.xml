@@ -5,23 +5,6 @@
 
 <mapper namespace="com.kien.book.repository.BookMapper">
 
-    <select id="getBasicInfoByUuids" parameterType="java.util.List" resultType="BookBasicInfo">
-        SELECT
-            id,
-            title
-        FROM
-            books
-        WHERE
-            <if test="list != null and list.size() > 0">
-                uuid IN
-                <foreach item="uuid" collection="list" open="(" separator="," close=")">
-                    #{uuid}
-                </foreach>
-                AND
-            </if>
-            is_deleted = FALSE
-    </select>
-
     <select id="getById" parameterType="long" resultType="BookView">
         SELECT
             b.id AS id,
@@ -150,7 +133,6 @@
             <if test="id != null">
                 id = #{id},
             </if>
-            uuid = #{uuid},
             title = #{title},
             title_kana = #{titleKana},
             author = #{author},
@@ -161,10 +143,9 @@
             updated_at = #{updatedAt}
     </insert>
 
-    <insert id="batchSave" parameterType="java.util.List">
+    <insert id="batchSaveWithSpecifiedId" parameterType="java.util.List">
         INSERT INTO `books` (
             id,
-            uuid,
             title,
             title_kana,
             author,
@@ -177,15 +158,33 @@
         VALUES
         <foreach collection="list" item="book" separator=",">
             (
-                <choose>
-                    <when test="book.id != null">
-                        #{book.id},
-                    </when>
-                    <otherwise>
-                        NULL,
-                    </otherwise>
-                </choose>
-                #{book.uuid},
+                #{book.id},
+                #{book.title},
+                #{book.titleKana},
+                #{book.author},
+                #{book.publisherId},
+                #{book.userId},
+                #{book.price},
+                #{book.createdAt},
+                #{book.updatedAt}
+            )
+        </foreach>
+    </insert>
+
+    <insert id="batchSaveWithoutId" parameterType="java.util.List" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO `books` (
+            title,
+            title_kana,
+            author,
+            publisher_id,
+            user_id,
+            price,
+            created_at,
+            updated_at
+        )
+        VALUES
+        <foreach collection="list" item="book" separator=",">
+            (
                 #{book.title},
                 #{book.titleKana},
                 #{book.author},

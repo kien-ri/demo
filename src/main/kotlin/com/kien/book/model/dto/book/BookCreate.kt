@@ -35,7 +35,6 @@ data class BookCreate(
         updatedAt: LocalDateTime? = null
     ) = Book(
         id = id,
-        uuid = UUID.randomUUID().toString(),
         title = title,
         titleKana = titleKana,
         author = author,
