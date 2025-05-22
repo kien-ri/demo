@@ -5,10 +5,6 @@ import com.kien.book.model.Book
 import com.kien.book.model.dto.book.*
 import com.kien.book.repository.BookMapper
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
@@ -140,7 +136,7 @@ class BookServiceTest {
                 1   // mapperのsaveメソッドの戻り値指定
             }
 
-            val expectedResult = BookCreatedResponse(id = 1L, title = "Kotlin入門")
+            val expectedResult = BookBasicInfo(id = 1L, title = "Kotlin入門")
             val result = bookService.registerBook(bookCreate)
 
             assertEquals(expectedResult, result)
@@ -162,7 +158,7 @@ class BookServiceTest {
                 1   // mapperのsaveメソッドの戻り値指定
             }
 
-            val expectedResult = BookCreatedResponse(id = 222L, title = "Kotlin入門")
+            val expectedResult = BookBasicInfo(id = 222L, title = "Kotlin入門")
             val result = bookService.registerBook(bookCreateWithId)
 
             assertEquals(expectedResult, result)

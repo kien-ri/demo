@@ -41,7 +41,7 @@ class BookController(private val bookService: BookService) {
     }
 
     @PostMapping
-    fun registerBook(@Valid @RequestBody bookCreate: BookCreate): ResponseEntity<BookCreatedResponse> {
+    fun registerBook(@Valid @RequestBody bookCreate: BookCreate): ResponseEntity<BookBasicInfo> {
         val createdResponse = bookService.registerBook(bookCreate)
         return ResponseEntity.ok(createdResponse)
     }
