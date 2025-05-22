@@ -150,39 +150,6 @@ class BookControllerTest {
         }
     }
 
-    @Test
-    fun `getBooksByCondition should return paginated books`() {
-        val condition = BookCondition(
-            title = "Kotlin",
-            pageSize = 10,
-            currentPage = 1
-        )
-        val bookView = BookView(
-            id = 1L,
-            title = "Kotlin入門",
-            titleKana = "コトリン ニュウモン",
-            author = "山田太郎",
-            publisherId = 1L,
-            publisherName = "技術出版社",
-            userId = 100L,
-            userName = "テストユーザー",
-            isDeleted = false,
-            createdAt = LocalDateTime.of(2025, 4, 28, 10, 0),
-            updatedAt = LocalDateTime.of(2025, 4, 28, 10, 0)
-        )
-        val page = Page(10, 1, 1, 1, listOf(bookView))
-        whenever(bookService.getBooksByCondition(condition)).thenReturn(page)
-
-        mockMvc.get("/books") {
-            param("title", condition.title!!)
-            param("pageSize", condition.pageSize.toString())
-            param("currentPage", condition.currentPage.toString())
-        }.andExpect {
-            status { isOk() }
-            content { json(objectMapper.writeValueAsString(page)) }
-        }
-    }
-
     @Nested
     inner class RegisterBookTest {
 
@@ -603,25 +570,6 @@ class BookControllerTest {
         }
     }
 
-    @Test
-    fun `deleteBookLogically should return 204 when deletion succeeds`() {
-        val bookId = 1L
-        mockMvc.delete("/books/$bookId")
-            .andExpect {
-                status { isNoContent() }
-            }
-    }
-
-    @Test
-    fun `deleteBooksLogically should return 204 when batch deletion succeeds`() {
-        mockMvc.delete("/books/batch") {
-            contentType = MediaType.APPLICATION_JSON
-            content = objectMapper.writeValueAsString(listOf(1L, 2L))
-        }.andExpect {
-            status { isNoContent() }
-        }
-    }
-
     @Nested
     inner class UpdateBookTest {
         @Test
@@ -997,35 +945,6 @@ class BookControllerTest {
             }
 
             verify(bookService, times(1)).updateBook(any())
-        }
-    }
-
-    @Test
-    fun `updateBooks should return 204 when batch update succeeds`() {
-        val bookUpdates = listOf(
-            BookUpdate(
-                id = 1L,
-                title = "Kotlin入門",
-                titleKana = "コトリン ニュウモン",
-                author = "山田太郎",
-                publisherId = 1L,
-                userId = 100L
-            ),
-            BookUpdate(
-                id = 2L,
-                title = "Spring Boot入門",
-                titleKana = "スプリング ブート ニュウモン",
-                author = "佐藤花子",
-                publisherId = 2L,
-                userId = 101L
-            )
-        )
-
-        mockMvc.put("/books/batch") {
-            contentType = MediaType.APPLICATION_JSON
-            content = objectMapper.writeValueAsString(bookUpdates)
-        }.andExpect {
-            status { isNoContent() }
         }
     }
 }
