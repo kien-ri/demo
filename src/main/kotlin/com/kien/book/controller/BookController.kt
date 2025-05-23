@@ -5,6 +5,7 @@ import com.kien.book.model.dto.book.*
 import com.kien.book.service.BookService
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Positive
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping;
@@ -71,10 +72,14 @@ class BookController(private val bookService: BookService) {
     }
 
     @PutMapping("/batch")
-    fun updateBooks(@RequestBody @Valid bookUpdates: List<BookUpdate>): ResponseEntity<Void> {
-        val books = bookUpdates.map { it.toEntity() }
-        bookService.updateBooks(books)
-        return ResponseEntity.noContent().build()
+    fun updateBooks(@RequestBody bookUpdates: List<BookUpdate>): ResponseEntity<BookBatchProcessedResult> {
+        val result = bookService.updateBooks(bookUpdates)
+        val httpStatus = result.httpStatus
+        return when (httpStatus) {
+            HttpStatus.OK -> ResponseEntity.ok(result)
+            HttpStatus.BAD_REQUEST -> ResponseEntity.badRequest().body(result)
+            else -> ResponseEntity.status(HttpStatus.MULTI_STATUS).body(result)
+        }
     }
 
 }

@@ -183,4 +183,81 @@
         AND is_deleted = false
     </update>
 
+    <update id="batchUpdate" parameterType="java.util.List">
+        UPDATE
+            `books`
+        SET
+            title = ELT(FIELD(id,
+                <foreach collection="list" item="book" separator=",">
+                    #{book.id}
+                </foreach>
+                ),
+                <foreach collection="list" item="book" separator=",">
+                    #{book.title}
+                </foreach>
+            ),
+            title_kana = ELT(FIELD(id,
+                <foreach collection="list" item="book" separator=",">
+                    #{book.id}
+                </foreach>
+                ),
+                <foreach collection="list" item="book" separator=",">
+                    #{book.titleKana}
+                </foreach>
+            ),
+            author = ELT(FIELD(id,
+                <foreach collection="list" item="book" separator=",">
+                    #{book.id}
+                </foreach>
+                ),
+                <foreach collection="list" item="book" separator=",">
+                    #{book.author}
+                </foreach>
+            ),
+            publisher_id = ELT(FIELD(id,
+                <foreach collection="list" item="book" separator=",">
+                    #{book.id}
+                </foreach>
+                ),
+                <foreach collection="list" item="book" separator=",">
+                    #{book.publisherId}
+                </foreach>
+            ),
+            user_id = ELT(FIELD(id,
+                <foreach collection="list" item="book" separator=",">
+                    #{book.id}
+                </foreach>
+                ),
+                <foreach collection="list" item="book" separator=",">
+                    #{book.userId}
+                </foreach>
+            ),
+            price = ELT(FIELD(id,
+                <foreach collection="list" item="book" separator=",">
+                    #{book.id}
+                </foreach>
+                ),
+                <foreach collection="list" item="book" separator=",">
+                    #{book.price}
+                </foreach>
+            ),
+            updated_at = ELT(FIELD(id,
+                <foreach collection="list" item="book" separator=",">
+                    #{book.id}
+                </foreach>
+                ),
+                <foreach collection="list" item="book" separator=",">
+                    #{book.updatedAt}
+                </foreach>
+            )
+        WHERE
+            id IN
+            (
+                <foreach collection="list" item="book" separator=",">
+                    #{book.id}
+                </foreach>
+            )
+        AND is_deleted = false
+    </update>
+
 </mapper>
