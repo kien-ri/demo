@@ -174,7 +174,6 @@ class BookService(
         // 1. DTOからEntityへ変換
         val currentTime = LocalDateTime.now()
         val books = bookCreates.map {
-            // ここでUUIDが生成される
             it.toEntity(
                 createdAt = currentTime,
                 updatedAt = currentTime
@@ -218,15 +217,13 @@ class BookService(
                 }
                 if (withIdCount == withId.size && noIdCount == withoutId.size) {
                     // 3.1 INSERTできたら成功配列に入れる
-                    (withId + withoutId).forEach { book ->
-                        successfulItems.add(
-                            ProcessedBook(
-                                id = book.id,
-                                title = book.title,
-                                error = null
-                            )
+                    (withId + withoutId).map { book ->
+                        ProcessedBook(
+                            id = book.id,
+                            title = book.title,
+                            error = null
                         )
-                    }
+                    }.let { successfulItems.addAll(it) }
                 } else {
                     // 3.2 INSERT時点でエラー起きた場合はグローバルハンドラにthrow
                     throw throw CustomException(message = MSG_INSERT_ERROR)
