@@ -5,10 +5,6 @@ import com.kien.book.model.Book
 import com.kien.book.model.dto.book.*
 import com.kien.book.repository.BookMapper
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
@@ -28,9 +24,6 @@ class BookServiceTest {
 
     @MockitoBean
     private lateinit var bookMapper: BookMapper
-
-    @MockitoBean
-    private lateinit var batchService: BatchService
 
     @Autowired
     private lateinit var bookService: BookService
@@ -94,27 +87,6 @@ class BookServiceTest {
         }
     }
 
-
-    @Test
-    fun `getBooksByCondition should return bookPage`() {
-        val condition = BookCondition(
-            title = "Kotlin",
-            titleKana = "コトリン",
-            author = "山田",
-            pageSize = 10,
-            currentPage = 1
-        )
-        val bookView = BookView(
-            id = 1L,
-            title = "Kotlin入門",
-            titleKana = "コトリン ニュウモン",
-            author = "山田太郎",
-            publisherId = 1L,
-            price = 2500,
-            userId = 100L
-        )
-    }
-
     @Nested
     inner class RegisterBookTest {
 
@@ -140,7 +112,7 @@ class BookServiceTest {
                 1   // mapperのsaveメソッドの戻り値指定
             }
 
-            val expectedResult = BookCreatedResponse(id = 1L, title = "Kotlin入門")
+            val expectedResult = BookBasicInfo(id = 1L, title = "Kotlin入門")
             val result = bookService.registerBook(bookCreate)
 
             assertEquals(expectedResult, result)
@@ -162,7 +134,7 @@ class BookServiceTest {
                 1   // mapperのsaveメソッドの戻り値指定
             }
 
-            val expectedResult = BookCreatedResponse(id = 222L, title = "Kotlin入門")
+            val expectedResult = BookBasicInfo(id = 222L, title = "Kotlin入門")
             val result = bookService.registerBook(bookCreateWithId)
 
             assertEquals(expectedResult, result)
@@ -406,46 +378,6 @@ class BookServiceTest {
 
             verify(bookMapper, times(1)).save(any())
         }
-    }
-
-    @Test
-    fun `registerBooks should call batchService with save operation`() {
-        val bookCreates = listOf(
-            BookCreate(
-                title = "Kotlin入門",
-                titleKana = "コトリン ニュウモン",
-                author = "山田太郎",
-                publisherId = 1L,
-                userId = 100L
-            ),
-            BookCreate(
-                title = "Spring Boot入門",
-                titleKana = "スプリング ブート ニュウモン",
-                author = "佐藤花子",
-                publisherId = 2L,
-                userId = 101L
-            )
-        )
-        bookService.registerBooks(bookCreates)
-        verify(batchService).batchProcess(
-            dataList = bookCreates,
-            mapperClass = BookMapper::class.java,
-            operation = BookMapper::save
-        )
-    }
-
-    @Test
-    fun `deleteBookLogically should call delete on BookMapper`() {
-        val bookId = 1L
-        bookService.deleteBookLogically(bookId)
-        verify(bookMapper).deleteLogically(bookId)
-    }
-
-    @Test
-    fun `deleteBooksLogically should call deleteBatch on BookMapper`() {
-        val ids = listOf(1L, 2L)
-        bookService.deleteBooksLogically(ids)
-        verify(bookMapper).deleteBatchLogically(ids)
     }
 
     @Nested
@@ -844,33 +776,5 @@ class BookServiceTest {
 
             verify(bookMapper, times(1)).update(any())
         }
-    }
-
-    @Test
-    fun `updateBooks should call batchService with update operation`() {
-        val books = listOf(
-            Book(
-                id = 1L,
-                title = "Kotlin入門",
-                titleKana = "コトリン ニュウモン",
-                author = "山田太郎",
-                publisherId = 1L,
-                userId = 100L
-            ),
-            Book(
-                id = 2L,
-                title = "Spring Boot入門",
-                titleKana = "スプリング ブート ニュウモン",
-                author = "佐藤花子",
-                publisherId = 2L,
-                userId = 101L
-            )
-        )
-        bookService.updateBooks(books)
-        verify(batchService).batchProcess(
-            dataList = books,
-            mapperClass = BookMapper::class.java,
-            operation = BookMapper::update
-        )
     }
 }

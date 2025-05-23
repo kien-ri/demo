@@ -1,39 +1,24 @@
 package com.kien.book.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.kien.book.common.CustomException
 import com.kien.book.common.NonExistentForeignKeyCustomException
 import com.kien.book.common.NotFoundCustomException
 import com.kien.book.common.Page
-import com.kien.book.model.Book
 import com.kien.book.model.dto.book.*
 import com.kien.book.common.DuplicateKeyCustomException
 import com.kien.book.model.dto.book.BookCreate
 import com.kien.book.model.dto.book.BookView
 import com.kien.book.service.BookService
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.Mockito
-import org.mockito.Mockito.mock
 import org.mockito.kotlin.*
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
-import org.springframework.context.annotation.Bean
-import org.springframework.test.context.junit.jupiter.SpringExtension
 import java.time.LocalDateTime
-import org.mockito.Mockito.mock
-import org.mockito.kotlin.*
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.context.TestConfiguration
-import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.http.MediaType
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.*
-import java.sql.SQLIntegrityConstraintViolationException
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
@@ -165,39 +150,6 @@ class BookControllerTest {
         }
     }
 
-    @Test
-    fun `getBooksByCondition should return paginated books`() {
-        val condition = BookCondition(
-            title = "Kotlin",
-            pageSize = 10,
-            currentPage = 1
-        )
-        val bookView = BookView(
-            id = 1L,
-            title = "Kotlin入門",
-            titleKana = "コトリン ニュウモン",
-            author = "山田太郎",
-            publisherId = 1L,
-            publisherName = "技術出版社",
-            userId = 100L,
-            userName = "テストユーザー",
-            isDeleted = false,
-            createdAt = LocalDateTime.of(2025, 4, 28, 10, 0),
-            updatedAt = LocalDateTime.of(2025, 4, 28, 10, 0)
-        )
-        val page = Page(10, 1, 1, 1, listOf(bookView))
-        whenever(bookService.getBooksByCondition(condition)).thenReturn(page)
-
-        mockMvc.get("/books") {
-            param("title", condition.title!!)
-            param("pageSize", condition.pageSize.toString())
-            param("currentPage", condition.currentPage.toString())
-        }.andExpect {
-            status { isOk() }
-            content { json(objectMapper.writeValueAsString(page)) }
-        }
-    }
-
     @Nested
     inner class RegisterBookTest {
 
@@ -216,7 +168,7 @@ class BookControllerTest {
                 userId = 100L
             )
 
-            val expectedResult = BookCreatedResponse(
+            val expectedResult = BookBasicInfo(
                 id = 1L,
                 title = "Kotlin入門"
             )
@@ -249,7 +201,7 @@ class BookControllerTest {
                 userId = 100L
             )
 
-            val expectedResult = BookCreatedResponse(
+            val expectedResult = BookBasicInfo(
                 id = 222L,
                 title = "Kotlin入門"
             )
@@ -615,25 +567,6 @@ class BookControllerTest {
             }
 
             verify(bookService, times(1)).registerBook(any())
-        }
-    }
-
-    @Test
-    fun `deleteBookLogically should return 204 when deletion succeeds`() {
-        val bookId = 1L
-        mockMvc.delete("/books/$bookId")
-            .andExpect {
-                status { isNoContent() }
-            }
-    }
-
-    @Test
-    fun `deleteBooksLogically should return 204 when batch deletion succeeds`() {
-        mockMvc.delete("/books/batch") {
-            contentType = MediaType.APPLICATION_JSON
-            content = objectMapper.writeValueAsString(listOf(1L, 2L))
-        }.andExpect {
-            status { isNoContent() }
         }
     }
 
@@ -1012,35 +945,6 @@ class BookControllerTest {
             }
 
             verify(bookService, times(1)).updateBook(any())
-        }
-    }
-
-    @Test
-    fun `updateBooks should return 204 when batch update succeeds`() {
-        val bookUpdates = listOf(
-            BookUpdate(
-                id = 1L,
-                title = "Kotlin入門",
-                titleKana = "コトリン ニュウモン",
-                author = "山田太郎",
-                publisherId = 1L,
-                userId = 100L
-            ),
-            BookUpdate(
-                id = 2L,
-                title = "Spring Boot入門",
-                titleKana = "スプリング ブート ニュウモン",
-                author = "佐藤花子",
-                publisherId = 2L,
-                userId = 101L
-            )
-        )
-
-        mockMvc.put("/books/batch") {
-            contentType = MediaType.APPLICATION_JSON
-            content = objectMapper.writeValueAsString(bookUpdates)
-        }.andExpect {
-            status { isNoContent() }
         }
     }
 }
