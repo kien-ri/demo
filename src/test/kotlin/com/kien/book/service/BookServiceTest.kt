@@ -9,11 +9,13 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.assertThrows
+import org.mockito.ArgumentMatchers.anyList
 import org.mockito.kotlin.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.dao.DuplicateKeyException
+import org.springframework.http.HttpStatus
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import java.sql.SQLIntegrityConstraintViolationException
 import java.time.LocalDateTime
@@ -377,6 +379,415 @@ class BookServiceTest {
             }
 
             verify(bookMapper, times(1)).save(any())
+        }
+    }
+
+    @Nested
+    inner class RegisterBooksTest{
+        val bookCreate1 = BookCreate(
+            id = null,
+            title = "はじめてのKotlinプログラミング",
+            titleKana = "ハジメテノ コトリン プログラミング",
+            author = "山田太郎",
+            publisherId = 1L,
+            price = 2500,
+            userId = 100L
+        )
+        val bookCreate2 = BookCreate(
+            id = null,
+            title = "Kotlinで学ぶ関数型プログラミング",
+            titleKana = "コトリンデ マナブ カンスウガタ プログラミング",
+            author = "鈴木花子",
+            publisherId = 1L,
+            price = 3000,
+            userId = 100L
+        )
+        val bookCreate3 = BookCreate(
+            id = null,
+            title = "実践Kotlinアプリ開発",
+            titleKana = "ジッセン コトリン アプリ カイハツ",
+            author = "佐藤次郎",
+            publisherId = 1L,
+            price = 2800,
+            userId = 100L
+        )
+
+        @Test
+        fun `return suceess when register succeeds without id`() {
+            val bookCreates = listOf(
+                bookCreate1,
+                bookCreate2,
+                bookCreate3
+            )
+
+            val captor = argumentCaptor<List<Book>>()
+            whenever(bookMapper.batchSaveWithoutId(captor.capture())).thenAnswer {
+                val books = captor.firstValue
+                books.forEachIndexed { index, book ->
+                    book.id = (1 + index).toLong()
+                }
+                books.size
+            }
+            whenever(bookMapper.batchSaveWithSpecifiedId(captor.capture())).thenAnswer {
+                val books = captor.firstValue
+                books.size
+            }
+
+            val expectedResult = BookBatchProcessedResult(
+                httpStatus = HttpStatus.OK,
+                successfulItems = listOf(
+                    ProcessedBook(id = 1, title = "はじめてのKotlinプログラミング", error = null),
+                    ProcessedBook(id = 2, title = "Kotlinで学ぶ関数型プログラミング", error = null),
+                    ProcessedBook(id = 3, title = "実践Kotlinアプリ開発", error = null)
+                ),
+                failedItems = emptyList()
+            )
+
+            val result = bookService.registerBooks(bookCreates)
+            assertEquals(expectedResult, result)
+            verify(bookMapper, times(1)).batchSaveWithoutId(any())
+            verify(bookMapper, never()).batchSaveWithSpecifiedId(any())
+        }
+
+        @Test
+        fun `return suceess when register succeeds with specified ids`() {
+            val bookCreates = listOf(
+                bookCreate1.copy(id = 100L),
+                bookCreate2.copy(id = 105L),
+                bookCreate3.copy(id = 110L)
+            )
+
+            val captor = argumentCaptor<List<Book>>()
+            whenever(bookMapper.batchSaveWithoutId(captor.capture())).thenAnswer {
+                val books = captor.firstValue
+                books.forEachIndexed { index, book ->
+                    book.id = (1 + index).toLong()
+                }
+                books.size
+            }
+            whenever(bookMapper.batchSaveWithSpecifiedId(captor.capture())).thenAnswer {
+                val books = captor.firstValue
+                books.size
+            }
+
+            val expectedResult = BookBatchProcessedResult(
+                httpStatus = HttpStatus.OK,
+                successfulItems = listOf(
+                    ProcessedBook(id = 100L, title = "はじめてのKotlinプログラミング", error = null),
+                    ProcessedBook(id = 105L, title = "Kotlinで学ぶ関数型プログラミング", error = null),
+                    ProcessedBook(id = 110L, title = "実践Kotlinアプリ開発", error = null)
+                ),
+                failedItems = emptyList()
+            )
+
+            val result = bookService.registerBooks(bookCreates)
+            assertEquals(expectedResult, result)
+            verify(bookMapper, times(1)).batchSaveWithSpecifiedId(anyList())
+            verify(bookMapper, never()).batchSaveWithoutId(anyList())
+        }
+
+        @Test
+        fun `return partial when some books have invalid id`() {
+            val bookCreates = listOf(
+                bookCreate1.copy(id = -1L),
+                bookCreate2.copy(id = 1L),
+                bookCreate3.copy(id = 0L)
+            )
+
+            val captor = argumentCaptor<List<Book>>()
+            whenever(bookMapper.batchSaveWithoutId(captor.capture())).thenAnswer {
+                val books = captor.firstValue
+                books.forEachIndexed { index, book ->
+                    book.id = (1 + index).toLong()
+                }
+                books.size
+            }
+            whenever(bookMapper.batchSaveWithSpecifiedId(captor.capture())).thenAnswer {
+                val books = captor.firstValue
+                books.size
+            }
+
+            val expectedResult = BookBatchProcessedResult(
+                httpStatus = HttpStatus.MULTI_STATUS,
+                successfulItems = listOf(
+                    ProcessedBook(id = 1, title = "Kotlinで学ぶ関数型プログラミング", error = null)
+                ),
+                failedItems = listOf(
+                    ProcessedBook(
+                        id = -1L,
+                        title = "はじめてのKotlinプログラミング",
+                        error = InvalidParamCustomException(
+                            message = "入力された値が無効です。",
+                            field = "id",
+                            value = -1L
+                        )
+                    ),
+                    ProcessedBook(
+                        id = 0L,
+                        title = "実践Kotlinアプリ開発",
+                        error = InvalidParamCustomException(
+                            message = "入力された値が無効です。",
+                            field = "id",
+                            value = 0L
+                        )
+                    )
+                )
+            )
+
+            val result = bookService.registerBooks(bookCreates)
+            assertEquals(expectedResult, result)
+            verify(bookMapper, times(1)).batchSaveWithSpecifiedId(anyList())
+            verify(bookMapper, never()).batchSaveWithoutId(anyList())
+        }
+
+        @Test
+        fun `return partial when some books have invalid publisherId`() {
+            val bookCreates = listOf(
+                bookCreate1.copy(publisherId = -1L),
+                bookCreate2.copy(publisherId = 1L),
+                bookCreate3.copy(publisherId = 0L)
+            )
+
+            val captor = argumentCaptor<List<Book>>()
+            whenever(bookMapper.batchSaveWithoutId(captor.capture())).thenAnswer {
+                val books = captor.firstValue
+                books.forEachIndexed { index, book ->
+                    book.id = (1 + index).toLong()
+                }
+                books.size
+            }
+            whenever(bookMapper.batchSaveWithSpecifiedId(captor.capture())).thenAnswer {
+                val books = captor.firstValue
+                books.size
+            }
+
+            val expectedResult = BookBatchProcessedResult(
+                httpStatus = HttpStatus.MULTI_STATUS,
+                successfulItems = listOf(
+                    ProcessedBook(id = 1, title = "Kotlinで学ぶ関数型プログラミング", error = null)
+                ),
+                failedItems = listOf(
+                    ProcessedBook(
+                        id = null,
+                        title = "はじめてのKotlinプログラミング",
+                        error = InvalidParamCustomException(
+                            message = "入力された値が無効です。",
+                            field = "publisherId",
+                            value = -1L
+                        )
+                    ),
+                    ProcessedBook(
+                        id = null,
+                        title = "実践Kotlinアプリ開発",
+                        error = InvalidParamCustomException(
+                            message = "入力された値が無効です。",
+                            field = "publisherId",
+                            value = 0L
+                        )
+                    )
+                )
+            )
+
+            val result = bookService.registerBooks(bookCreates)
+            assertEquals(expectedResult, result)
+            verify(bookMapper, never()).batchSaveWithSpecifiedId(anyList())
+            verify(bookMapper, times(1)).batchSaveWithoutId(anyList())
+        }
+
+        @Test
+        fun `return partial when some books have invalid userId`() {
+            val bookCreates = listOf(
+                bookCreate1.copy(userId = -1L),
+                bookCreate2.copy(userId = 1L),
+                bookCreate3.copy(userId = 0L)
+            )
+
+            val captor = argumentCaptor<List<Book>>()
+            whenever(bookMapper.batchSaveWithoutId(captor.capture())).thenAnswer {
+                val books = captor.firstValue
+                books.forEachIndexed { index, book ->
+                    book.id = (1 + index).toLong()
+                }
+                books.size
+            }
+            whenever(bookMapper.batchSaveWithSpecifiedId(captor.capture())).thenAnswer {
+                val books = captor.firstValue
+                books.size
+            }
+
+            val expectedResult = BookBatchProcessedResult(
+                httpStatus = HttpStatus.MULTI_STATUS,
+                successfulItems = listOf(
+                    ProcessedBook(id = 1, title = "Kotlinで学ぶ関数型プログラミング", error = null)
+                ),
+                failedItems = listOf(
+                    ProcessedBook(
+                        id = null,
+                        title = "はじめてのKotlinプログラミング",
+                        error = InvalidParamCustomException(
+                            message = "入力された値が無効です。",
+                            field = "userId",
+                            value = -1L
+                        )
+                    ),
+                    ProcessedBook(
+                        id = null,
+                        title = "実践Kotlinアプリ開発",
+                        error = InvalidParamCustomException(
+                            message = "入力された値が無効です。",
+                            field = "userId",
+                            value = 0L
+                        )
+                    )
+                )
+            )
+
+            val result = bookService.registerBooks(bookCreates)
+            assertEquals(expectedResult, result)
+            verify(bookMapper, times(1)).batchSaveWithoutId(anyList())
+            verify(bookMapper, never()).batchSaveWithSpecifiedId(anyList())
+        }
+
+        @Test
+        fun `return partial when some books have invalid price`() {
+            val bookCreates = listOf(
+                bookCreate1.copy(price = -1),
+                bookCreate2.copy(price = 1000),
+                bookCreate3.copy(price = -500)
+            )
+
+            val captor = argumentCaptor<List<Book>>()
+            whenever(bookMapper.batchSaveWithoutId(captor.capture())).thenAnswer {
+                val books = captor.firstValue
+                books.forEachIndexed { index, book ->
+                    book.id = (1 + index).toLong()
+                }
+                books.size
+            }
+            whenever(bookMapper.batchSaveWithSpecifiedId(captor.capture())).thenAnswer {
+                val books = captor.firstValue
+                books.size
+            }
+
+            val expectedResult = BookBatchProcessedResult(
+                httpStatus = HttpStatus.MULTI_STATUS,
+                successfulItems = listOf(
+                    ProcessedBook(id = 1, title = "Kotlinで学ぶ関数型プログラミング", error = null)
+                ),
+                failedItems = listOf(
+                    ProcessedBook(
+                        id = null,
+                        title = "はじめてのKotlinプログラミング",
+                        error = InvalidParamCustomException(
+                            message = "入力された値が無効です。",
+                            field = "price",
+                            value = -1
+                        )
+                    ),
+                    ProcessedBook(
+                        id = null,
+                        title = "実践Kotlinアプリ開発",
+                        error = InvalidParamCustomException(
+                            message = "入力された値が無効です。",
+                            field = "price",
+                            value = -500
+                        )
+                    )
+                )
+            )
+
+            val result = bookService.registerBooks(bookCreates)
+            assertEquals(expectedResult, result)
+            verify(bookMapper, times(1)).batchSaveWithoutId(anyList())
+            verify(bookMapper, never()).batchSaveWithSpecifiedId(anyList())
+        }
+
+        @Test
+        fun `return failed when all books have invalid property`() {
+            val bookCreates = listOf(
+                bookCreate1.copy(id = -1L),
+                bookCreate2.copy(publisherId = -1L),
+                bookCreate3.copy(price = -500)
+            )
+
+            val expectedResult = BookBatchProcessedResult(
+                httpStatus = HttpStatus.BAD_REQUEST,
+                successfulItems = emptyList(),
+                failedItems = listOf(
+                    ProcessedBook(
+                        id = -1L,
+                        title = "はじめてのKotlinプログラミング",
+                        error = InvalidParamCustomException(
+                            message = "入力された値が無効です。",
+                            field = "id",
+                            value = -1L
+                        )
+                    ),
+                    ProcessedBook(
+                        id = null,
+                        title = "Kotlinで学ぶ関数型プログラミング",
+                        error = InvalidParamCustomException(
+                            message = "入力された値が無効です。",
+                            field = "publisherId",
+                            value = -1L
+                        )
+                    ),
+                    ProcessedBook(
+                        id = null,
+                        title = "実践Kotlinアプリ開発",
+                        error = InvalidParamCustomException(
+                            message = "入力された値が無効です。",
+                            field = "price",
+                            value = -500
+                        )
+                    )
+                )
+            )
+
+            val result = bookService.registerBooks(bookCreates)
+            assertEquals(expectedResult, result)
+            verify(bookMapper, never()).batchSaveWithSpecifiedId(anyList())
+            verify(bookMapper, never()).batchSaveWithoutId(anyList())
+        }
+
+        @Test
+        fun `throw exception when register failed`() {
+            val bookCreates = listOf(
+                bookCreate1,
+                bookCreate2,
+                bookCreate3
+            )
+
+            // 何かの原因でINSERTできた行数が0の状況をmock
+            whenever(bookMapper.batchSaveWithoutId(anyList())).thenReturn(0)
+
+            val expectedError = CustomException(
+                message = "書籍情報が正しく登録されませんでした。"
+            )
+
+            val error = assertFailsWith<CustomException> {
+                bookService.registerBooks(bookCreates)
+            }
+            assertEquals(error.message, expectedError.message)
+            verify(bookMapper, times(1)).batchSaveWithoutId(anyList())
+        }
+
+        @Test
+        fun `throw exception when other exception occurred`() {
+            val bookCreates = listOf(
+                bookCreate1,
+                bookCreate2,
+                bookCreate3
+            )
+
+            val expectedError = RuntimeException("Unexpected error")
+            whenever(bookMapper.batchSaveWithoutId(anyList())).thenThrow(expectedError)
+
+            val error = assertFailsWith<RuntimeException> {
+                bookService.registerBooks(bookCreates)
+            }
+            assertEquals(expectedError, error)
+            verify(bookMapper, times(1)).batchSaveWithoutId(anyList())
         }
     }
 
