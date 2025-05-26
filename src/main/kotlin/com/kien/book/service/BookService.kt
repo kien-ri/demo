@@ -36,6 +36,9 @@ class BookService(
     @Value("\${messages.errors.insertError}")
     val MSG_INSERT_ERROR: String = ""
 
+    @Value("\${messages.errors.updateError}")
+    val MSG_UPDATE_ERROR: String = ""
+
     @Value("\${messages.errors.noIdGenerated}")
     val MSG_NO_ID_GENERATED: String = ""
 
@@ -220,6 +223,10 @@ class BookService(
     }
 
     fun updateBooks(bookUpdates: List<BookUpdate>): BookBatchProcessedResult {
+        val successfulItems = mutableListOf<ProcessedBook>()
+        val failedItems = mutableListOf<ProcessedBook>()
+        val validBooks = mutableListOf<Book>()
+
         // 1. DTOからEntityへ変換
         val currentTime = LocalDateTime.now()
         val books = bookUpdates.map {
@@ -227,10 +234,6 @@ class BookService(
                 updatedAt = currentTime
             )
         }
-
-        val successfulItems = mutableListOf<ProcessedBook>()
-        val failedItems = mutableListOf<ProcessedBook>()
-        val validBooks = mutableListOf<Book>()
 
         // 2. パラメータのバリデーション
         books.forEach { book ->
@@ -261,7 +264,7 @@ class BookService(
                     )
                 }.let { successfulItems.addAll(it) }
             } else {
-                throw throw CustomException(message = MSG_INSERT_ERROR)
+                throw throw CustomException(message = MSG_UPDATE_ERROR)
             }
         }
 

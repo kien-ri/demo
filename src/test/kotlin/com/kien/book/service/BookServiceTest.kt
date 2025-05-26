@@ -1062,7 +1062,7 @@ class BookServiceTest {
             whenever(bookMapper.batchUpdate(anyList())).thenReturn(0)
 
             val expectedError = CustomException(
-                message = "書籍情報が正しく登録されませんでした。"
+                message = "書籍情報が正しく更新されませんでした。"
             )
 
             val error = assertFailsWith<CustomException> {
