@@ -2,7 +2,7 @@ package com.kien.book.common
 
 import com.fasterxml.jackson.annotation.JsonIncludeProperties
 
-// JSONに、上のRuntimeExceptionの情報を出力しないようにする
+// JSONに、親クラスのRuntimeExceptionの情報を出力しないようにする
 @JsonIncludeProperties("message")
 open class CustomException(
     override val message: String

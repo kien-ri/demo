@@ -7,9 +7,7 @@ import org.springframework.http.HttpStatus
  */
 data class BookBatchProcessedResult(
     val httpStatus: HttpStatus,
-    // 成功に登録された書籍
     val successfulItems: List<ProcessedBook>,
-    // 登録に失敗した書籍
     val failedItems: List<ProcessedBook>
 )
 

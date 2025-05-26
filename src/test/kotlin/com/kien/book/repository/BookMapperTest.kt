@@ -461,7 +461,7 @@ class BookMapperTest {
         ],
         executionPhase = ExecutionPhase.BEFORE_TEST_CLASS
     )
-    inner class batchSaveWithoutIdTest {
+    inner class BatchSaveWithoutIdTest {
         @Autowired
         private lateinit var booksTestMapper: BooksTestMapper
 
