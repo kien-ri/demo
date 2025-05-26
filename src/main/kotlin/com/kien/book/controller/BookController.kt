@@ -74,12 +74,7 @@ class BookController(private val bookService: BookService) {
     @PutMapping("/batch")
     fun updateBooks(@RequestBody bookUpdates: List<BookUpdate>): ResponseEntity<BookBatchProcessedResult> {
         val result = bookService.updateBooks(bookUpdates)
-        val httpStatus = result.httpStatus
-        return when (httpStatus) {
-            HttpStatus.OK -> ResponseEntity.ok(result)
-            HttpStatus.BAD_REQUEST -> ResponseEntity.badRequest().body(result)
-            else -> ResponseEntity.status(HttpStatus.MULTI_STATUS).body(result)
-        }
+        return ResponseEntity.status(result.httpStatus).body(result)
     }
 
 }

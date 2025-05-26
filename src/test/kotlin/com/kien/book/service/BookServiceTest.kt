@@ -9,11 +9,13 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.assertThrows
+import org.mockito.ArgumentMatchers.anyList
 import org.mockito.kotlin.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.dao.DuplicateKeyException
+import org.springframework.http.HttpStatus
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import java.sql.SQLIntegrityConstraintViolationException
 import java.time.LocalDateTime
@@ -775,6 +777,317 @@ class BookServiceTest {
             }
 
             verify(bookMapper, times(1)).update(any())
+        }
+    }
+
+    @Nested
+    inner class UpdateBooksTest{
+        val bookUpdate1 = BookUpdate(
+            id = 1L,
+            title = "はじめてのKotlinプログラミング",
+            titleKana = "ハジメテノ コトリン プログラミング",
+            author = "山田太郎",
+            publisherId = 1L,
+            price = 2500,
+            userId = 100L
+        )
+        val bookUpdate2 = BookUpdate(
+            id = 2L,
+            title = "Kotlinで学ぶ関数型プログラミング",
+            titleKana = "コトリンデ マナブ カンスウガタ プログラミング",
+            author = "鈴木花子",
+            publisherId = 1L,
+            price = 3000,
+            userId = 100L
+        )
+        val bookUpdate3 = BookUpdate(
+            id = 3L,
+            title = "実践Kotlinアプリ開発",
+            titleKana = "ジッセン コトリン アプリ カイハツ",
+            author = "佐藤次郎",
+            publisherId = 1L,
+            price = 2800,
+            userId = 100L
+        )
+
+        @Test
+        fun `return success when update succeeds`() {
+            val bookUpdates = listOf(
+                bookUpdate1,
+                bookUpdate2,
+                bookUpdate3
+            )
+
+            whenever(bookMapper.batchUpdate(any())).thenReturn(3)
+
+            val expectedResult = BookBatchProcessedResult(
+                httpStatus = HttpStatus.OK,
+                successfulItems = listOf(
+                    ProcessedBook(id = 1L, title = "はじめてのKotlinプログラミング", error = null),
+                    ProcessedBook(id = 2L, title = "Kotlinで学ぶ関数型プログラミング", error = null),
+                    ProcessedBook(id = 3L, title = "実践Kotlinアプリ開発", error = null)
+                ),
+                failedItems = emptyList()
+            )
+
+            val result = bookService.updateBooks(bookUpdates)
+            assertEquals(expectedResult, result)
+            verify(bookMapper, times(1)).batchUpdate(anyList())
+        }
+
+        @Test
+        fun `return partial when some books have invalid id`() {
+            val bookUpdates = listOf(
+                bookUpdate1.copy(id = -1L),
+                bookUpdate2.copy(id = 1L),
+                bookUpdate3.copy(id = 0L)
+            )
+
+            whenever(bookMapper.batchUpdate(any())).thenReturn(1)
+
+            val expectedResult = BookBatchProcessedResult(
+                httpStatus = HttpStatus.MULTI_STATUS,
+                successfulItems = listOf(
+                    ProcessedBook(id = 1, title = "Kotlinで学ぶ関数型プログラミング", error = null)
+                ),
+                failedItems = listOf(
+                    ProcessedBook(
+                        id = -1L,
+                        title = "はじめてのKotlinプログラミング",
+                        error = InvalidParamCustomException(
+                            message = "入力された値が無効です。",
+                            field = "id",
+                            value = -1L
+                        )
+                    ),
+                    ProcessedBook(
+                        id = 0L,
+                        title = "実践Kotlinアプリ開発",
+                        error = InvalidParamCustomException(
+                            message = "入力された値が無効です。",
+                            field = "id",
+                            value = 0L
+                        )
+                    )
+                )
+            )
+
+            val result = bookService.updateBooks(bookUpdates)
+            assertEquals(expectedResult, result)
+            verify(bookMapper, times(1)).batchUpdate(anyList())
+        }
+
+        @Test
+        fun `return partial when some books have invalid publisherId`() {
+            val bookUpdates = listOf(
+                bookUpdate1.copy(publisherId = -1L),
+                bookUpdate2.copy(publisherId = 1L),
+                bookUpdate3.copy(publisherId = 0L)
+            )
+
+            whenever(bookMapper.batchUpdate(any())).thenReturn(1)
+
+            val expectedResult = BookBatchProcessedResult(
+                httpStatus = HttpStatus.MULTI_STATUS,
+                successfulItems = listOf(
+                    ProcessedBook(id = 2L, title = "Kotlinで学ぶ関数型プログラミング", error = null)
+                ),
+                failedItems = listOf(
+                    ProcessedBook(
+                        id = 1L,
+                        title = "はじめてのKotlinプログラミング",
+                        error = InvalidParamCustomException(
+                            message = "入力された値が無効です。",
+                            field = "publisherId",
+                            value = -1L
+                        )
+                    ),
+                    ProcessedBook(
+                        id = 3L,
+                        title = "実践Kotlinアプリ開発",
+                        error = InvalidParamCustomException(
+                            message = "入力された値が無効です。",
+                            field = "publisherId",
+                            value = 0L
+                        )
+                    )
+                )
+            )
+
+            val result = bookService.updateBooks(bookUpdates)
+            assertEquals(expectedResult, result)
+            verify(bookMapper, times(1)).batchUpdate(anyList())
+        }
+
+        @Test
+        fun `return partial when some books have invalid userId`() {
+            val bookUpdates = listOf(
+                bookUpdate1.copy(userId = -1L),
+                bookUpdate2.copy(userId = 1L),
+                bookUpdate3.copy(userId = 0L)
+            )
+
+            whenever(bookMapper.batchUpdate(any())).thenReturn(1)
+
+            val expectedResult = BookBatchProcessedResult(
+                httpStatus = HttpStatus.MULTI_STATUS,
+                successfulItems = listOf(
+                    ProcessedBook(id = 2L, title = "Kotlinで学ぶ関数型プログラミング", error = null)
+                ),
+                failedItems = listOf(
+                    ProcessedBook(
+                        id = 1L,
+                        title = "はじめてのKotlinプログラミング",
+                        error = InvalidParamCustomException(
+                            message = "入力された値が無効です。",
+                            field = "userId",
+                            value = -1L
+                        )
+                    ),
+                    ProcessedBook(
+                        id = 3L,
+                        title = "実践Kotlinアプリ開発",
+                        error = InvalidParamCustomException(
+                            message = "入力された値が無効です。",
+                            field = "userId",
+                            value = 0L
+                        )
+                    )
+                )
+            )
+
+            val result = bookService.updateBooks(bookUpdates)
+            assertEquals(expectedResult, result)
+            verify(bookMapper, times(1)).batchUpdate(anyList())
+        }
+
+        @Test
+        fun `return partial when some books have invalid price`() {
+            val bookUpdates = listOf(
+                bookUpdate1.copy(price = -1),
+                bookUpdate2.copy(price = 1000),
+                bookUpdate3.copy(price = -500)
+            )
+
+            whenever(bookMapper.batchUpdate(any())).thenReturn(1)
+
+            val expectedResult = BookBatchProcessedResult(
+                httpStatus = HttpStatus.MULTI_STATUS,
+                successfulItems = listOf(
+                    ProcessedBook(id = 2L, title = "Kotlinで学ぶ関数型プログラミング", error = null)
+                ),
+                failedItems = listOf(
+                    ProcessedBook(
+                        id = 1L,
+                        title = "はじめてのKotlinプログラミング",
+                        error = InvalidParamCustomException(
+                            message = "入力された値が無効です。",
+                            field = "price",
+                            value = -1
+                        )
+                    ),
+                    ProcessedBook(
+                        id = 3L,
+                        title = "実践Kotlinアプリ開発",
+                        error = InvalidParamCustomException(
+                            message = "入力された値が無効です。",
+                            field = "price",
+                            value = -500
+                        )
+                    )
+                )
+            )
+
+            val result = bookService.updateBooks(bookUpdates)
+            assertEquals(expectedResult, result)
+            verify(bookMapper, times(1)).batchUpdate(anyList())
+        }
+
+        @Test
+        fun `return failed when all books have invalid property`() {
+            val bookUpdates = listOf(
+                bookUpdate1.copy(id = -1L),
+                bookUpdate2.copy(publisherId = -1L),
+                bookUpdate3.copy(price = -500)
+            )
+
+            val expectedResult = BookBatchProcessedResult(
+                httpStatus = HttpStatus.BAD_REQUEST,
+                successfulItems = emptyList(),
+                failedItems = listOf(
+                    ProcessedBook(
+                        id = -1L,
+                        title = "はじめてのKotlinプログラミング",
+                        error = InvalidParamCustomException(
+                            message = "入力された値が無効です。",
+                            field = "id",
+                            value = -1L
+                        )
+                    ),
+                    ProcessedBook(
+                        id = 2L,
+                        title = "Kotlinで学ぶ関数型プログラミング",
+                        error = InvalidParamCustomException(
+                            message = "入力された値が無効です。",
+                            field = "publisherId",
+                            value = -1L
+                        )
+                    ),
+                    ProcessedBook(
+                        id = 3L,
+                        title = "実践Kotlinアプリ開発",
+                        error = InvalidParamCustomException(
+                            message = "入力された値が無効です。",
+                            field = "price",
+                            value = -500
+                        )
+                    )
+                )
+            )
+
+            val result = bookService.updateBooks(bookUpdates)
+            assertEquals(expectedResult, result)
+            verify(bookMapper, never()).batchUpdate(anyList())
+        }
+
+        @Test
+        fun `throw exception when update failed`() {
+            val bookUpdates = listOf(
+                bookUpdate1,
+                bookUpdate2,
+                bookUpdate3
+            )
+
+            // UPDATEできた行数が0の状況をmock
+            whenever(bookMapper.batchUpdate(anyList())).thenReturn(0)
+
+            val expectedError = CustomException(
+                message = "書籍情報が正しく登録されませんでした。"
+            )
+
+            val error = assertFailsWith<CustomException> {
+                bookService.updateBooks(bookUpdates)
+            }
+            assertEquals(error.message, expectedError.message)
+            verify(bookMapper, times(1)).batchUpdate(anyList())
+        }
+
+        @Test
+        fun `throw exception when exception occurred`() {
+            val bookUpdates = listOf(
+                bookUpdate1,
+                bookUpdate2,
+                bookUpdate3
+            )
+
+            val expectedError = RuntimeException("Unexpected error")
+            whenever(bookMapper.batchUpdate(anyList())).thenThrow(expectedError)
+
+            val error = assertFailsWith<RuntimeException> {
+                bookService.updateBooks(bookUpdates)
+            }
+            assertEquals(expectedError, error)
+            verify(bookMapper, times(1)).batchUpdate(anyList())
         }
     }
 }
