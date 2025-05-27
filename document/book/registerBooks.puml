@@ -29,8 +29,8 @@ end
 DB --> BookMapper -- : 追加された件数
 BookMapper --> BookService -- : 追加された件数
 note over BookService : commit
-BookService --> BookController -- : 追加された件数
-BookController --> UI -- : 追加された件数
+BookService --> BookController -- : 登録成功(id, title)
+BookController --> UI -- : 登録成功(id, title)
 UI --> User -- : 結果表示
 deactivate User
 
