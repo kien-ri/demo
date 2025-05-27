@@ -795,6 +795,10 @@ class BookMapperTest {
                 )
             )
             assertThat(updatedBooks).isEqualTo(expectedBooks)
+
+            // id = 2は更新されない
+            val deletedBookAfter = booksTestMapper.getByIdIncludingDeleted(2L)
+            assertThat(deletedBookAfter).isEqualTo(deletedBook)
         }
 
         @Test
