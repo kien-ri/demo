@@ -55,7 +55,7 @@ paths:
                     userId: "-1"
                     message: 入力された値が無効です。
                 invalidPrice:
-                  summary: 価格が不正
+                  summary: 金額が不正
                   value:
                     price: "-1"
                     message: 入力された値が無効です。
@@ -68,7 +68,7 @@ paths:
                   userId: 999
                   message: 存在しない外部キーです。
         '409':
-          description: DBのエラー
+          description: 主キー重複
           content:
             application/json:
               example:
@@ -192,11 +192,26 @@ paths:
                       price: 500
                       createdAt: '2025-04-25T08:30:00Z'
                       updatedAt: '2025-04-25T08:30:00Z'
+        '400':
+          description: パラメータ不正
+          content:
+            application/json:
+              examples:
+                invalidCurrent:
+                  summary: currentPage不正
+                  value:
+                    currentPage: "-1"
+                    message:  "入力された値が無効です。"
+                invalidSize:
+                  summary: pageSize不正
+                  value:
+                    pageSize: "-2"
+                    message:  "入力された値が無効です。"
         '404':
           description: 指定条件の書籍が見つかりません
           content:
             application/json: {}
-        default:
+        '500':
           description: 予想外のエラー
           content:
             application/json:
