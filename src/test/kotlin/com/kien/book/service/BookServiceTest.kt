@@ -149,6 +149,7 @@ class BookServiceTest {
             val e = assertFailsWith<CustomException> {
                 bookService.registerBook(bookCreateWithNegativeId)
             }
+            // TODO
             assertEquals("書籍IDは正数である必要があります", e.message)
 
             verify(bookMapper, never()).save(any())

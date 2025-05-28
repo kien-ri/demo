@@ -20,6 +20,7 @@ import org.springframework.web.servlet.resource.NoResourceFoundException
 @ResponseBody
 class GlobalExceptionHandler {
 
+    // TODO
     @Value("\${messages.errors.duplicateKey}")
     val MSG_DUPLICATE_KEY: String = ""
 

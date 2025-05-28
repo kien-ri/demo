@@ -69,6 +69,7 @@ class BookService(
     fun getBooksByCondition(bookCondition: BookCondition): Page<BookView> {
         if (bookCondition.minPrice != null) {
             require(bookCondition.minPrice >= 0) {
+                // TODO
                 throw CustomException("エラー：下限金額にマイナスの値を指定できません。")
             }
         }
