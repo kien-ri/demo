@@ -1,11 +1,8 @@
 package com.kien.book.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.kien.book.common.NonExistentForeignKeyCustomException
-import com.kien.book.common.NotFoundCustomException
-import com.kien.book.common.Page
+import com.kien.book.common.CustomException
 import com.kien.book.model.dto.book.*
-import com.kien.book.common.DuplicateKeyCustomException
 import com.kien.book.model.dto.book.BookCreate
 import com.kien.book.model.dto.book.BookView
 import com.kien.book.service.BookService
@@ -16,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import java.time.LocalDateTime
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.*
@@ -438,6 +436,49 @@ class BookControllerTest {
         }
 
         @Test
+        fun `return 400 when multi param invalid`() {
+            val bookCreate = BookCreate(
+                id = -1L,
+                title = "Kotlin入門",
+                titleKana = "コトリン ニュウモン",
+                author = "山田太郎",
+                publisherId = -1L,
+                userId = -1L,
+                price = -1
+            )
+
+            val expectedResponseBody = arrayOf(
+                mapOf(
+                    "id" to "-1",
+                    "message" to "入力された値が無効です"
+                ),
+                mapOf(
+                    "publisherId" to "-1",
+                    "message" to "入力された値が無効です"
+                ),
+                mapOf(
+                    "userId" to "-1",
+                    "message" to "入力された値が無効です"
+                ),
+                mapOf(
+                    "price" to "-1",
+                    "message" to "入力された値が無効です"
+                ),
+            )
+
+            val mvcResult = mockMvc.post("/books") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(bookCreate)
+            }
+            mvcResult.andExpect {
+                status { isBadRequest() }
+                content { objectMapper.writeValueAsString(expectedResponseBody) }
+            }
+
+            verify(bookService, never()).registerBook(any())
+        }
+
+        @Test
         fun `return 409 when id duplicated`() {
             val bookCreate = BookCreate(
                 id = 1L,
@@ -449,8 +490,9 @@ class BookControllerTest {
                 userId = 100L
             )
 
-            val expectedError = DuplicateKeyCustomException(
+            val expectedError = CustomException(
                 message = "プライマリキーが重複しました。別の値にしてください",
+                httpStatus = HttpStatus.CONFLICT,
                 field = "id",
                 value = 1L
             )
@@ -479,19 +521,20 @@ class BookControllerTest {
                 title = "Kotlin入門",
                 titleKana = "コトリン ニュウモン",
                 author = "山田太郎",
-                publisherId = 11111111L,
+                publisherId = 999L,
                 price = 2500,
                 userId = 100L
             )
 
-            val expectedError = NonExistentForeignKeyCustomException(
+            val expectedError = CustomException(
                 message = "存在しない外部キーです。",
+                httpStatus = HttpStatus.NOT_FOUND,
                 field = "publisherId",
-                value = 11111111L
+                value = 999L
             )
             whenever(bookService.registerBook(bookCreate)).thenThrow(expectedError)
             val expectedResponseBody = mapOf(
-                "publisherId" to 11111111L,
+                "publisherId" to 999L,
                 "message" to "存在しない外部キーです。"
             )
 
@@ -516,17 +559,18 @@ class BookControllerTest {
                 author = "山田太郎",
                 publisherId = 1L,
                 price = 2500,
-                userId = 10000000L
+                userId = 999L
             )
 
-            val expectedError = NonExistentForeignKeyCustomException(
+            val expectedError = CustomException(
                 message = "存在しない外部キーです。",
+                httpStatus = HttpStatus.NOT_FOUND,
                 field = "userId",
-                value = 10000000L
+                value = 999L
             )
             whenever(bookService.registerBook(bookCreate)).thenThrow(expectedError)
             val expectedResponseBody = mapOf(
-                "userId" to 10000000L,
+                "userId" to 999L,
                 "message" to "存在しない外部キーです。"
             )
 
@@ -824,8 +868,9 @@ class BookControllerTest {
                 price = 4200
             )
 
-            val expectedError = NonExistentForeignKeyCustomException(
+            val expectedError = CustomException(
                 message = "存在しない外部キーです。",
+                httpStatus = HttpStatus.NOT_FOUND,
                 field = "publisher_id",
                 value = 999L
             )
@@ -859,8 +904,9 @@ class BookControllerTest {
                 price = 4200
             )
 
-            val expectedError = NonExistentForeignKeyCustomException(
+            val expectedError = CustomException(
                 message = "存在しない外部キーです。",
+                httpStatus = HttpStatus.NOT_FOUND,
                 field = "user_id",
                 value = 999L
             )
@@ -894,8 +940,9 @@ class BookControllerTest {
                 price = 4200
             )
 
-            val expectedError = NotFoundCustomException(
+            val expectedError = CustomException(
                 message = "指定IDの書籍情報が存在しません",
+                httpStatus = HttpStatus.NOT_FOUND,
                 field = "id",
                 value = 999L
             )

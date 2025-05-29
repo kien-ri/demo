@@ -1,4 +1,4 @@
-package com.kien.book.common.util
+package com.kien.book.util
 
 object StringUtils {
     fun String.toCamelCase(): String {

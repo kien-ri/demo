@@ -27,8 +27,7 @@ data class BookCreate(
     val price: Int?
 ) {
     fun toEntity(
-        createdAt: LocalDateTime? = null,
-        updatedAt: LocalDateTime? = null
+        current: LocalDateTime? = null,
     ) = Book(
         id = id,
         title = title,
@@ -37,7 +36,7 @@ data class BookCreate(
         publisherId = publisherId,
         userId = userId,
         price = price,
-        createdAt = createdAt,
-        updatedAt = updatedAt
+        createdAt = current,
+        updatedAt = current
     )
 }
