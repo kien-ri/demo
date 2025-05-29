@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.dao.DuplicateKeyException
+import org.springframework.http.HttpStatus
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import java.sql.SQLIntegrityConstraintViolationException
 import java.time.LocalDateTime
@@ -146,11 +147,17 @@ class BookServiceTest {
         fun `should throw CustomException when id is negative`() {
             val bookCreateWithNegativeId = bookCreate.copy(id = -1L)
 
+            val expectedError = CustomException(
+                message = "入力された値が無効です。",
+                httpStatus = HttpStatus.BAD_REQUEST,
+                field = "id",
+                value = -1L
+            )
             val e = assertFailsWith<CustomException> {
                 bookService.registerBook(bookCreateWithNegativeId)
             }
-            assertEquals("書籍IDは正数である必要があります", e.message)
 
+            assertThat(expectedError).isEqualTo(e)
             verify(bookMapper, never()).save(any())
         }
 
@@ -158,10 +165,16 @@ class BookServiceTest {
         fun `should throw CustomException when id is zero`() {
             val bookCreateWithZeroId = bookCreate.copy(id = 0L)
 
+            val expectedError = CustomException(
+                message = "入力された値が無効です。",
+                httpStatus = HttpStatus.BAD_REQUEST,
+                field = "id",
+                value = 0L
+            )
             val e = assertFailsWith<CustomException> {
                 bookService.registerBook(bookCreateWithZeroId)
             }
-            assertEquals("書籍IDは正数である必要があります", e.message)
+            assertThat(expectedError).isEqualTo(e)
 
             verify(bookMapper, never()).save(any())
         }
@@ -170,10 +183,16 @@ class BookServiceTest {
         fun `should throw CustomException when price is negative`() {
             val bookCreateWithNegativePrice = bookCreate.copy(price = -1)
 
+            val expectedError = CustomException(
+                message = "入力された値が無効です。",
+                httpStatus = HttpStatus.BAD_REQUEST,
+                field = "price",
+                value = -1
+            )
             val e = assertFailsWith<CustomException> {
                 bookService.registerBook(bookCreateWithNegativePrice)
             }
-            assertEquals("価格は0以上である必要があります", e.message)
+            assertThat(expectedError).isEqualTo(e)
 
             verify(bookMapper, never()).save(any())
         }
@@ -182,10 +201,16 @@ class BookServiceTest {
         fun `should throw CustomException when publisherId is negative`() {
             val bookCreateWithNegativePublisherId = bookCreate.copy(publisherId = -1L)
 
+            val expectedError = CustomException(
+                message = "入力された値が無効です。",
+                httpStatus = HttpStatus.BAD_REQUEST,
+                field = "publisherId",
+                value = -1L
+            )
             val e = assertFailsWith<CustomException> {
                 bookService.registerBook(bookCreateWithNegativePublisherId)
             }
-            assertEquals("出版社IDは正数である必要があります", e.message)
+            assertThat(expectedError).isEqualTo(e)
 
             verify(bookMapper, never()).save(any())
         }
@@ -194,10 +219,16 @@ class BookServiceTest {
         fun `should throw CustomException when publisherId is zero`() {
             val bookCreateWithZeroPublisherId = bookCreate.copy(publisherId = 0L)
 
-            val exception = assertFailsWith<CustomException> {
+            val expectedError = CustomException(
+                message = "入力された値が無効です。",
+                httpStatus = HttpStatus.BAD_REQUEST,
+                field = "publisherId",
+                value = 0L
+            )
+            val e = assertFailsWith<CustomException> {
                 bookService.registerBook(bookCreateWithZeroPublisherId)
             }
-            assertEquals("出版社IDは正数である必要があります", exception.message)
+            assertThat(expectedError).isEqualTo(e)
 
             verify(bookMapper, never()).save(any())
         }
@@ -206,10 +237,16 @@ class BookServiceTest {
         fun `should throw CustomException when userId is negative`() {
             val bookCreateWithNegativeUserId = bookCreate.copy(userId = -1L)
 
-            val exception = assertFailsWith<CustomException> {
+            val expectedError = CustomException(
+                message = "入力された値が無効です。",
+                httpStatus = HttpStatus.BAD_REQUEST,
+                field = "userId",
+                value = -1L
+            )
+            val e = assertFailsWith<CustomException> {
                 bookService.registerBook(bookCreateWithNegativeUserId)
             }
-            assertEquals("ユーザーIDは正数である必要があります", exception.message)
+            assertThat(expectedError).isEqualTo(e)
 
             verify(bookMapper, never()).save(any())
         }
@@ -218,10 +255,16 @@ class BookServiceTest {
         fun `should throw CustomException when userId is zero`() {
             val bookCreateWithZeroUserId = bookCreate.copy(userId = 0L)
 
-            val exception = assertFailsWith<CustomException> {
+            val expectedError = CustomException(
+                message = "入力された値が無効です。",
+                httpStatus = HttpStatus.BAD_REQUEST,
+                field = "userId",
+                value = 0L
+            )
+            val e = assertFailsWith<CustomException> {
                 bookService.registerBook(bookCreateWithZeroUserId)
             }
-            assertEquals("ユーザーIDは正数である必要があります", exception.message)
+            assertThat(expectedError).isEqualTo(e)
 
             verify(bookMapper, never()).save(any())
         }
@@ -230,8 +273,9 @@ class BookServiceTest {
         fun `should throw DuplicateKeyException when id is duplicated`() {
             val bookCreateWithId = bookCreate.copy(id = 1L)
 
-            val expectedError = DuplicateKeyCustomException(
+            val expectedError = CustomException(
                 message = "プライマリキーが重複しました。別の値にしてください",
+                httpStatus = HttpStatus.CONFLICT,
                 field = "id",
                 value = 1L
             )
@@ -239,12 +283,10 @@ class BookServiceTest {
             val springError = DuplicateKeyException("模擬主キー重複エラー")
             whenever(bookMapper.save(any())).thenThrow(springError)
 
-            val realError = assertFailsWith<DuplicateKeyCustomException> {
+            val realError = assertFailsWith<CustomException> {
                 bookService.registerBook(bookCreateWithId)
             }
-            assertThat(realError.message).isEqualTo(expectedError.message)
-            assertThat(realError.field).isEqualTo(expectedError.field)
-            assertThat(realError.value).isEqualTo(expectedError.value)
+            assertThat(expectedError).isEqualTo(realError)
 
             verify(bookMapper, times(1)).save(any())
         }
@@ -256,11 +298,12 @@ class BookServiceTest {
          */
         @Test
         fun `should throw DataIntegrityViolationException when publisherId does not exist`() {
-            val bookCreateWithInvalidPublisherId = bookCreate.copy(publisherId = 11111111L)
-            val expectedError = NonExistentForeignKeyCustomException(
+            val bookCreateWithInvalidPublisherId = bookCreate.copy(publisherId = 999L)
+            val expectedError = CustomException(
                 message = "存在しない外部キーです。",
+                httpStatus = HttpStatus.NOT_FOUND,
                 field = "publisherId",
-                value = 11111111L
+                value = 999L
             )
             val sqlException = SQLIntegrityConstraintViolationException(
                 "FOREIGN KEY (`publisher_id`) violation",
@@ -274,12 +317,10 @@ class BookServiceTest {
             )
             whenever(bookMapper.save(any())).thenThrow(springException)
 
-            val realError = assertFailsWith<NonExistentForeignKeyCustomException> {
+            val realError = assertFailsWith<CustomException> {
                 bookService.registerBook(bookCreateWithInvalidPublisherId)
             }
-            assertThat(realError.message).isEqualTo(expectedError.message)
-            assertThat(realError.field).isEqualTo(expectedError.field)
-            assertThat(realError.value).isEqualTo(expectedError.value)
+            assertThat(expectedError).isEqualTo(realError)
 
             verify(bookMapper, times(1)).save(any())
         }
@@ -291,11 +332,12 @@ class BookServiceTest {
          */
         @Test
         fun `should throw DataIntegrityViolationException when userId does not exist`() {
-            val bookCreateWithInvalidUserId = bookCreate.copy(userId = 10000000L)
-            val expectedError = NonExistentForeignKeyCustomException(
+            val bookCreateWithInvalidUserId = bookCreate.copy(userId = 999L)
+            val expectedError = CustomException(
                 message = "存在しない外部キーです。",
+                httpStatus = HttpStatus.NOT_FOUND,
                 field = "userId",
-                value = 10000000L
+                value = 999L
             )
             val sqlException = SQLIntegrityConstraintViolationException(
                 "FOREIGN KEY (`user_id`) violation",
@@ -309,12 +351,10 @@ class BookServiceTest {
             )
             whenever(bookMapper.save(any())).thenThrow(springException)
 
-            val realError = assertFailsWith<NonExistentForeignKeyCustomException> {
+            val realError = assertFailsWith<CustomException> {
                 bookService.registerBook(bookCreateWithInvalidUserId)
             }
-            assertThat(realError.message).isEqualTo(expectedError.message)
-            assertThat(realError.field).isEqualTo(expectedError.field)
-            assertThat(realError.value).isEqualTo(expectedError.value)
+            assertThat(expectedError).isEqualTo(realError)
 
             verify(bookMapper, times(1)).save(any())
         }
@@ -344,10 +384,16 @@ class BookServiceTest {
         fun `should throw CustomException when insert fails`() {
             whenever(bookMapper.save(any())).thenReturn(0)
 
+            val expectedError = CustomException(
+                message = "書籍情報が正しく登録されませんでした。",
+                httpStatus = HttpStatus.INTERNAL_SERVER_ERROR,
+                field = "",
+                value = null
+            )
             val e = assertFailsWith<CustomException> {
                 bookService.registerBook(bookCreate)
             }
-            assertEquals("書籍情報が正しく登録されませんでした。", e.message)
+            assertThat(expectedError).isEqualTo(e)
 
             verify(bookMapper, times(1)).save(any())
         }
@@ -360,10 +406,16 @@ class BookServiceTest {
         fun `should throw CustomException when id is not generated`() {
             whenever(bookMapper.save(any())).thenReturn(1)
 
+            val expectedError = CustomException(
+                message = "書籍情報保存に失敗しました：IDが生成されませんでした",
+                httpStatus = HttpStatus.INTERNAL_SERVER_ERROR,
+                field = "id",
+                value = null
+            )
             val e = assertFailsWith<CustomException> {
                 bookService.registerBook(bookCreate)
             }
-            assertEquals("書籍情報保存に失敗しました：IDが生成されませんでした", e.message)
+            assertThat(expectedError).isEqualTo(e)
 
             verify(bookMapper, times(1)).save(any())
         }
@@ -419,13 +471,14 @@ class BookServiceTest {
                 price = 4200
             )
 
-            val expectedError = InvalidParamCustomException(
+            val expectedError = CustomException(
                 message = "入力された値が無効です。",
+                httpStatus = HttpStatus.BAD_REQUEST,
                 field = "id",
                 value = -1L
             )
 
-            val realError = assertFailsWith<InvalidParamCustomException> {
+            val realError = assertFailsWith<CustomException> {
                 bookService.updateBook(bookUpdate)
             }
 
@@ -448,13 +501,14 @@ class BookServiceTest {
                 price = 4200
             )
 
-            val expectedError = InvalidParamCustomException(
+            val expectedError = CustomException(
                 message = "入力された値が無効です。",
+                httpStatus = HttpStatus.BAD_REQUEST,
                 field = "id",
                 value = 0L
             )
 
-            val realError = assertFailsWith<InvalidParamCustomException> {
+            val realError = assertFailsWith<CustomException> {
                 bookService.updateBook(bookUpdate)
             }
 
@@ -477,13 +531,14 @@ class BookServiceTest {
                 price = 4200
             )
 
-            val expectedError = InvalidParamCustomException(
+            val expectedError = CustomException(
                 message = "入力された値が無効です。",
+                httpStatus = HttpStatus.BAD_REQUEST,
                 field = "publisherId",
                 value = -1L
             )
 
-            val realError = assertFailsWith<InvalidParamCustomException> {
+            val realError = assertFailsWith<CustomException> {
                 bookService.updateBook(bookUpdate)
             }
 
@@ -506,13 +561,14 @@ class BookServiceTest {
                 price = 4200
             )
 
-            val expectedError = InvalidParamCustomException(
+            val expectedError = CustomException(
                 message = "入力された値が無効です。",
+                httpStatus = HttpStatus.BAD_REQUEST,
                 field = "publisherId",
                 value = 0L
             )
 
-            val realError = assertFailsWith<InvalidParamCustomException> {
+            val realError = assertFailsWith<CustomException> {
                 bookService.updateBook(bookUpdate)
             }
 
@@ -535,13 +591,14 @@ class BookServiceTest {
                 price = 4200
             )
 
-            val expectedError = InvalidParamCustomException(
+            val expectedError = CustomException(
                 message = "入力された値が無効です。",
+                httpStatus = HttpStatus.BAD_REQUEST,
                 field = "userId",
                 value = -1L
             )
 
-            val realError = assertFailsWith<InvalidParamCustomException> {
+            val realError = assertFailsWith<CustomException> {
                 bookService.updateBook(bookUpdate)
             }
 
@@ -564,13 +621,14 @@ class BookServiceTest {
                 price = 4200
             )
 
-            val expectedError = InvalidParamCustomException(
+            val expectedError = CustomException(
                 message = "入力された値が無効です。",
+                httpStatus = HttpStatus.BAD_REQUEST,
                 field = "userId",
                 value = 0L
             )
 
-            val realError = assertFailsWith<InvalidParamCustomException> {
+            val realError = assertFailsWith<CustomException> {
                 bookService.updateBook(bookUpdate)
             }
 
@@ -593,13 +651,14 @@ class BookServiceTest {
                 price = -1
             )
 
-            val expectedError = InvalidParamCustomException(
+            val expectedError = CustomException(
                 message = "入力された値が無効です。",
+                httpStatus = HttpStatus.BAD_REQUEST,
                 field = "price",
                 value = -1
             )
 
-            val realError = assertFailsWith<InvalidParamCustomException> {
+            val realError = assertFailsWith<CustomException> {
                 bookService.updateBook(bookUpdate)
             }
 
@@ -627,8 +686,9 @@ class BookServiceTest {
                 price = 4200
             )
 
-            val expectedError = NonExistentForeignKeyCustomException(
+            val expectedError = CustomException(
                 message = "存在しない外部キーです。",
+                httpStatus = HttpStatus.NOT_FOUND,
                 field = "publisherId",
                 value = 999L
             )
@@ -645,7 +705,7 @@ class BookServiceTest {
             )
             whenever(bookMapper.update(any())).thenThrow(springException)
 
-            val realError = assertFailsWith<NonExistentForeignKeyCustomException> {
+            val realError = assertFailsWith<CustomException> {
                 bookService.updateBook(bookUpdate)
             }
             assertThat(realError.message).isEqualTo(expectedError.message)
@@ -672,8 +732,9 @@ class BookServiceTest {
                 price = 4200
             )
 
-            val expectedError = NonExistentForeignKeyCustomException(
+            val expectedError = CustomException(
                 message = "存在しない外部キーです。",
+                httpStatus = HttpStatus.NOT_FOUND,
                 field = "userId",
                 value = 999L
             )
@@ -690,7 +751,7 @@ class BookServiceTest {
             )
             whenever(bookMapper.update(any())).thenThrow(springException)
 
-            val realError = assertFailsWith<NonExistentForeignKeyCustomException> {
+            val realError = assertFailsWith<CustomException> {
                 bookService.updateBook(bookUpdate)
             }
             assertThat(realError.message).isEqualTo(expectedError.message)
@@ -739,15 +800,16 @@ class BookServiceTest {
                 price = 4200
             )
 
-            val expectedError = NotFoundCustomException(
+            val expectedError = CustomException(
                 message = "指定IDの書籍情報が存在しません",
+                httpStatus = HttpStatus.NOT_FOUND,
                 field = "id",
                 value = 999L
             )
 
             whenever(bookMapper.update(any())).thenReturn(0)
 
-            val realError = assertFailsWith<NotFoundCustomException> {
+            val realError = assertFailsWith<CustomException> {
                 bookService.updateBook(bookUpdate)
             }
             assertThat(realError.message).isEqualTo(expectedError.message)

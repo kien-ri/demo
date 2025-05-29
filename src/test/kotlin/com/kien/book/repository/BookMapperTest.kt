@@ -15,13 +15,7 @@ import org.springframework.dao.DataIntegrityViolationException
 import java.sql.SQLIntegrityConstraintViolationException
 import org.junit.jupiter.api.*
 import org.springframework.dao.DuplicateKeyException
-import org.springframework.jdbc.core.JdbcTemplate
-import org.springframework.test.annotation.Rollback
-import org.springframework.transaction.TransactionStatus
-import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
-import kotlin.test.assertFailsWith
-import java.time.temporal.ChronoUnit
 import kotlin.test.assertFailsWith
 
 @MybatisTest

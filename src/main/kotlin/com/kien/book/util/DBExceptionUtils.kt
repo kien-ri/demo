@@ -1,4 +1,4 @@
-package com.kien.book.common.util
+package com.kien.book.util
 
 import org.springframework.dao.DataIntegrityViolationException
 import java.sql.SQLIntegrityConstraintViolationException

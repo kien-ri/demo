@@ -3,20 +3,18 @@ package com.kien.book.service
 import com.kien.book.common.*
 import com.kien.book.model.dto.book.BookCondition
 import com.kien.book.common.Page
-import com.kien.book.common.util.DBExceptionUtils
-import com.kien.book.common.util.StringUtils.toCamelCase
-import com.kien.book.common.util.ValidationUtils
+import com.kien.book.util.DBExceptionUtils
+import com.kien.book.util.StringUtils.toCamelCase
+import com.kien.book.util.ValidationUtils
 import com.kien.book.model.Book
 import com.kien.book.model.dto.book.*
 import com.kien.book.repository.BookMapper
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.cglib.core.Local
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.sql.SQLIntegrityConstraintViolationException
 import java.time.LocalDateTime
 import kotlin.math.ceil
 import kotlin.reflect.full.memberProperties
@@ -39,18 +37,6 @@ class BookService(
     @Value("\${messages.errors.noIdGenerated}")
     val MSG_NO_ID_GENERATED: String = ""
 
-    @Value("\${messages.errors.invalidBookId}")
-    val MSG_INVALID_BOOK_ID: String = ""
-
-    @Value("\${messages.errors.invalidPirce}")
-    val MSG_INVALID_PRICE: String = ""
-
-    @Value("\${messages.errors.invalidPublisherId}")
-    val MSG_INVALID_PUBLISHER_ID: String = ""
-
-    @Value("\${messages.errors.invalidUserId}")
-    val MSG_INVALID_USER_ID: String = ""
-
     @Value("\${messages.errors.nonExistentFK}")
     val MSG_NONEXISTENT_FK: String = ""
 
@@ -69,17 +55,17 @@ class BookService(
     fun getBooksByCondition(bookCondition: BookCondition): Page<BookView> {
         if (bookCondition.minPrice != null) {
             require(bookCondition.minPrice >= 0) {
-                throw CustomException("エラー：下限金額にマイナスの値を指定できません。")
+//                throw CustomException("エラー：下限金額にマイナスの値を指定できません。")
             }
         }
         if (bookCondition.maxPrice != null) {
             require(bookCondition.maxPrice >= 0) {
-                throw CustomException("エラー：上限金額にマイナスの値を指定できません。")
+//                throw CustomException("エラー：上限金額にマイナスの値を指定できません。")
             }
         }
         if (bookCondition.minPrice != null && bookCondition.maxPrice != null) {
             require(bookCondition.minPrice <= bookCondition.maxPrice) {
-                throw CustomException("エラー：下限金額が上限金額より大きいです。")
+//                throw CustomException("エラー：下限金額が上限金額より大きいです。")
             }
         }
 
@@ -114,32 +100,37 @@ class BookService(
      */
     @Transactional
     fun registerBook(bookCreate: BookCreate): BookBasicInfo {
-        // 作成時間と更新時間を設定
+        // 1. DTO to Entity
         val currentTime = LocalDateTime.now()
         val book = bookCreate.toEntity(
-            createdAt = currentTime,
-            updatedAt = currentTime
+            current = currentTime,
         )
 
+        // 2. パラメータのバリデーション
         validateBookParam(book)
 
+        // 3. INSERT実行
         var insertedCount: Int = -1
         try {
             insertedCount = bookMapper.save(book)
         } catch (e: DuplicateKeyException) {
-            throw DuplicateKeyCustomException(
+            // 3.1 主キー重複エラー
+            throw CustomException(
                 message = MSG_DUPLICATE_KEY,
+                httpStatus = HttpStatus.CONFLICT,
                 field = Book::id.name,
                 value = bookCreate.id
             )
         } catch (e: DataIntegrityViolationException) {
+            // 3.2 外部キー存在しないエラー
             if (DBExceptionUtils.isForeignKeyViolation(e)) {
                 val errorMsg = e.message ?: ""
                 val propertyName = DBExceptionUtils.extractForeignKeyColumn(errorMsg)?.toCamelCase() ?: ""
                 val property = BookCreate::class.memberProperties.find { it.name == propertyName }
                 val propertyValue = property?.get(bookCreate)
-                throw NonExistentForeignKeyCustomException(
+                throw CustomException(
                     message = MSG_NONEXISTENT_FK,
+                    httpStatus = HttpStatus.NOT_FOUND,
                     field = propertyName,
                     value = propertyValue
                 )
@@ -147,13 +138,25 @@ class BookService(
             throw e
         }
 
+        // 4. INSERT結果の検証
+        // 4.1 挿入件数のチェック
         if (insertedCount <= 0) {
             throw CustomException(
-                message = MSG_INSERT_ERROR
+                message = MSG_INSERT_ERROR,
+                httpStatus = HttpStatus.INTERNAL_SERVER_ERROR,
+                field = "",
+                value = null
             )
         }
-        val bookId = book.id ?: throw CustomException(message = MSG_NO_ID_GENERATED)
+        // 4.2 インクリメントのIDが付与されたかをチェック(Mybatis UseGeneratedKeys)
+        val bookId = book.id ?: throw CustomException(
+            message = MSG_NO_ID_GENERATED,
+            httpStatus = HttpStatus.INTERNAL_SERVER_ERROR,
+            field = Book::id.name,
+            value = null
+        )
 
+        // 5. 戻り値DTO構成
         return BookBasicInfo(
             id = bookId,
             title = book.title
@@ -196,8 +199,9 @@ class BookService(
                 val propertyName = DBExceptionUtils.extractForeignKeyColumn(errorMsg)?.toCamelCase() ?: ""
                 val property = BookUpdate::class.memberProperties.find { it.name == propertyName }
                 val propertyValue = property?.get(bookUpdate)
-                throw NonExistentForeignKeyCustomException(
+                throw CustomException(
                     message = MSG_NONEXISTENT_FK,
+                    httpStatus = HttpStatus.NOT_FOUND,
                     field = propertyName,
                     value = propertyValue
                 )
@@ -206,8 +210,9 @@ class BookService(
         }
 
         if (updatedCount <= 0) {
-            throw NotFoundCustomException(
+            throw CustomException(
                 message = MSG_NON_EXISTENT_BOOK,
+                httpStatus = HttpStatus.NOT_FOUND,
                 field = Book::id.name,
                 value = bookId
             )
@@ -248,8 +253,9 @@ class BookService(
         )
         // 金額のチェック
         if (book.price?.let { it < 0 } == true) {
-            throw InvalidParamCustomException(
+            throw CustomException(
                 message = MSG_INVALID_VALUE,
+                httpStatus = HttpStatus.BAD_REQUEST,
                 field = Book::price.name,
                 value = book.price
             )
