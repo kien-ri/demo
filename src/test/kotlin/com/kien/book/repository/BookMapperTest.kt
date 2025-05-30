@@ -15,13 +15,7 @@ import org.springframework.dao.DataIntegrityViolationException
 import java.sql.SQLIntegrityConstraintViolationException
 import org.junit.jupiter.api.*
 import org.springframework.dao.DuplicateKeyException
-import org.springframework.jdbc.core.JdbcTemplate
-import org.springframework.test.annotation.Rollback
-import org.springframework.transaction.TransactionStatus
-import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
-import kotlin.test.assertFailsWith
-import java.time.temporal.ChronoUnit
 import kotlin.test.assertFailsWith
 
 @MybatisTest
@@ -904,6 +898,302 @@ class BookMapperTest {
             assertThat(rootCause is SQLIntegrityConstraintViolationException)
             val errorCode = (rootCause as SQLIntegrityConstraintViolationException).errorCode
             assertThat(errorCode).isEqualTo(1452)
+        }
+    }
+
+    @Nested
+    @Sql(scripts = ["/schema.sql"], executionPhase = ExecutionPhase.BEFORE_TEST_CLASS)
+    @Sql(
+        scripts = [
+            "/repository/data/books/update/publisher.sql",
+            "/repository/data/books/update/user.sql",
+            "/repository/data/books/update/books.sql"
+        ],
+        executionPhase = ExecutionPhase.BEFORE_TEST_CLASS
+    )
+    inner class BatchUpdateTest{
+        @Autowired
+        private lateinit var booksTestMapper: BooksTestMapper
+
+        val currentTime = LocalDateTime.of(2025, 5, 4, 13, 20, 10)
+
+        val book1 = Book(
+            id = 1L,
+            title = "Python入門",
+            titleKana = "パイソン ニュウモン",
+            author = "佐藤花子",
+            publisherId = 1L,
+            userId = 100L,
+            price = 2500,
+            updatedAt = currentTime
+        )
+
+        val book3 = Book(
+            id = 3L,
+            title = "Java入門（第2版）",
+            titleKana = "ジャバ ニュウモン ダイニハン",
+            author = "鈴木一郎",
+            publisherId = 1L,
+            userId = 100L,
+            price = 3000,
+            updatedAt = currentTime
+        )
+
+        val book4 = Book(
+            id = 4L,
+            title = "Kotlin入門（第2版）",
+            titleKana = "コトリン ニュウモン ダイニハン",
+            author = "田中太郎",
+            publisherId = 1L,
+            userId = 100L,
+            price = 2800,
+            updatedAt = currentTime
+        )
+
+        @Test
+        fun `batch update books and return affected rows`() {
+            // 元々のデータを検証
+            val originalBooks = listOf(
+                bookMapper.getById(1L),
+                bookMapper.getById(3L),
+                bookMapper.getById(4L)
+            )
+            val originalBookViews = listOf(
+                BookView(
+                    id = 1L,
+                    title = "Kotlin入門",
+                    titleKana = "コトリン ニュウモン",
+                    author = "山田太郎",
+                    publisherId = 1L,
+                    publisherName = "技術出版社",
+                    userId = 100L,
+                    userName = "テストユーザー",
+                    price = 2500,
+                    createdAt = LocalDateTime.of(2023, 1, 1, 10, 0, 0),
+                    updatedAt = LocalDateTime.of(2023, 1, 1, 10, 0, 0)
+                ),
+                BookView(
+                    id = 3L,
+                    title = "Java入門",
+                    titleKana = "ジャバー ニュウモン",
+                    author = "田中太郎",
+                    publisherId = null,
+                    publisherName = null,
+                    userId = 100L,
+                    userName = "テストユーザー",
+                    price = 2000,
+                    createdAt = LocalDateTime.of(2023, 1, 1, 10, 0, 0),
+                    updatedAt = LocalDateTime.of(2023, 1, 1, 10, 0, 0)
+                ),
+                BookView(
+                    id = 4L,
+                    title = "Spring Boot 入門",
+                    titleKana = "スプリング ブート ニュウモン",
+                    author = "佐藤次郎",
+                    publisherId = 1L,
+                    publisherName = "技術出版社",
+                    userId = null,
+                    userName = null,
+                    price = 3000,
+                    createdAt = LocalDateTime.of(2023, 2, 1, 10, 0, 0),
+                    updatedAt = LocalDateTime.of(2023, 2, 1, 10, 0, 0)
+                )
+            )
+            assertThat(originalBooks).isEqualTo(originalBookViews)
+
+            // 更新を実行
+            val bookList = listOf(
+                book1,
+                book3,
+                book4
+            )
+            val updatedCount = bookMapper.batchUpdate(bookList)
+            assertThat(updatedCount).isEqualTo(3)
+
+            // 更新されたことを検証
+            val updatedBooks = listOf(
+                bookMapper.getById(1L),
+                bookMapper.getById(3L),
+                bookMapper.getById(4L)
+            )
+            val expectedBooks = listOf(
+                BookView(
+                    id = 1L,
+                    title = "Python入門",
+                    titleKana = "パイソン ニュウモン",
+                    author = "佐藤花子",
+                    publisherId = 1L,
+                    publisherName = "技術出版社",
+                    userId = 100L,
+                    userName = "テストユーザー",
+                    price = 2500,
+                    createdAt = LocalDateTime.of(2023,1,1,10,0,0),
+                    updatedAt = currentTime
+                ),
+                BookView(
+                    id = 3L,
+                    title = "Java入門（第2版）",
+                    titleKana = "ジャバ ニュウモン ダイニハン",
+                    author = "鈴木一郎",
+                    publisherId = 1L,
+                    publisherName = "技術出版社",
+                    userId = 100L,
+                    userName = "テストユーザー",
+                    price = 3000,
+                    createdAt = LocalDateTime.of(2023,1,1,10,0,0),
+                    updatedAt = currentTime
+                ),
+                BookView(
+                    id = 4L,
+                    title = "Kotlin入門（第2版）",
+                    titleKana = "コトリン ニュウモン ダイニハン",
+                    author = "田中太郎",
+                    publisherId = 1L,
+                    publisherName = "技術出版社",
+                    userId = 100L,
+                    userName = "テストユーザー",
+                    price = 2800,
+                    createdAt = LocalDateTime.of(2023,2,1,10,0,0),
+                    updatedAt = currentTime
+                )
+            )
+            assertThat(updatedBooks).isEqualTo(expectedBooks)
+        }
+
+        @Test
+        fun `return updated rows when some books are logically deleted`() {
+            // 論理削除されていることを確認
+            val deletedBook = booksTestMapper.getByIdIncludingDeleted(2L)
+            assertThat(deletedBook.isDeleted).isEqualTo(true)
+
+            // 更新を実行、結果は2行だけ更新される
+            val books = listOf(
+                book1.copy(id = 2L),
+                book3,
+                book4
+            )
+            val updatedCount = bookMapper.batchUpdate(books)
+            assertThat(updatedCount).isEqualTo(2)
+
+            // それ以外の行は更新される
+            val updatedBooks = listOf(
+                bookMapper.getById(2L),
+                bookMapper.getById(3L),
+                bookMapper.getById(4L)
+            )
+            val expectedBooks = listOf(
+                null,
+                BookView(
+                    id = 3L,
+                    title = "Java入門（第2版）",
+                    titleKana = "ジャバ ニュウモン ダイニハン",
+                    author = "鈴木一郎",
+                    publisherId = 1L,
+                    publisherName = "技術出版社",
+                    userId = 100L,
+                    userName = "テストユーザー",
+                    price = 3000,
+                    createdAt = LocalDateTime.of(2023,1,1,10,0,0),
+                    updatedAt = currentTime
+                ),
+                BookView(
+                    id = 4L,
+                    title = "Kotlin入門（第2版）",
+                    titleKana = "コトリン ニュウモン ダイニハン",
+                    author = "田中太郎",
+                    publisherId = 1L,
+                    publisherName = "技術出版社",
+                    userId = 100L,
+                    userName = "テストユーザー",
+                    price = 2800,
+                    createdAt = LocalDateTime.of(2023,2,1,10,0,0),
+                    updatedAt = currentTime
+                )
+            )
+            assertThat(updatedBooks).isEqualTo(expectedBooks)
+
+            // id = 2は更新されない
+            val deletedBookAfter = booksTestMapper.getByIdIncludingDeleted(2L)
+            assertThat(deletedBookAfter).isEqualTo(deletedBook)
+        }
+
+        @Test
+        fun `return updated rows when some books are not exist`() {
+            // 存在しないことを確認
+            val notExistsBook = booksTestMapper.getByIdIncludingDeleted(999L)
+            assertThat(notExistsBook).isEqualTo(null)
+
+            // 更新を実行、結果は2行だけ更新される
+            val books = listOf(
+                book1.copy(id = 999L),
+                book3,
+                book4
+            )
+            val updatedCount = bookMapper.batchUpdate(books)
+            assertThat(updatedCount).isEqualTo(2)
+
+            // それ以外の行は更新される
+            val updatedBooks = listOf(
+                bookMapper.getById(999L),
+                bookMapper.getById(3L),
+                bookMapper.getById(4L)
+            )
+            val expectedBooks = listOf(
+                null,
+                BookView(
+                    id = 3L,
+                    title = "Java入門（第2版）",
+                    titleKana = "ジャバ ニュウモン ダイニハン",
+                    author = "鈴木一郎",
+                    publisherId = 1L,
+                    publisherName = "技術出版社",
+                    userId = 100L,
+                    userName = "テストユーザー",
+                    price = 3000,
+                    createdAt = LocalDateTime.of(2023,1,1,10,0,0),
+                    updatedAt = currentTime
+                ),
+                BookView(
+                    id = 4L,
+                    title = "Kotlin入門（第2版）",
+                    titleKana = "コトリン ニュウモン ダイニハン",
+                    author = "田中太郎",
+                    publisherId = 1L,
+                    publisherName = "技術出版社",
+                    userId = 100L,
+                    userName = "テストユーザー",
+                    price = 2800,
+                    createdAt = LocalDateTime.of(2023,2,1,10,0,0),
+                    updatedAt = currentTime
+                )
+            )
+            assertThat(updatedBooks).isEqualTo(expectedBooks)
+        }
+
+        @Test
+        fun `throw exception when publisherId non exists`() {
+            val books = listOf(
+                book1.copy(publisherId = 999L),
+                book3.copy(),
+                book4.copy()
+            )
+
+            assertFailsWith<DataIntegrityViolationException> {
+                bookMapper.batchUpdate(books)
+            }
+        }
+
+        @Test
+        fun `throw exception when userId non exists`() {
+            val books = listOf(
+                book1.copy(userId = 999L),
+                book3.copy(),
+                book4.copy()
+            )
+
+            assertFailsWith<DataIntegrityViolationException> {
+                bookMapper.batchUpdate(books)
+            }
         }
     }
 }

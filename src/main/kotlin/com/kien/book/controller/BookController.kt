@@ -72,10 +72,9 @@ class BookController(private val bookService: BookService) {
     }
 
     @PutMapping("/batch")
-    fun updateBooks(@RequestBody @Valid bookUpdates: List<BookUpdate>): ResponseEntity<Void> {
-        val books = bookUpdates.map { it.toEntity() }
-        bookService.updateBooks(books)
-        return ResponseEntity.noContent().build()
+    fun updateBooks(@RequestBody bookUpdates: List<BookUpdate>): ResponseEntity<BookBatchProcessedResult> {
+        val result = bookService.updateBooks(bookUpdates)
+        return ResponseEntity.status(result.httpStatus).body(result)
     }
 
 }

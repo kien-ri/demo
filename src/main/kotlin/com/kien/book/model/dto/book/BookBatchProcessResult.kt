@@ -3,7 +3,7 @@ package com.kien.book.model.dto.book
 import org.springframework.http.HttpStatus
 
 /**
- * 一括登録APIの戻り値
+ * 一括登録/更新APIの戻り値
  */
 data class BookBatchProcessedResult(
     val httpStatus: HttpStatus,

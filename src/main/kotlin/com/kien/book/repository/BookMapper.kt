@@ -26,4 +26,6 @@ interface BookMapper {
     fun deleteBatchLogically(ids: List<Long>): Int
 
     fun update(book: Book): Int
+
+    fun batchUpdate(books: List<Book>): Int
 }

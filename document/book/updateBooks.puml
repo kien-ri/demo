@@ -11,9 +11,9 @@ database ":DB" as DB
 
 activate User
 User -> UI ++ : 情報更新請求
-UI -> BookController ++ : (PATCH /books, json)
-BookController -> BookService ++ : book list
-BookService -> BookMapper ++ : book list
+UI -> BookController ++ : PUT /books/batch
+BookController -> BookService ++ : DTO List
+BookService -> BookMapper ++ : バリデーション\n通過したBook List
 BookMapper -> DB ++ : UPDATE
 
 alt 更新失敗した場合
@@ -26,9 +26,9 @@ end
 
 DB --> BookMapper -- : 影響件数
 BookMapper --> BookService -- : 影響件数
-BookService --> BookController -- : 更新完了
-BookController --> UI -- : 更新成功
-UI --> User -- : 完了画面
+BookService --> BookController -- : 更新結果
+BookController --> UI -- : 更新結果
+UI --> User -- : 結果表示
 deactivate User
 
 @enduml

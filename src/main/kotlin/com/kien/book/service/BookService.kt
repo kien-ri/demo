@@ -36,6 +36,9 @@ class BookService(
     @Value("\${messages.errors.insertError}")
     val MSG_INSERT_ERROR: String = ""
 
+    @Value("\${messages.errors.updateError}")
+    val MSG_UPDATE_ERROR: String = ""
+
     @Value("\${messages.errors.noIdGenerated}")
     val MSG_NO_ID_GENERATED: String = ""
 
@@ -300,11 +303,67 @@ class BookService(
         )
     }
 
-    fun updateBooks(books: List<Book>) {
-        batchService.batchProcess(
-            dataList = books,
-            mapperClass = BookMapper::class.java,
-            operation = BookMapper::update
+    fun updateBooks(bookUpdates: List<BookUpdate>): BookBatchProcessedResult {
+        val successfulItems = mutableListOf<ProcessedBook>()
+        val failedItems = mutableListOf<ProcessedBook>()
+        val validBooks = mutableListOf<Book>()
+
+        // 1. DTOからEntityへ変換
+        val currentTime = LocalDateTime.now()
+        val books = bookUpdates.map {
+            it.toEntity(
+                updatedAt = currentTime
+            )
+        }
+
+        // 2. パラメータのバリデーション
+        books.forEach { book ->
+            try {
+                validateBookParam(book)
+                validBooks.add(book)
+            } catch (e: CustomException) {
+                failedItems.add(
+                    ProcessedBook(
+                        // 指定がある場合は指定したIDを返し、ない場合はnull
+                        id = book.id,
+                        title = book.title,
+                        error = e
+                    )
+                )
+            }
+        }
+
+        // 3. パラメータのバリデーションに通過した書籍情報のみをUPDATEする
+        if (validBooks.isNotEmpty()) {
+            val updatedCount = bookMapper.batchUpdate(validBooks)
+            if (updatedCount == validBooks.size) {
+                validBooks.map { book ->
+                    ProcessedBook(
+                        id = book.id,
+                        title = book.title,
+                        error = null
+                    )
+                }.let { successfulItems.addAll(it) }
+            } else {
+                throw throw CustomException(message = MSG_UPDATE_ERROR)
+            }
+        }
+
+        // 4. http status 設定
+        val httpStatus = when {
+            // 全失敗
+            successfulItems.isEmpty() -> HttpStatus.BAD_REQUEST
+            // 全成功
+            failedItems.isEmpty() -> HttpStatus.OK
+            // 一部成功
+            else -> HttpStatus.MULTI_STATUS
+        }
+
+        // 5. DTO構成
+        return BookBatchProcessedResult(
+            httpStatus = httpStatus,
+            successfulItems = successfulItems,
+            failedItems = failedItems
         )
     }
 
