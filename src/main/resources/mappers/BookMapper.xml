@@ -143,6 +143,60 @@
             updated_at = #{updatedAt}
     </insert>
 
+    <insert id="batchSaveWithSpecifiedId" parameterType="java.util.List">
+        INSERT INTO `books` (
+            id,
+            title,
+            title_kana,
+            author,
+            publisher_id,
+            user_id,
+            price,
+            created_at,
+            updated_at
+        )
+        VALUES
+        <foreach collection="list" item="book" separator=",">
+            (
+                #{book.id},
+                #{book.title},
+                #{book.titleKana},
+                #{book.author},
+                #{book.publisherId},
+                #{book.userId},
+                #{book.price},
+                #{book.createdAt},
+                #{book.updatedAt}
+            )
+        </foreach>
+    </insert>
+
+    <insert id="batchSaveWithoutId" parameterType="java.util.List" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO `books` (
+            title,
+            title_kana,
+            author,
+            publisher_id,
+            user_id,
+            price,
+            created_at,
+            updated_at
+        )
+        VALUES
+        <foreach collection="list" item="book" separator=",">
+            (
+                #{book.title},
+                #{book.titleKana},
+                #{book.author},
+                #{book.publisherId},
+                #{book.userId},
+                #{book.price},
+                #{book.createdAt},
+                #{book.updatedAt}
+            )
+        </foreach>
+    </insert>
+
     <update id="deleteLogically" parameterType="long">
         UPDATE
             `books`

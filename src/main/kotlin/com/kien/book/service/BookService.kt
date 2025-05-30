@@ -163,13 +163,94 @@ class BookService(
         )
     }
 
-    fun registerBooks(bookCreates: List<BookCreate>) {
-        val books = bookCreates.map { it.toEntity() }
+    /**
+     * 書籍の一括登録処理を行う。
+     *
+     * このメソッドは、与えられた書籍作成DTOのリストから書籍エンティティを生成し、
+     * バリデーションを実行した後、有効な書籍のみをデータベースに一括登録する。
+     * 登録結果は、成功した書籍と失敗した書籍の情報と共に返される。
+     *
+     * ただし、SQLエラーが発生した場合は、エラーをそのままthrowし、グローバルハンドラに処理させる。
+     */
+    @Transactional
+    fun registerBooks(bookCreates: List<BookCreate>): BookBatchProcessedResult {
+        // 1. DTOからEntityへ変換
+        val currentTime = LocalDateTime.now()
+        val books = bookCreates.map {
+            it.toEntity(
+                createdAt = currentTime,
+                updatedAt = currentTime
+            )
+        }
 
-        batchService.batchProcess(
-            dataList = books,
-            mapperClass = BookMapper::class.java,
-            operation = BookMapper::save
+        val successfulItems = mutableListOf<ProcessedBook>()
+        val failedItems = mutableListOf<ProcessedBook>()
+        val validBooks = mutableListOf<Book>()
+
+        // 2. パラメータのバリデーション
+        books.forEach { book ->
+            try {
+                validateBookParam(book)
+                validBooks.add(book)
+            } catch (e: CustomException) {
+                failedItems.add(
+                    ProcessedBook(
+                        // 指定がある場合は指定したIDを返し、ない場合はnull
+                        id = book.id,
+                        title = book.title,
+                        error = e
+                    )
+                )
+            }
+        }
+
+        // 3. パラメータのバリデーションに通過した書籍情報のみをINSERTする
+        if (validBooks.isNotEmpty()) {
+            val (withId, withoutId) = validBooks.partition { it.id != null }
+            try {
+                var withIdCount = 0
+                var noIdCount = 0
+                if (withId.isNotEmpty()) {
+                    withIdCount = bookMapper.batchSaveWithSpecifiedId(withId)
+                }
+
+                if (withoutId.isNotEmpty()) {
+                    // ID指定なしのINSERTではMybatisによってインクリメントのIDがobjに付与される
+                    noIdCount = bookMapper.batchSaveWithoutId(withoutId)
+                }
+                if (withIdCount == withId.size && noIdCount == withoutId.size) {
+                    // 3.1 INSERTできたら成功配列に入れる
+                    (withId + withoutId).map { book ->
+                        ProcessedBook(
+                            id = book.id,
+                            title = book.title,
+                            error = null
+                        )
+                    }.let { successfulItems.addAll(it) }
+                } else {
+                    // 3.2 INSERT時点でエラー起きた場合はグローバルハンドラにthrow
+                    throw throw CustomException(message = MSG_INSERT_ERROR)
+                }
+            } catch (e: RuntimeException) {
+                throw e
+            }
+        }
+
+        // 4. http status 設定
+        val httpStatus = when {
+            // 全失敗
+            successfulItems.isEmpty() -> HttpStatus.BAD_REQUEST
+            // 全成功
+            failedItems.isEmpty() -> HttpStatus.OK
+            // 一部成功
+            else -> HttpStatus.MULTI_STATUS
+        }
+
+        // 5. DTO構成
+        return BookBatchProcessedResult(
+            httpStatus = httpStatus,
+            successfulItems = successfulItems,
+            failedItems = failedItems
         )
     }
 
