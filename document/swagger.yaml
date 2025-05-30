@@ -55,23 +55,26 @@ paths:
                     userId: "-1"
                     message: 入力された値が無効です。
                 invalidPrice:
-                  summary: 価格が不正
+                  summary: 金額が不正
                   value:
                     price: "-1"
                     message: 入力された値が無効です。
-        '409':
-          description: DBのエラー
+        '404':
+          description: 存在しない外部キー
           content:
             application/json:
-              examples:
-                duplicateKey:
-                  summary: 主キーが重複
-                  value:
-                    error: プライマリキーが重複しました。別の値にしてください
-                constraint:
-                  summary: 存在しない外部キーを指定
-                  value:
-                    error: 存在しない外部キーです。
+              example:
+                value:
+                  userId: 999
+                  message: 存在しない外部キーです。
+        '409':
+          description: 主キー重複
+          content:
+            application/json:
+              example:
+                value:
+                  id: 1
+                  message: プライマリキーが重複しました。別の値にしてください
         '500':
           description: 予想外のエラー
           content:
@@ -189,11 +192,26 @@ paths:
                       price: 500
                       createdAt: '2025-04-25T08:30:00Z'
                       updatedAt: '2025-04-25T08:30:00Z'
+        '400':
+          description: パラメータ不正
+          content:
+            application/json:
+              examples:
+                invalidCurrent:
+                  summary: currentPage不正
+                  value:
+                    currentPage: "-1"
+                    message:  "入力された値が無効です。"
+                invalidSize:
+                  summary: pageSize不正
+                  value:
+                    pageSize: "-2"
+                    message:  "入力された値が無効です。"
         '404':
           description: 指定条件の書籍が見つかりません
           content:
             application/json: {}
-        default:
+        '500':
           description: 予想外のエラー
           content:
             application/json:
@@ -205,16 +223,6 @@ paths:
       summary: 書籍情報更新
       description: 指定IDの書籍情報を更新する
       operationId: updateBook
-      parameters:
-        - name: id
-          in: path
-          description: 書籍ID
-          required: true
-          schema:
-            type: integer
-            format: int64
-            minimum: 1
-          example: 1
       requestBody:
         description: 書籍情報
         content:
@@ -362,11 +370,11 @@ paths:
     post:
       tags:
         - book
-      summary: 書籍情報一括登録
-      description: 複数の書籍情報を一括で登録する
-      operationId: registerBooks
+      summary: 書籍情報一括作成
+      description: 複数の書籍情報を一括で作成する
+      operationId: createBooks
       requestBody:
-        description: 書籍情報のリスト
+        description: 作成する書籍情報のリスト
         content:
           application/json:
             schema:
@@ -374,31 +382,79 @@ paths:
               items:
                 $ref: '#/components/schemas/BookCreate'
             examples:
-              batchBookCreate:
-                summary: 複数書籍登録のリクエスト例
+              batchCreate:
+                summary: 複数書籍作成のリクエスト例
                 value:
-                  - title: 星を継ぐもの
-                    titleKana: ホシヲツグモノ
+                  - id: 1
+                    title: 星を継ぐもの（改訂版）
+                    titleKana: ホシヲツグモノカイテイバン
                     author: ジェイムズ・P・ホーガン
                     publisherId: 1
                     userId: 1
-                    price: 700
-                  - title: ガニメデの優しい巨人
-                    titleKana: ガニメデノヤサシイキョジン
+                    price: 500
+                  - id: 2
+                    title: ガニメデの優しい巨人（改訂版）
+                    titleKana: ガニメデノヤサシイキョジンカイテイバン
                     author: ジェイムズ・P・ホーガン
                     publisherId: 1
                     userId: 2
-                    price: 1300
+                    price: 800
       responses:
-        '204':
+        '200':
           description: OK
           content:
             application/json:
-              examples:
-                success:
-                  summary: 複数書籍登録成功例
-                  value: {}
-        default:
+              example:
+                value:
+                  httpStatus: OK
+                  successfulItems:
+                    - id: 1
+                      title: 星を継ぐもの（改訂版）
+                      error: null
+                    - id: 2
+                      title: ガニメデの優しい巨人（改訂版）
+                      error: null
+                  failedItems: []
+        '207':
+          description: 一部成功
+          content:
+            application/json:
+              example:
+                value:
+                  httpStatus: MULTI_STATUS
+                  successfulItems:
+                    - id: 2
+                      title: ガニメデの優しい巨人（改訂版）
+                      error: null
+                  failedItems:
+                    - id: 1
+                      title: 星を継ぐもの（改訂版）
+                      error:
+                        message: 入力された値が無効です。
+                        field: publisherId
+                        value: -1
+        '400':
+          description: 全失敗
+          content:
+            application/json:
+              example:
+                value:
+                  httpStatus: BAD_REQUEST
+                  successfulItems: []
+                  failedItems:
+                    - id: 1
+                      title: 星を継ぐもの（改訂版）
+                      error:
+                        message: 入力された値が無効です。
+                        field: publisherId
+                        value: -1
+                    - id: 2
+                      title: ガニメデの優しい巨人（改訂版）
+                      error:
+                        message: 入力された値が無効です。
+                        field: price
+                        value: -500
+        '500':
           description: 予想外のエラー
           content:
             application/json:
@@ -472,15 +528,61 @@ paths:
                     userId: 2
                     price: 800
       responses:
-        '204':
+        '200':
           description: OK
           content:
             application/json:
-              examples:
-                success:
-                  summary: 複数書籍更新成功例
-                  value: {}
-        default:
+              example:
+                value:
+                  httpStatus: OK
+                  successfulItems:
+                    - id: 1
+                      title: 星を継ぐもの（改訂版）
+                      error: null
+                    - id: 2
+                      title: ガニメデの優しい巨人（改訂版）
+                      error: null
+                  failedItems: []
+        '207':
+          description: 一部成功
+          content:
+            application/json:
+              example:
+                value:
+                  httpStatus: MULTI_STATUS
+                  successfulItems:
+                    - id: 2
+                      title: ガニメデの優しい巨人（改訂版）
+                      error: null
+                  failedItems:
+                    - id: 1
+                      title: 星を継ぐもの（改訂版）
+                      error:
+                        message: 入力された値が無効です。
+                        field: publisherId
+                        value: -1
+        '400':
+          description: 全失敗
+          content:
+            application/json:
+              example:
+                value:
+                  httpStatus: BAD_REQUEST
+                  successfulItems: []
+                  failedItems:
+                    - id: 1
+                      title: 星を継ぐもの（改訂版）
+                      error:
+                        message: 入力された値が無効です。
+                        field: publisherId
+                        value: -1
+                    - id: 2
+                      title: ガニメデの優しい巨人（改訂版）
+                      error:
+                        message: 入力された値が無効です。
+                        field: price
+                        value: -500
+        '500':
           description: 予想外のエラー
           content:
             application/json:
