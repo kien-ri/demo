@@ -182,7 +182,7 @@ class BookService(
     }
 
     @Transactional
-    fun updateBook(bookUpdate: BookUpdate): BookUpdatedResponse {
+    fun updateBook(bookUpdate: BookUpdate): BookBasicInfo {
         val bookId = bookUpdate.id
         val book = bookUpdate.toEntity(
             updatedAt = LocalDateTime.now()
@@ -218,7 +218,7 @@ class BookService(
             )
         }
 
-        return BookUpdatedResponse(
+        return BookBasicInfo(
             id = bookId,
             title = book.title
         )

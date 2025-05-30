@@ -628,7 +628,7 @@ class BookControllerTest {
                 price = 4200
             )
 
-            val expectedResult = BookUpdatedResponse(
+            val expectedResult = BookBasicInfo(
                 id = 1L,
                 title = "Kotlin応用ガイド"
             )

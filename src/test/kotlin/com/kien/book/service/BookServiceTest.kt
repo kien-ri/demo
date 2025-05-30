@@ -446,15 +446,15 @@ class BookServiceTest {
                 price = 4200
             )
 
-            val expectedResult = BookUpdatedResponse(
+            val expectedResult = BookBasicInfo(
                 id = 1L,
                 title = "Kotlin応用ガイド"
             )
 
             whenever(bookMapper.update(any())).thenReturn(1)
-            val bookUpdatedResponse = bookService.updateBook(bookUpdate)
+            val info = bookService.updateBook(bookUpdate)
 
-            assertThat(bookUpdatedResponse).isEqualTo(expectedResult)
+            assertThat(info).isEqualTo(expectedResult)
 
             verify(bookMapper, times(1)).update(any())
         }
@@ -482,9 +482,7 @@ class BookServiceTest {
                 bookService.updateBook(bookUpdate)
             }
 
-            assertThat(realError.message).isEqualTo(expectedError.message)
-            assertThat(realError.field).isEqualTo(expectedError.field)
-            assertThat(realError.value).isEqualTo(expectedError.value)
+            assertThat(realError).isEqualTo(expectedError)
 
             verify(bookMapper, never()).update(any())
         }
@@ -512,9 +510,7 @@ class BookServiceTest {
                 bookService.updateBook(bookUpdate)
             }
 
-            assertThat(realError.message).isEqualTo(expectedError.message)
-            assertThat(realError.field).isEqualTo(expectedError.field)
-            assertThat(realError.value).isEqualTo(expectedError.value)
+            assertThat(realError).isEqualTo(expectedError)
 
             verify(bookMapper, never()).update(any())
         }
@@ -542,9 +538,7 @@ class BookServiceTest {
                 bookService.updateBook(bookUpdate)
             }
 
-            assertThat(realError.message).isEqualTo(expectedError.message)
-            assertThat(realError.field).isEqualTo(expectedError.field)
-            assertThat(realError.value).isEqualTo(expectedError.value)
+            assertThat(realError).isEqualTo(expectedError)
 
             verify(bookMapper, never()).update(any())
         }
@@ -572,9 +566,7 @@ class BookServiceTest {
                 bookService.updateBook(bookUpdate)
             }
 
-            assertThat(realError.message).isEqualTo(expectedError.message)
-            assertThat(realError.field).isEqualTo(expectedError.field)
-            assertThat(realError.value).isEqualTo(expectedError.value)
+            assertThat(realError).isEqualTo(expectedError)
 
             verify(bookMapper, never()).update(any())
         }
@@ -602,9 +594,7 @@ class BookServiceTest {
                 bookService.updateBook(bookUpdate)
             }
 
-            assertThat(realError.message).isEqualTo(expectedError.message)
-            assertThat(realError.field).isEqualTo(expectedError.field)
-            assertThat(realError.value).isEqualTo(expectedError.value)
+            assertThat(realError).isEqualTo(expectedError)
 
             verify(bookMapper, never()).update(any())
         }
@@ -632,9 +622,7 @@ class BookServiceTest {
                 bookService.updateBook(bookUpdate)
             }
 
-            assertThat(realError.message).isEqualTo(expectedError.message)
-            assertThat(realError.field).isEqualTo(expectedError.field)
-            assertThat(realError.value).isEqualTo(expectedError.value)
+            assertThat(realError).isEqualTo(expectedError)
 
             verify(bookMapper, never()).update(any())
         }
@@ -662,9 +650,7 @@ class BookServiceTest {
                 bookService.updateBook(bookUpdate)
             }
 
-            assertThat(realError.message).isEqualTo(expectedError.message)
-            assertThat(realError.field).isEqualTo(expectedError.field)
-            assertThat(realError.value).isEqualTo(expectedError.value)
+            assertThat(realError).isEqualTo(expectedError)
 
             verify(bookMapper, never()).update(any())
         }
@@ -708,9 +694,7 @@ class BookServiceTest {
             val realError = assertFailsWith<CustomException> {
                 bookService.updateBook(bookUpdate)
             }
-            assertThat(realError.message).isEqualTo(expectedError.message)
-            assertThat(realError.field).isEqualTo(expectedError.field)
-            assertThat(realError.value).isEqualTo(expectedError.value)
+            assertThat(realError).isEqualTo(expectedError)
 
             verify(bookMapper, times(1)).update(any())
         }
@@ -754,9 +738,7 @@ class BookServiceTest {
             val realError = assertFailsWith<CustomException> {
                 bookService.updateBook(bookUpdate)
             }
-            assertThat(realError.message).isEqualTo(expectedError.message)
-            assertThat(realError.field).isEqualTo(expectedError.field)
-            assertThat(realError.value).isEqualTo(expectedError.value)
+            assertThat(realError).isEqualTo(expectedError)
 
             verify(bookMapper, times(1)).update(any())
         }
@@ -812,9 +794,7 @@ class BookServiceTest {
             val realError = assertFailsWith<CustomException> {
                 bookService.updateBook(bookUpdate)
             }
-            assertThat(realError.message).isEqualTo(expectedError.message)
-            assertThat(realError.field).isEqualTo(expectedError.field)
-            assertThat(realError.value).isEqualTo(expectedError.value)
+            assertThat(realError).isEqualTo(expectedError)
 
             verify(bookMapper, times(1)).update(any())
         }
