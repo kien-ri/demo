@@ -6,6 +6,7 @@ import com.kien.book.common.NotFoundCustomException
 import com.kien.book.common.Page
 import com.kien.book.model.dto.book.*
 import com.kien.book.common.DuplicateKeyCustomException
+import com.kien.book.common.InvalidParamCustomException
 import com.kien.book.model.dto.book.BookCreate
 import com.kien.book.model.dto.book.BookView
 import com.kien.book.service.BookService
@@ -16,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import java.time.LocalDateTime
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.*
@@ -567,6 +569,249 @@ class BookControllerTest {
             }
 
             verify(bookService, times(1)).registerBook(any())
+        }
+    }
+
+    @Nested
+    inner class RegisterBooksTest {
+
+        val bookCreate1 = BookCreate(
+            id = null,
+            title = "はじめてのKotlinプログラミング",
+            titleKana = "ハジメテノ コトリン プログラミング",
+            author = "山田太郎",
+            publisherId = 1L,
+            price = 2500,
+            userId = 100L
+        )
+        val bookCreate2 = BookCreate(
+            id = null,
+            title = "Kotlinで学ぶ関数型プログラミング",
+            titleKana = "コトリンデ マナブ カンスウガタ プログラミング",
+            author = "鈴木花子",
+            publisherId = 1L,
+            price = 3000,
+            userId = 100L
+        )
+        val bookCreate3 = BookCreate(
+            id = null,
+            title = "実践Kotlinアプリ開発",
+            titleKana = "ジッセン コトリン アプリ カイハツ",
+            author = "佐藤次郎",
+            publisherId = 1L,
+            price = 2800,
+            userId = 100L
+        )
+
+        @Test
+        fun `return 200 when register without id`() {
+            val bookCreates = listOf(
+                bookCreate1,
+                bookCreate2,
+                bookCreate3
+            )
+
+            val expectedResult = BookBatchProcessedResult(
+                httpStatus = HttpStatus.OK,
+                successfulItems = listOf(
+                    ProcessedBook(id = 1, title = "はじめてのKotlinプログラミング", error = null),
+                    ProcessedBook(id = 2, title = "Kotlinで学ぶ関数型プログラミング", error = null),
+                    ProcessedBook(id = 3, title = "実践Kotlinアプリ開発", error = null)
+                ),
+                failedItems = emptyList()
+            )
+            whenever(bookService.registerBooks(bookCreates)).thenReturn(expectedResult)
+
+            val mvcResult = mockMvc.post("/books/batch") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(bookCreates)
+            }
+            mvcResult.andExpect {
+                status { isOk() }
+                content { json(objectMapper.writeValueAsString(expectedResult)) }
+            }
+
+            verify(bookService, times(1)).registerBooks(any())
+        }
+
+        @Test
+        fun `return 200 when register with id`() {
+            val bookCreates = listOf(
+                bookCreate1.copy(id = 10),
+                bookCreate2.copy(id = 11),
+                bookCreate3.copy(id = 12)
+            )
+
+            val expectedResult = BookBatchProcessedResult(
+                httpStatus = HttpStatus.OK,
+                successfulItems = listOf(
+                    ProcessedBook(id = 10, title = "はじめてのKotlinプログラミング", error = null),
+                    ProcessedBook(id = 11, title = "Kotlinで学ぶ関数型プログラミング", error = null),
+                    ProcessedBook(id = 12, title = "実践Kotlinアプリ開発", error = null)
+                ),
+                failedItems = emptyList()
+            )
+            whenever(bookService.registerBooks(bookCreates)).thenReturn(expectedResult)
+
+            val mvcResult = mockMvc.post("/books/batch") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(bookCreates)
+            }
+            mvcResult.andExpect {
+                status { isOk() }
+                content { json(objectMapper.writeValueAsString(expectedResult)) }
+            }
+
+            verify(bookService, times(1)).registerBooks(any())
+        }
+
+        @Test
+        fun `return 207 when some books have invalid property`() {
+            val bookCreates = listOf(
+                bookCreate1.copy(id = -1L),
+                bookCreate2,
+                bookCreate3.copy(publisherId = 0L)
+            )
+
+            val expectedResult = BookBatchProcessedResult(
+                httpStatus = HttpStatus.MULTI_STATUS,
+                successfulItems = listOf(
+                    ProcessedBook(id = 1, title = "Kotlinで学ぶ関数型プログラミング", error = null),
+                ),
+                failedItems = listOf(
+                    ProcessedBook(
+                        id = null,
+                        title = "はじめてのKotlinプログラミング",
+                        error = InvalidParamCustomException(
+                            message = "入力された値が無効です。",
+                            field = "id",
+                            value = -1L
+                        )
+                    ),
+                    ProcessedBook(
+                        id = null,
+                        title = "実践Kotlinアプリ開発",
+                        error = InvalidParamCustomException(
+                            message = "入力された値が無効です。",
+                            field = "publisherId",
+                            value = 0L
+                        )
+                    )
+                )
+            )
+
+            whenever(bookService.registerBooks(bookCreates)).thenReturn(expectedResult)
+
+            val mvcResult = mockMvc.post("/books/batch") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(bookCreates)
+            }
+            mvcResult.andExpect {
+                status { isMultiStatus() }
+                content { json(objectMapper.writeValueAsString(expectedResult)) }
+            }
+
+            verify(bookService, times(1)).registerBooks(any())
+        }
+
+        @Test
+        fun `return 400 when all books param invalid`() {
+            val bookCreates = listOf(
+                bookCreate1.copy(id = -1L),
+                bookCreate2.copy(userId = 0L),
+                bookCreate3.copy(price = -1)
+            )
+
+            val expectedResult = BookBatchProcessedResult(
+                httpStatus = HttpStatus.BAD_REQUEST,
+                successfulItems = emptyList(),
+                failedItems = listOf(
+                    ProcessedBook(
+                        id = null,
+                        title = "",
+                        error = InvalidParamCustomException(
+                            message = "入力された値が無効です。",
+                            field = "id",
+                            value = -1L
+                        )
+                    ),
+                    ProcessedBook(
+                        id = null,
+                        title = "",
+                        error = InvalidParamCustomException(
+                            message = "入力された値が無効です。",
+                            field = "userId",
+                            value = 0L
+                        )
+                    ),
+                    ProcessedBook(
+                        id = null,
+                        title = "",
+                        error = InvalidParamCustomException(
+                            message = "入力された値が無効です。",
+                            field = "price",
+                            value = -1
+                        )
+                    )
+                )
+            )
+            whenever(bookService.registerBooks(bookCreates)).thenReturn(expectedResult)
+
+            val mvcResult = mockMvc.post("/books/batch") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(bookCreates)
+            }
+            mvcResult.andExpect {
+                status { isBadRequest() }
+                content { json(objectMapper.writeValueAsString(expectedResult)) }
+            }
+
+            verify(bookService, times(1)).registerBooks(any())
+        }
+
+        @Test
+        fun `return 500 when register failed`() {
+            val bookCreates = listOf(
+                bookCreate1,
+                bookCreate2,
+                bookCreate3
+            )
+
+            whenever(bookService.registerBooks(bookCreates)).thenThrow(RuntimeException("予想外エラー"))
+
+            val expectedResponseBody = mapOf(
+                "error" to "予想外のエラーが発生しました。エラー内容：予想外エラー"
+            )
+
+            val mvcResult = mockMvc.post("/books/batch") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(bookCreates)
+            }
+            mvcResult.andExpect {
+                status { isInternalServerError() }
+                content { json(objectMapper.writeValueAsString(expectedResponseBody)) }
+            }
+
+            verify(bookService, times(1)).registerBooks(any())
+        }
+    }
+
+    @Test
+    fun `deleteBookLogically should return 204 when deletion succeeds`() {
+        val bookId = 1L
+        mockMvc.delete("/books/$bookId")
+            .andExpect {
+                status { isNoContent() }
+            }
+    }
+
+    @Test
+    fun `deleteBooksLogically should return 204 when batch deletion succeeds`() {
+        mockMvc.delete("/books/batch") {
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsString(listOf(1L, 2L))
+        }.andExpect {
+            status { isNoContent() }
         }
     }
 

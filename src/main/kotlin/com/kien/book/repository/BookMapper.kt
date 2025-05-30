@@ -1,8 +1,8 @@
 package com.kien.book.repository
 
 import com.kien.book.model.Book
+import com.kien.book.model.dto.book.BookBasicInfo
 import com.kien.book.model.dto.book.BookCondition
-import com.kien.book.model.dto.book.BookCreate
 import com.kien.book.model.dto.book.BookView
 import org.apache.ibatis.annotations.Mapper
 
@@ -16,6 +16,10 @@ interface BookMapper {
     fun getListByCondition(bookCondition: BookCondition): List<BookView>
 
     fun save(book: Book): Int
+
+    fun batchSaveWithSpecifiedId(books: List<Book>): Int
+
+    fun batchSaveWithoutId(books: List<Book>): Int
 
     fun deleteLogically(id: Long): Int
 
